@@ -1,4 +1,5 @@
 import { UserButton } from "@clerk/nextjs";
+import { Bell } from "lucide-react";
 
 export default function Header() {
   return (
@@ -17,8 +18,15 @@ export default function Header() {
         </p>
       </div>
 
-      {/* User Section */}
-      <div className="flex flex-1 justify-end">
+      <div className="flex flex-1 mr-4 items-center justify-end">
+        <div className="relative">
+          <Bell className="w-6 h-6 text-gray-700 cursor-pointer" />
+          <span className="absolute -top-2 -right-2 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-white text-xs font-bold">
+            2
+          </span>
+        </div>
+      </div>
+      <div className="flex justify-end">
         <UserButton />
       </div>
     </div>
