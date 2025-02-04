@@ -1,5 +1,6 @@
-"use client"
-import { Bar, BarChart, CartesianGrid, XAxis } from "recharts"
+"use client";
+import { Bar, BarChart, CartesianGrid, XAxis } from "recharts";
+
 import {
   Card,
   CardContent,
@@ -7,16 +8,13 @@ import {
   CardFooter,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card"
-import {
-  ChartConfig,
-  ChartContainer,
-} from "@/components/ui/chart"
+} from "@/components/ui/card";
+import { ChartConfig, ChartContainer } from "@/components/ui/chart";
 
 const chartData = [
   { name: "Story Points", done: 60, baseline: 58.5, target: 78 },
   { name: "Coding Hours", done: 20, baseline: 25, target: 50 },
-]
+];
 
 const chartConfig = {
   done: {
@@ -31,7 +29,7 @@ const chartConfig = {
     label: "Target",
     color: "hsl(var(--chart-2))",
   },
-} satisfies ChartConfig
+} satisfies ChartConfig;
 
 interface CustomBarLabelProps {
   x: number;
@@ -39,11 +37,10 @@ interface CustomBarLabelProps {
   width: number;
   height: number;
   value?: number | string;
-};
-
+}
 
 const renderCustomLabel = (props: CustomBarLabelProps, key: string) => {
-  const { x, y, width, height, value } = props
+  const { x, y, width, height, value } = props;
   return (
     <g>
       <text
@@ -67,8 +64,8 @@ const renderCustomLabel = (props: CustomBarLabelProps, key: string) => {
         {key}
       </text>
     </g>
-  )
-}
+  );
+};
 
 export function BarChartMultiple() {
   return (
@@ -105,12 +102,14 @@ export function BarChartMultiple() {
       </CardContent>
       <CardFooter className="flex-col items-start gap-2 text-sm">
         <div className="flex gap-2 font-bold leading-none text-chart-4">
-          Your story points have exceeded the baseline. Let’s aim to hit the target!
+          Your story points have exceeded the baseline. Let’s aim to hit the
+          target!
         </div>
         <div className="flex gap-2 font-bold leading-none text-chart-1">
-          Your working hours have not yet reached the baseline, but don’t give up—every effort brings us closer to success!
+          Your working hours have not yet reached the baseline, but don’t give
+          up—every effort brings us closer to success!
         </div>
       </CardFooter>
     </Card>
-  )
+  );
 }

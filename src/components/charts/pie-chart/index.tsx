@@ -1,85 +1,83 @@
-"use client"
+"use client";
 
-import { TrendingUp } from "lucide-react"
-import { Pie, PieChart as PieRechart } from "recharts"
+import { Pie, PieChart as PieRechart, Cell } from "recharts";
 
 import {
   Card,
   CardContent,
   CardDescription,
-  CardFooter,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card"
-import {
-  ChartConfig,
-  ChartContainer,
-  ChartTooltip,
-  ChartTooltipContent,
-} from "@/components/ui/chart"
+} from "@/components/ui/card";
+import { ChartConfig, ChartContainer } from "@/components/ui/chart";
+
 const chartData = [
-  { browser: "chrome", visitors: 275, fill: "var(--color-chrome)" },
-  { browser: "safari", visitors: 200, fill: "var(--color-safari)" },
-  { browser: "firefox", visitors: 187, fill: "var(--color-firefox)" },
-  { browser: "edge", visitors: 173, fill: "var(--color-edge)" },
-  { browser: "other", visitors: 90, fill: "var(--color-other)" },
-]
+  { type: "newFeature", value: 275, fill: "var(--color-newFeature)" },
+  { type: "issue", value: 200, fill: "var(--color-issue)" },
+  { type: "enhance", value: 187, fill: "var(--color-enhance)" },
+  { type: "techdebt", value: 173, fill: "var(--color-techdebt)" },
+  { type: "support", value: 90, fill: "var(--color-support)" },
+];
 
 const chartConfig = {
-  visitors: {
-    label: "Visitors",
+  value: {
+    label: "Task Category",
   },
-  chrome: {
-    label: "Chrome",
+  newFeature: {
+    label: "New Feature",
     color: "hsl(var(--chart-1))",
   },
-  safari: {
-    label: "Safari",
+  issue: {
+    label: "Issue",
     color: "hsl(var(--chart-2))",
   },
-  firefox: {
-    label: "Firefox",
+  enhance: {
+    label: "Enhance",
     color: "hsl(var(--chart-3))",
   },
-  edge: {
-    label: "Edge",
+  techdebt: {
+    label: "Tech Debt",
     color: "hsl(var(--chart-4))",
   },
-  other: {
-    label: "Other",
+  support: {
+    label: "Support",
     color: "hsl(var(--chart-5))",
   },
-} satisfies ChartConfig
+} satisfies ChartConfig;
 
 export function PieChart() {
   return (
     <Card className="flex flex-col">
       <CardHeader className="items-center pb-0">
-        <CardTitle>Pie Chart</CardTitle>
-        <CardDescription>January - June 2024</CardDescription>
+        <CardTitle>{chartConfig.value.label}</CardTitle>
+        <CardDescription>Sprint 46 - Sprint 50</CardDescription>
       </CardHeader>
       <CardContent className="flex-1 pb-0">
         <ChartContainer
           config={chartConfig}
-          className="mx-auto aspect-square max-h-[250px]"
+          className="mx-auto aspect-square max-h-[400px]"
         >
-          <PieRechart>
-            <ChartTooltip
-              cursor={false}
-              content={<ChartTooltipContent hideLabel />}
-            />
-            <Pie data={chartData} dataKey="visitors" nameKey="browser" />
+          <PieRechart
+            width={500} // Increased chart width
+            height={500} // Increased chart height
+            margin={{ top: 40, bottom: 40, left: 40, right: 40 }} // Added margin
+          >
+            <Pie
+              data={chartData}
+              dataKey="value"
+              nameKey="type"
+              outerRadius={70} // Increased outer radius
+              label={({ index, value, percent }) =>
+                `${chartConfig[chartData[index].type].label}: ${value} (${(percent * 100).toFixed(2)}%)`
+              } // Uses `chartConfig` for dynamic labels
+            >
+              {chartData.map((entry, index) => (
+                <Cell key={`cell-${index}`} fill={entry.fill} />
+              ))}
+            </Pie>
           </PieRechart>
         </ChartContainer>
       </CardContent>
-      <CardFooter className="flex-col gap-2 text-sm">
-        <div className="flex items-center gap-2 font-medium leading-none">
-          Trending up by 5.2% this month <TrendingUp className="h-4 w-4" />
-        </div>
-        <div className="leading-none text-muted-foreground">
-          Showing total visitors for the last 6 months
-        </div>
-      </CardFooter>
     </Card>
-  )
+  );
 }

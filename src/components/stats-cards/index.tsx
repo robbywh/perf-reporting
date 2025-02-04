@@ -1,9 +1,4 @@
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 const stats = [
   {
@@ -26,11 +21,15 @@ const stats = [
     title: "Dev Approved",
     value: "54 SP",
   },
+  {
+    title: "MR Submitted",
+    value: "30",
+  },
 ];
 
 export function StatsCards() {
   return (
-    <div className="grid grid-cols-1 gap-4 md:grid-cols-5">
+    <div className="grid grid-cols-1 gap-4 md:grid-cols-6">
       {stats.map((stat, index) => (
         <Card key={index} className="shadow-md">
           <CardHeader className="flex items-start justify-between">

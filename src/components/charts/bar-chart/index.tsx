@@ -1,6 +1,6 @@
-"use client"
+"use client";
 
-import { Bar, BarChart as BarRechart, CartesianGrid, XAxis } from "recharts"
+import { Bar, BarChart as BarRechart, CartesianGrid, XAxis } from "recharts";
 
 import {
   Card,
@@ -9,26 +9,23 @@ import {
   CardFooter,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card"
-import {
-  ChartConfig,
-  ChartContainer,
-} from "@/components/ui/chart"
+} from "@/components/ui/card";
+import { ChartConfig, ChartContainer } from "@/components/ui/chart";
 const chartData = [
-  { name: "Sprint 45", value: 186 },
-  { name: "Sprint 46", value: 305 },
-  { name: "Sprint 47", value: 256 },
-  { name: "Sprint 48", value: 234 },
-  { name: "Sprint 49", value: 350 },
-  { name: "Sprint 50", value: 245 },
-]
+  { name: "Sprint 41", value: 186 },
+  { name: "Sprint 42", value: 305 },
+  { name: "Sprint 43", value: 256 },
+  { name: "Sprint 44", value: 234 },
+  { name: "Sprint 45", value: 350 },
+  { name: "Sprint 46", value: 245 },
+];
 
 const chartConfig = {
   name: {
     label: "Story Point",
     color: "hsl(var(--chart-1))",
   },
-} satisfies ChartConfig
+} satisfies ChartConfig;
 
 interface CustomBarLabelProps {
   x: number;
@@ -36,11 +33,10 @@ interface CustomBarLabelProps {
   width: number;
   height: number;
   value?: number | string;
-};
-
+}
 
 const renderCustomLabel = (props: CustomBarLabelProps) => {
-  const { x, y, width, height, value } = props
+  const { x, y, width, height, value } = props;
   return (
     <g>
       <text
@@ -55,8 +51,8 @@ const renderCustomLabel = (props: CustomBarLabelProps) => {
         {value}
       </text>
     </g>
-  )
-}
+  );
+};
 
 export function BarChart() {
   const total = chartData.reduce((sum, item) => sum + item.value, 0);
@@ -66,7 +62,7 @@ export function BarChart() {
     <Card>
       <CardHeader>
         <CardTitle>Sprint Velocity</CardTitle>
-        <CardDescription>Sprint 45 - Sprint 50</CardDescription>
+        <CardDescription>Sprint 41 - Sprint 46</CardDescription>
       </CardHeader>
       <CardContent>
         <ChartContainer config={chartConfig}>
@@ -78,15 +74,20 @@ export function BarChart() {
               tickMargin={10}
               axisLine={false}
             />
-            <Bar dataKey="value" fill="var(--color-name)" radius={8}   label={(props) => renderCustomLabel(props)} />
+            <Bar
+              dataKey="value"
+              fill="var(--color-name)"
+              radius={8}
+              label={(props) => renderCustomLabel(props)}
+            />
           </BarRechart>
         </ChartContainer>
       </CardContent>
       <CardFooter className="flex-col items-start gap-2 text-sm">
-        <div className="flex gap-2 font-bold leading-none text-xl">
+        <div className="flex gap-2 text-xl font-bold leading-none">
           Your sprint velocity is {average}
         </div>
       </CardFooter>
     </Card>
-  )
+  );
 }
