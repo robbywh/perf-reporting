@@ -4,28 +4,28 @@ import { Bar, BarChart, CartesianGrid, XAxis } from "recharts";
 import {
   Card,
   CardContent,
-  CardFooter,
+  CardDescription,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
 import { ChartConfig, ChartContainer } from "@/components/ui/chart";
 
 const chartData = [
-  { name: "Story Points", done: 60, baseline: 58.5, target: 78 },
-  { name: "Coding Hours", done: 20, baseline: 25, target: 50 },
+  { name: "Sprint 41", capacity: 60, reality: 58.5 },
+  { name: "Sprint 42", capacity: 60, reality: 58.5 },
+  { name: "Sprint 43", capacity: 60, reality: 58.5 },
+  { name: "Sprint 44", capacity: 60, reality: 58.5 },
+  { name: "Sprint 45", capacity: 60, reality: 58.5 },
+  { name: "Sprint 46", capacity: 60, reality: 58.5 },
 ];
 
 const chartConfig = {
-  done: {
-    label: "Done",
+  capacity: {
+    label: "Capacity",
     color: "hsl(var(--chart-1))",
   },
-  baseline: {
-    label: "Baseline",
-    color: "hsl(var(--chart-4))",
-  },
-  target: {
-    label: "Target",
+  reality: {
+    label: "Reality",
     color: "hsl(var(--chart-2))",
   },
 } satisfies ChartConfig;
@@ -66,11 +66,14 @@ const renderCustomLabel = (props: CustomBarLabelProps, key: string) => {
   );
 };
 
-export function BarChartMultiple() {
+export function BarChartCapacity() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Story Points & Coding Hours</CardTitle>
+        <CardTitle>Capacity VS Reality</CardTitle>
+        <CardDescription>
+          Your team&apos;s sprint velocity is 263
+        </CardDescription>
       </CardHeader>
       <CardContent>
         <ChartContainer config={chartConfig}>
@@ -78,36 +81,20 @@ export function BarChartMultiple() {
             <CartesianGrid vertical={false} />
             <XAxis dataKey="name" tickLine tickMargin={10} axisLine />
             <Bar
-              dataKey="done"
-              fill="var(--color-done)"
+              dataKey="reality"
+              fill="var(--color-reality)"
               radius={4}
-              label={(props) => renderCustomLabel(props, "Done")} // Attach custom label with "Done"
+              label={(props) => renderCustomLabel(props, "Reality")}
             />
             <Bar
-              dataKey="baseline"
-              fill="var(--color-baseline)"
+              dataKey="capacity"
+              fill="var(--color-capacity)"
               radius={4}
-              label={(props) => renderCustomLabel(props, "Baseline")} // Attach custom label with "Baseline"
-            />
-            <Bar
-              dataKey="target"
-              fill="var(--color-target)"
-              radius={4}
-              label={(props) => renderCustomLabel(props, "Target")} // Attach custom label with "Target"
+              label={(props) => renderCustomLabel(props, "Capacity")}
             />
           </BarChart>
         </ChartContainer>
       </CardContent>
-      <CardFooter className="flex-col items-start gap-2 text-sm">
-        <div className="flex gap-2 font-bold leading-none text-chart-4">
-          Your story points have exceeded the baseline. Let’s aim to hit the
-          target!
-        </div>
-        <div className="flex gap-2 font-bold leading-none text-chart-1">
-          Your working hours have not yet reached the baseline, but don’t give
-          up—every effort brings us closer to success!
-        </div>
-      </CardFooter>
     </Card>
   );
 }

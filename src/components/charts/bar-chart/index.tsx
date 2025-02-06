@@ -6,7 +6,6 @@ import {
   Card,
   CardContent,
   CardDescription,
-  CardFooter,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
@@ -62,7 +61,7 @@ export function BarChart() {
     <Card>
       <CardHeader>
         <CardTitle>Sprint Velocity</CardTitle>
-        <CardDescription>Sprint 41 - Sprint 46</CardDescription>
+        <CardDescription>Your sprint velocity is {average}</CardDescription>
       </CardHeader>
       <CardContent>
         <ChartContainer config={chartConfig}>
@@ -83,11 +82,6 @@ export function BarChart() {
           </BarRechart>
         </ChartContainer>
       </CardContent>
-      <CardFooter className="flex-col items-start gap-2 text-sm">
-        <div className="flex gap-2 text-xl font-bold leading-none">
-          Your sprint velocity is {average}
-        </div>
-      </CardFooter>
     </Card>
   );
 }

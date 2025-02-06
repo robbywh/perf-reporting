@@ -1,13 +1,13 @@
+import { Edit2 } from "lucide-react";
 import Image from "next/image";
 import { useState } from "react";
-import { FiEdit2 } from "react-icons/fi"; // Pencil icon
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
-export default function CodingHoursForm() {
+export function CodingHoursForm() {
   const [screenshot, setScreenshot] = useState<string | null>(null);
   const [codingHours, setCodingHours] = useState<string>("");
   const [isEditing, setIsEditing] = useState<boolean>(true);
@@ -90,7 +90,7 @@ export default function CodingHoursForm() {
               className="absolute right-2 top-2 flex items-center gap-1"
               onClick={() => setIsEditing(true)}
             >
-              <FiEdit2 className="size-5" />
+              <Edit2 className="size-5" />
               <span>Edit</span>
             </Button>
           </div>

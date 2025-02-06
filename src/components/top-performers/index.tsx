@@ -61,7 +61,9 @@ export function TopPerformers() {
     <Card className="w-full max-w-md">
       <CardHeader>
         <CardTitle>Top Performers</CardTitle>
-        <CardDescription>Your sprint velocity 263</CardDescription>
+        <CardDescription>
+          Your team&apos;s story points total 263.
+        </CardDescription>
       </CardHeader>
       <CardContent>
         <div className="space-y-4">

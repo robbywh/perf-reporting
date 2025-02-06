@@ -1,26 +1,25 @@
-"use client"
+"use client";
 
-import * as React from "react"
-import { Label, Pie, PieChart } from "recharts"
+import * as React from "react";
+import { Label, Pie, PieChart } from "recharts";
 
 import {
   Card,
   CardContent,
-  CardDescription,
   CardFooter,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card"
+} from "@/components/ui/card";
 import {
   ChartConfig,
   ChartContainer,
   ChartTooltip,
   ChartTooltipContent,
-} from "@/components/ui/chart"
+} from "@/components/ui/chart";
 
 interface ChartData {
-  status: string; 
-  value: number;  
+  status: string;
+  value: number;
   fill: string;
 }
 
@@ -35,22 +34,18 @@ export function PieDonutChart({
   title,
   totalLabel,
   config,
-  data
+  data,
 }: PieDonutChartProps) {
   const total = data.reduce((acc, curr) => acc + curr.value, 0);
-  const rejected = data.find(
-    (item) => item.status === "rejected"
-  )?.value || 0;
-  const rejectionRatio = rejected > 0
-    ? (rejected / total) * 100
-    : 0;
-  const formattedRejectionRatio = rejectionRatio % 1 !== 0 ? rejectionRatio.toFixed(2) : rejectionRatio;
-  
+  const rejected = data.find((item) => item.status === "rejected")?.value || 0;
+  const rejectionRatio = rejected > 0 ? (rejected / total) * 100 : 0;
+  const formattedRejectionRatio =
+    rejectionRatio % 1 !== 0 ? rejectionRatio.toFixed(2) : rejectionRatio;
+
   return (
     <Card className="flex flex-col">
       <CardHeader className="items-center pb-0">
         <CardTitle>{title}</CardTitle>
-        <CardDescription>Sprint 46</CardDescription>
       </CardHeader>
       <CardContent className="flex-1 pb-0">
         <ChartContainer
@@ -94,7 +89,7 @@ export function PieDonutChart({
                           {totalLabel}
                         </tspan>
                       </text>
-                    )
+                    );
                   }
                 }}
               />
@@ -108,5 +103,5 @@ export function PieDonutChart({
         </div>
       </CardFooter>
     </Card>
-  )
+  );
 }
