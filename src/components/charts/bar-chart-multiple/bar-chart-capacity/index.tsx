@@ -1,5 +1,5 @@
 "use client";
-import { Bar, BarChart, CartesianGrid, XAxis } from "recharts";
+import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts";
 
 import {
   Card,
@@ -11,12 +11,12 @@ import {
 import { ChartConfig, ChartContainer } from "@/components/ui/chart";
 
 const chartData = [
-  { name: "Sprint 41", capacity: 60, reality: 58.5 },
-  { name: "Sprint 42", capacity: 60, reality: 58.5 },
-  { name: "Sprint 43", capacity: 60, reality: 58.5 },
-  { name: "Sprint 44", capacity: 60, reality: 58.5 },
-  { name: "Sprint 45", capacity: 60, reality: 58.5 },
-  { name: "Sprint 46", capacity: 60, reality: 58.5 },
+  { name: "Sprint 41", capacity: 300, reality: 120 },
+  { name: "Sprint 42", capacity: 300, reality: 180 },
+  { name: "Sprint 43", capacity: 300, reality: 150 },
+  { name: "Sprint 44", capacity: 300, reality: 250 },
+  { name: "Sprint 45", capacity: 300, reality: 320 },
+  { name: "Sprint 46", capacity: 300, reality: 270 },
 ];
 
 const chartConfig = {
@@ -80,6 +80,7 @@ export function BarChartCapacity() {
           <BarChart accessibilityLayer data={chartData}>
             <CartesianGrid vertical={false} />
             <XAxis dataKey="name" tickLine tickMargin={10} axisLine />
+            <YAxis />
             <Bar
               dataKey="reality"
               fill="var(--color-reality)"

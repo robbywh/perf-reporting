@@ -10,188 +10,115 @@ import {
   ResponsiveContainer,
 } from "recharts";
 
-// Combined data for five sprints with both metrics per engineer.
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+
 const combinedData = [
   {
+    sprint: "Sprint 41",
+    Adi: 50 + Math.floor(Math.random() * 11) - 5,
+    Brian: 45 + Math.floor(Math.random() * 11) - 5,
+    Fatur: 60 + Math.floor(Math.random() * 11) - 5,
+    Gharis: 55 + Math.floor(Math.random() * 11) - 5,
+    Aaron: 40 + Math.floor(Math.random() * 11) - 5,
+    Reinaldi: 48 + Math.floor(Math.random() * 11) - 5,
+  },
+  {
+    sprint: "Sprint 42",
+    Adi: 60 + Math.floor(Math.random() * 11) - 5,
+    Brian: 50 + Math.floor(Math.random() * 11) - 5,
+    Fatur: 65 + Math.floor(Math.random() * 11) - 5,
+    Gharis: 60 + Math.floor(Math.random() * 11) - 5,
+    Aaron: 45 + Math.floor(Math.random() * 11) - 5,
+    Reinaldi: 50 + Math.floor(Math.random() * 11) - 5,
+  },
+  {
+    sprint: "Sprint 43",
+    Adi: 60 + Math.floor(Math.random() * 11) - 5,
+    Brian: 50 + Math.floor(Math.random() * 11) - 5,
+    Fatur: 65 + Math.floor(Math.random() * 11) - 5,
+    Gharis: 60 + Math.floor(Math.random() * 11) - 5,
+    Aaron: 45 + Math.floor(Math.random() * 11) - 5,
+    Reinaldi: 50 + Math.floor(Math.random() * 11) - 5,
+  },
+  {
     sprint: "Sprint 44",
-    Engineer1SP: 50,
-    Engineer1CH: 25,
-    Engineer2SP: 45,
-    Engineer2CH: 20,
-    Engineer3SP: 60,
-    Engineer3CH: 20,
-    Engineer4SP: 55,
-    Engineer4CH: 25,
-    Engineer5SP: 40,
-    Engineer5CH: 20,
+    Adi: 60 + Math.floor(Math.random() * 11) - 5,
+    Brian: 50 + Math.floor(Math.random() * 11) - 5,
+    Fatur: 65 + Math.floor(Math.random() * 11) - 5,
+    Gharis: 60 + Math.floor(Math.random() * 11) - 5,
+    Aaron: 45 + Math.floor(Math.random() * 11) - 5,
+    Reinaldi: 50 + Math.floor(Math.random() * 11) - 5,
   },
   {
     sprint: "Sprint 45",
-    Engineer1SP: 60,
-    Engineer1CH: 20,
-    Engineer2SP: 50,
-    Engineer2CH: 22,
-    Engineer3SP: 65,
-    Engineer3CH: 25,
-    Engineer4SP: 60,
-    Engineer4CH: 27,
-    Engineer5SP: 45,
-    Engineer5CH: 25,
+    Adi: 60 + Math.floor(Math.random() * 11) - 5,
+    Brian: 50 + Math.floor(Math.random() * 11) - 5,
+    Fatur: 65 + Math.floor(Math.random() * 11) - 5,
+    Gharis: 60 + Math.floor(Math.random() * 11) - 5,
+    Aaron: 45 + Math.floor(Math.random() * 11) - 5,
+    Reinaldi: 50 + Math.floor(Math.random() * 11) - 5,
   },
   {
     sprint: "Sprint 46",
-    Engineer1SP: 55,
-    Engineer1CH: 28,
-    Engineer2SP: 48,
-    Engineer2CH: 29,
-    Engineer3SP: 62,
-    Engineer3CH: 23,
-    Engineer4SP: 58,
-    Engineer4CH: 24,
-    Engineer5SP: 42,
-    Engineer5CH: 22,
-  },
-  {
-    sprint: "Sprint 47",
-    Engineer1SP: 65,
-    Engineer1CH: 22,
-    Engineer2SP: 52,
-    Engineer2CH: 25,
-    Engineer3SP: 70,
-    Engineer3CH: 27,
-    Engineer4SP: 63,
-    Engineer4CH: 28,
-    Engineer5SP: 50,
-    Engineer5CH: 27,
-  },
-  {
-    sprint: "Sprint 48",
-    Engineer1SP: 70,
-    Engineer1CH: 25,
-    Engineer2SP: 55,
-    Engineer2CH: 26,
-    Engineer3SP: 75,
-    Engineer3CH: 29,
-    Engineer4SP: 65,
-    Engineer4CH: 20,
-    Engineer5SP: 52,
-    Engineer5CH: 20,
+    Adi: 63 + Math.floor(Math.random() * 11) - 5,
+    Brian: 50 + Math.floor(Math.random() * 11) - 5,
+    Fatur: 42 + Math.floor(Math.random() * 11) - 5,
+    Gharis: 40 + Math.floor(Math.random() * 11) - 5,
+    Aaron: 38 + Math.floor(Math.random() * 11) - 5,
+    Reinaldi: 30 + Math.floor(Math.random() * 11) - 5,
   },
 ];
 
+// Dynamic list of engineer names.
+const engineerNames = ["Adi", "Brian", "Fatur", "Gharis", "Aaron", "Reinaldi"];
+
+// Optional: Define a color map for each engineer.
+const colorMap = {
+  Adi: "#8884d8",
+  Brian: "#82ca9d",
+  Fatur: "#ffc658",
+  Gharis: "#ff7300",
+  Aaron: "#888888",
+  Reinaldi: "#8a2be2",
+};
+
 export function LineChartSPCoding() {
   return (
-    <ResponsiveContainer width="100%" height={500}>
-      <LineChart
-        data={combinedData}
-        margin={{ top: 20, right: 60, left: 20, bottom: 5 }}
-      >
-        <CartesianGrid strokeDasharray="3 3" />
-        <XAxis dataKey="sprint" />
-        {/* Left Y-axis for Story Points */}
-        <YAxis
-          yAxisId="left"
-          label={{ value: "Story Points", angle: -90, position: "insideLeft" }}
-        />
-        {/* Right Y-axis for Coding Hours */}
-        <YAxis
-          yAxisId="right"
-          orientation="right"
-          label={{ value: "Coding Hours", angle: 90, position: "insideRight" }}
-        />
-        <Tooltip />
-        <Legend />
-        {/* Engineer 1 */}
-        <Line
-          yAxisId="left"
-          type="monotone"
-          dataKey="Engineer1SP"
-          name="Eng1 SP"
-          stroke="#8884d8"
-          strokeWidth={2}
-        />
-        <Line
-          yAxisId="right"
-          type="monotone"
-          dataKey="Engineer1CH"
-          name="Eng1 CH"
-          stroke="#8884d8"
-          strokeWidth={2}
-          strokeDasharray="5 5"
-        />
-        {/* Engineer 2 */}
-        <Line
-          yAxisId="left"
-          type="monotone"
-          dataKey="Engineer2SP"
-          name="Eng2 SP"
-          stroke="#82ca9d"
-          strokeWidth={2}
-        />
-        <Line
-          yAxisId="right"
-          type="monotone"
-          dataKey="Engineer2CH"
-          name="Eng2 CH"
-          stroke="#82ca9d"
-          strokeWidth={2}
-          strokeDasharray="5 5"
-        />
-        {/* Engineer 3 */}
-        <Line
-          yAxisId="left"
-          type="monotone"
-          dataKey="Engineer3SP"
-          name="Eng3 SP"
-          stroke="#ffc658"
-          strokeWidth={2}
-        />
-        <Line
-          yAxisId="right"
-          type="monotone"
-          dataKey="Engineer3CH"
-          name="Eng3 CH"
-          stroke="#ffc658"
-          strokeWidth={2}
-          strokeDasharray="5 5"
-        />
-        {/* Engineer 4 */}
-        <Line
-          yAxisId="left"
-          type="monotone"
-          dataKey="Engineer4SP"
-          name="Eng4 SP"
-          stroke="#ff7300"
-          strokeWidth={2}
-        />
-        <Line
-          yAxisId="right"
-          type="monotone"
-          dataKey="Engineer4CH"
-          name="Eng4 CH"
-          stroke="#ff7300"
-          strokeWidth={2}
-          strokeDasharray="5 5"
-        />
-        {/* Engineer 5 */}
-        <Line
-          yAxisId="left"
-          type="monotone"
-          dataKey="Engineer5SP"
-          name="Eng5 SP"
-          stroke="#888888"
-          strokeWidth={2}
-        />
-        <Line
-          yAxisId="right"
-          type="monotone"
-          dataKey="Engineer5CH"
-          name="Eng5 CH"
-          stroke="#888888"
-          strokeWidth={2}
-          strokeDasharray="5 5"
-        />
-      </LineChart>
-    </ResponsiveContainer>
+    <Card>
+      <CardHeader>
+        <CardTitle>Engineers&apos; Story Points Trends</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <ResponsiveContainer width="100%" height={500}>
+          <LineChart
+            data={combinedData}
+            margin={{ top: 20, right: 60, left: 20, bottom: 5 }}
+          >
+            <CartesianGrid strokeDasharray="3 3" />
+            <XAxis dataKey="sprint" />
+            <YAxis
+              yAxisId="left"
+              label={{
+                value: "Story Points",
+                angle: -90,
+                position: "insideLeft",
+              }}
+            />
+            <Tooltip />
+            <Legend />
+            {engineerNames.map((eng) => (
+              <Line
+                key={eng}
+                yAxisId="left"
+                dataKey={`${eng}`}
+                name={`${eng}`}
+                stroke={colorMap[eng as keyof typeof colorMap] || "#000"}
+                strokeWidth={2}
+              />
+            ))}
+          </LineChart>
+        </ResponsiveContainer>
+      </CardContent>
+    </Card>
   );
 }

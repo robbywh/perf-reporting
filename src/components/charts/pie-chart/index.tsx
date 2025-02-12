@@ -24,10 +24,7 @@ export function PieChart({ title, config, data }: ChartProps) {
         <CardTitle>{title}</CardTitle>
       </CardHeader>
       <CardContent className="flex-1 pb-0">
-        <ChartContainer
-          config={config}
-          className="mx-auto aspect-square max-h-[400px]"
-        >
+        <ChartContainer config={config} className="mx-auto max-h-[400px]">
           <PieRechart
             width={500} // Increased chart width
             height={500} // Increased chart height
@@ -37,7 +34,7 @@ export function PieChart({ title, config, data }: ChartProps) {
               data={data}
               dataKey="value"
               nameKey="type"
-              outerRadius={70} // Increased outer radius
+              outerRadius={100} // Increased outer radius
               label={({ index, value, percent }) =>
                 `${config[data[index].type].label}: ${value} (${(percent * 100).toFixed(2)}%)`
               }

@@ -8,6 +8,13 @@ const chartData = [
   { type: "enhance", value: 187, fill: "var(--color-enhance)" },
   { type: "techdebt", value: 173, fill: "var(--color-techdebt)" },
   { type: "support", value: 90, fill: "var(--color-support)" },
+  { type: "doc", value: 90, fill: "var(--color-doc)" },
+  {
+    type: "digitalMarketing",
+    value: 90,
+    fill: "var(--color-digitalMarketing)",
+  },
+  { type: "other", value: 90, fill: "var(--color-other)" },
 ];
 
 const chartConfig = {
@@ -15,27 +22,41 @@ const chartConfig = {
     label: "Task Category",
   },
   newFeature: {
-    label: "New Feature",
+    label: "NEW FEATURE",
     color: "hsl(var(--chart-1))",
   },
   issue: {
-    label: "Issue",
+    label: "ISSUE",
     color: "hsl(var(--chart-2))",
   },
   enhance: {
-    label: "Enhance",
+    label: "ENHANCE",
     color: "hsl(var(--chart-3))",
   },
   techdebt: {
-    label: "Tech Debt",
+    label: "TECH DEBT",
     color: "hsl(var(--chart-4))",
   },
   support: {
-    label: "Support",
+    label: "SUPPORT",
     color: "hsl(var(--chart-5))",
+  },
+  doc: {
+    label: "DOC",
+    color: "hsl(var(--chart-6))",
+  },
+  digitalMarketing: {
+    label: "DIGITAL MARKETING",
+    color: "hsl(var(--chart-7))",
+  },
+  other: {
+    label: "OTHER",
+    color: "hsl(var(--chart-8))",
   },
 } satisfies ChartConfig;
 
 export function PieTaskCategoryChart() {
-  return <PieChart title="Task" data={chartData} config={chartConfig} />;
+  return (
+    <PieChart title="Task Category" data={chartData} config={chartConfig} />
+  );
 }
