@@ -17,8 +17,23 @@ datasource db {
 model Sprint {
   id         String   @id @db.VarChar(36) 
   name       String   @db.VarChar(36) 
-  start_date DateTime                   
-  end_date   DateTime                    
+  startDate DateTime @map("start_date")                  
+  endDate   DateTime @map("end_date")                     
 
   @@map("sprint")
+}
+
+model Role {
+  id   String @id @unique
+  name String @db.VarChar(50)
+
+  users User[]
+}
+
+model User {
+  id       String @id @unique
+  username String @db.VarChar(25)
+  roleId   String @db.VarChar(25) @map("role_id")
+
+  role Role @relation(fields: [roleId], references: [id], onDelete: Cascade)
 }

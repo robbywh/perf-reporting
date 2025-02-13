@@ -12,7 +12,7 @@ export async function getFolderList() {
     const response = await fetch(url, {
       method: "GET",
       headers: {
-        Authorization: CLICKUP_API_TOKEN,
+        Authorization: CLICKUP_API_TOKEN || "",
       },
     });
 
