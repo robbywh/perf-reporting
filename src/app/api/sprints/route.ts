@@ -38,8 +38,8 @@ export async function POST() {
           data: {
             id,
             name,
-            start_date: startDateUTC,
-            end_date: endDateUTC,
+            startDate: startDateUTC,
+            endDate: endDateUTC,
           },
         });
       }
