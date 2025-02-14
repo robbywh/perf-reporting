@@ -13,27 +13,131 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-
-model Sprint {
-  id         String   @id @db.VarChar(36) 
-  name       String   @db.VarChar(36) 
-  startDate DateTime @map("start_date")                  
-  endDate   DateTime @map("end_date")                     
-
-  @@map("sprint")
-}
-
 model Role {
-  id   String @id @unique
+  id   String @id @db.VarChar(25)
   name String @db.VarChar(50)
-
+  
   users User[]
 }
 
 model User {
-  id       String @id @unique
-  username String @db.VarChar(25)
+  id       String @id @db.VarChar(36)
+  username String @db.VarChar(36)
   roleId   String @db.VarChar(25) @map("role_id")
 
-  role Role @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  role Role @relation(fields: [roleId], references: [id])
+}
+
+model Category {
+  id   String @id @db.Char(36)
+  name String @db.VarChar(25)
+  
+  tasks Task[]
+}
+
+model Status {
+  id   String @id @db.VarChar(25)
+  name String @db.VarChar(25)
+  
+  tasks Task[]
+}
+
+model Sprint {
+  id        String   @id @db.VarChar(25)
+  name      String   @db.VarChar(25)
+  startDate DateTime @map("start_date")
+  endDate   DateTime @map("end_date")
+  
+  tasks      Task[]
+  sprintEngineers  SprintEngineer[]
+}
+
+model Task {
+  id          String  @id @db.VarChar(25)
+  name        String  @db.VarChar(255)
+  sprintId    String  @db.VarChar(25) @map("sprint_id")
+  statusId    String  @db.VarChar(25) @map("status_id")
+  categoryId  String  @db.VarChar(25) @map("category_id")
+  parentTaskId String? @db.VarChar(25) @map("parent_task_id")
+  storyPoint  Decimal @db.Decimal @map("story_point")
+
+  sprint   Sprint @relation(fields: [sprintId], references: [id])
+  status   Status @relation(fields: [statusId], references: [id])
+  category Category @relation(fields: [categoryId], references: [id])
+  
+  taskTags     TaskTag[]
+  assignees    TaskAssignee[]
+}
+
+model TaskTag {
+  taskId String @db.VarChar(25) @map("task_id")
+  tagId  String  @db.VarChar(25) @map("tag_id")
+  
+  task Task @relation(fields: [taskId], references: [id])
+  tag  Tag  @relation(fields: [tagId], references: [id])
+  
+  @@id([taskId, tagId])
+}
+
+model TaskAssignee {
+  taskId      String @db.VarChar(25) @map("task_id")
+  engineerId  Int    @db.Integer @map("engineer_id")
+  task      Task    @relation(fields: [taskId], references: [id])
+  engineer  Engineer @relation(fields: [engineerId], references: [id])
+  
+  @@id([taskId, engineerId])
+}
+
+model Tag {
+  id   String @id @db.VarChar(25)
+  name String @db.VarChar(25)
+  
+  taskTags TaskTag[]
+}
+
+model Engineer {
+  id         Int     @id @db.Integer
+  name       String  @db.VarChar(50)
+  jobLevelId String  @db.VarChar(25) @map("job_level_id")
+  
+  jobLevel    JobLevel  @relation(fields: [jobLevelId], references: [id])
+  assignments TaskAssignee[]
+  sprintEngineers  SprintEngineer[]
+  leaves      Leave[]
+}
+
+model JobLevel {
+  id     String @id @db.VarChar(25)
+  name   String @db.VarChar(50)
+  baseline Decimal @db.Decimal
+  target   Decimal @db.Decimal
+  
+  engineers Engineer[]
+}
+
+model SprintEngineer {
+  id          Int    @id @db.Integer
+  sprintId    String @db.VarChar(25) @map("sprint_id")
+  engineerId  Int    @db.Integer @map("engineer_id")
+  jobLevelId  String @db.VarChar(25) @map("job_level_id")
+  baseline    Decimal @db.Decimal
+  target      Decimal @db.Decimal
+  
+  sprint   Sprint   @relation(fields: [sprintId], references: [id])
+  engineer Engineer @relation(fields: [engineerId], references: [id])
+}
+
+model Leave {
+  id         Int     @id @db.Integer
+  description String @db.VarChar(50)
+  date       DateTime @map("date")
+  engineerId Int      @db.Integer @map("engineer_id")
+  
+  engineer Engineer @relation(fields: [engineerId], references: [id])
+}
+
+model PublicHoliday {
+  id          Int     @id @db.Integer
+  description String  @db.VarChar(50)
+  date        DateTime @map("date")
 }
