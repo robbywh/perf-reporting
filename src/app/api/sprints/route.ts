@@ -1,49 +1,111 @@
 import { NextResponse } from "next/server";
 
-import { getFolderList } from "@/lib/clickup/lists.service";
+import { API_KEY } from "@/constants/server.constant";
+import { getFolderList } from "@/lib/clickup/lists";
+import { ClickUpTask, getListTasks } from "@/lib/clickup/tasks";
 import { prisma } from "@/services/db";
+import { getTodaySprints } from "@/services/sprints";
+import { upsertTaskWithTags } from "@/services/tasks";
 
-export async function POST() {
-  try {
-    // Call the external API library to fetch sprint lists from ClickUp.
-    const folderListResponse = await getFolderList();
+async function syncSprintsFromClickUp() {
+  // Call the external API library to fetch sprint lists from ClickUp.
+  const folderListResponse = await getFolderList();
 
-    // Ensure the response contains a "lists" array.
-    const lists = folderListResponse.lists;
-    if (!lists || !Array.isArray(lists)) {
-      return NextResponse.json(
-        { error: "Invalid API response structure" },
-        { status: 400 }
-      );
-    }
+  // Ensure the response contains a "lists" array.
+  const lists = folderListResponse.lists;
+  if (!lists || !Array.isArray(lists)) {
+    throw new Error("Invalid API response structure");
+  }
 
-    // Process each sprint list
-    for (const list of lists) {
-      const { id, name, start_date: startDate, due_date: dueDate } = list;
+  // Process each sprint list
+  for (const list of lists) {
+    const { id, name, start_date: startDate, due_date: dueDate } = list;
 
-      // Convert epoch strings (or numbers) to Date objects.
-      // These Date objects represent UTC dates. When calling toISOString(),
-      // they will be in Zulu format (e.g., "2025-01-08T00:00:00.000Z").
-      const startDateUTC = new Date(Number(startDate));
-      const endDateUTC = new Date(Number(dueDate));
+    // Convert epoch strings (or numbers) to Date objects.
+    // These Date objects represent UTC dates. When calling toISOString(),
+    // they will be in Zulu format (e.g., "2025-01-08T00:00:00.000Z").
+    const startDateUTC = new Date(Number(startDate));
+    const endDateUTC = new Date(Number(dueDate));
 
-      // Check if a sprint with the given id already exists.
-      const existingSprint = await prisma.sprint.findUnique({
-        where: { id },
+    // Check if a sprint with the given id already exists.
+    const existingSprint = await prisma.sprint.findUnique({
+      where: { id },
+    });
+
+    if (!existingSprint) {
+      // Insert the new sprint record into the database.
+      await prisma.sprint.create({
+        data: {
+          id,
+          name,
+          startDate: startDateUTC,
+          endDate: endDateUTC,
+        },
       });
+    }
+  }
+}
 
-      if (!existingSprint) {
-        // Insert the new sprint record into the database.
-        await prisma.sprint.create({
-          data: {
-            id,
-            name,
-            startDate: startDateUTC,
-            endDate: endDateUTC,
-          },
-        });
+export async function syncTodayTasksFromClickUp() {
+  try {
+    const todaySprints = await getTodaySprints();
+
+    for (const sprint of todaySprints) {
+      let page = 0;
+      let lastPage = false;
+
+      while (!lastPage) {
+        // Fetch tasks for the current sprint and page
+        const response = await getListTasks(sprint.id, page);
+        const tasks: ClickUpTask[] = response.tasks;
+        lastPage = response.last_page;
+
+        // Process each task
+        for (const task of tasks) {
+          const categoryField = task.custom_fields?.find(
+            (field) => field.name === "Kategori"
+          );
+          const categoryId = categoryField?.value?.[0] ?? null; // Get first category value if exists
+
+          const storyPoint = task.time_estimate
+            ? task.time_estimate / 3600000
+            : null; // Convert milliseconds to hours
+
+          await upsertTaskWithTags({
+            id: task.id,
+            name: task.name,
+            sprintId: sprint.id,
+            statusId: task.status.id,
+            categoryId,
+            parentTaskId: task.parent,
+            storyPoint,
+          });
+          console.log(`Task ${task.id} upserted successfully.`);
+        }
+
+        // Move to next page
+        page++;
       }
     }
+
+    return NextResponse.json({ message: "Today's tasks synced successfully." });
+  } catch (error) {
+    console.error("Error syncing today's tasks:", error);
+    return NextResponse.json(
+      { error: "Internal Server Error" },
+      { status: 500 }
+    );
+  }
+}
+
+export async function POST(request: Request) {
+  try {
+    if (API_KEY !== request.headers.get("x-api-key")) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    await syncSprintsFromClickUp();
+    await syncTodayTasksFromClickUp();
 
     return NextResponse.json({ message: "Sprints processed successfully" });
   } catch (error) {

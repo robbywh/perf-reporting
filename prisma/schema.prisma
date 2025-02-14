@@ -44,7 +44,7 @@ model Status {
 
 model Sprint {
   id        String   @id @db.VarChar(25)
-  name      String   @db.VarChar(25)
+  name      String   @db.VarChar(36)
   startDate DateTime @map("start_date")
   endDate   DateTime @map("end_date")
   
@@ -56,14 +56,14 @@ model Task {
   id          String  @id @db.VarChar(25)
   name        String  @db.VarChar(255)
   sprintId    String  @db.VarChar(25) @map("sprint_id")
-  statusId    String  @db.VarChar(25) @map("status_id")
-  categoryId  String  @db.VarChar(25) @map("category_id")
+  statusId    String?  @db.VarChar(25) @map("status_id")
+  categoryId  String?  @db.VarChar(25) @map("category_id")
   parentTaskId String? @db.VarChar(25) @map("parent_task_id")
-  storyPoint  Decimal @db.Decimal @map("story_point")
+  storyPoint  Decimal? @db.Decimal @map("story_point")
 
   sprint   Sprint @relation(fields: [sprintId], references: [id])
-  status   Status @relation(fields: [statusId], references: [id])
-  category Category @relation(fields: [categoryId], references: [id])
+  status   Status? @relation(fields: [statusId], references: [id])
+  category Category? @relation(fields: [categoryId], references: [id])
   
   taskTags     TaskTag[]
   assignees    TaskAssignee[]
@@ -90,7 +90,7 @@ model TaskAssignee {
 
 model Tag {
   id   String @id @db.VarChar(25)
-  name String @db.VarChar(25)
+  name String @db.VarChar(25) @unique
   
   taskTags TaskTag[]
 }

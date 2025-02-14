@@ -17,4 +17,6 @@ export async function seedRoles() {
       create: role,
     });
   }
+
+  console.log("✅ Roles seeded!");
 }

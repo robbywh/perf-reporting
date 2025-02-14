@@ -1,0 +1,2 @@
+-- AlterTable
+ALTER TABLE "Sprint" ALTER COLUMN "name" SET DATA TYPE VARCHAR(36);

@@ -36,4 +36,6 @@ export async function seedUsers() {
       create: user,
     });
   }
+
+  console.log("✅ Users seeded!");
 }
