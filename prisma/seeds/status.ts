@@ -3,19 +3,22 @@ const prisma = new PrismaClient();
 
 export async function seedStatuses() {
   const statuses = [
-    { id: "sc9016065588869_xhji2iEMC", name: "product approval" },
-    { id: "sc9016061131456_z9zbGfMu", name: "in progress" },
-    { id: "sc9016061131456_L4uXhMyj", name: "product review" },
-    { id: "sc9016061131456_98bF6Teg", name: "to do" },
-    { id: "sc9016061131456_3y8eeJKg", name: "tech review" },
-    { id: "sc9016061131456_JIJhOTF5", name: "ready for qa" },
-    { id: "sc9016061131456_dTVTGQHR", name: "qa review" },
+    { id: "product_approval", name: "product approval" },
+    { id: "in_progress", name: "in progress" },
+    { id: "product_review", name: "product review" },
+    { id: "to_do", name: "to do" },
+    { id: "tech_review", name: "tech review" },
+    { id: "ready_for_qa", name: "ready for qa" },
+    { id: "qa_review", name: "qa review" },
+    { id: "rejected", name: "rejected" },
   ];
 
   for (const status of statuses) {
     await prisma.status.upsert({
       where: { id: status.id },
-      update: {},
+      update: {
+        name: status.name,
+      },
       create: status,
     });
   }

@@ -3,9 +3,12 @@ import { NextResponse } from "next/server";
 import { API_KEY } from "@/constants/server.constant";
 import { getFolderList } from "@/lib/clickup/lists";
 import { ClickUpTask, getListTasks } from "@/lib/clickup/tasks";
+import { linkAssigneesToTask } from "@/services/assignees";
 import { prisma } from "@/services/db";
+import { linkSprintsToEngineers } from "@/services/sprintEngineers";
 import { getTodaySprints } from "@/services/sprints";
-import { upsertTaskWithTags } from "@/services/tasks";
+import { linkTagsToTask } from "@/services/tags";
+import { upsertTask } from "@/services/tasks";
 
 async function syncSprintsFromClickUp() {
   // Call the external API library to fetch sprint lists from ClickUp.
@@ -48,9 +51,23 @@ async function syncSprintsFromClickUp() {
 
 export async function syncTodayTasksFromClickUp() {
   try {
-    const todaySprints = await getTodaySprints();
-
+    // const todaySprints = await getTodaySprints();
+    const todaySprints = [
+      {
+        id: "901605588869",
+      },
+      {
+        id: "901605843977",
+      },
+      {
+        id: "901606113456",
+      },
+      {
+        id: "901606315079",
+      },
+    ];
     for (const sprint of todaySprints) {
+      await linkSprintsToEngineers(sprint.id);
       let page = 0;
       let lastPage = false;
 
@@ -71,16 +88,25 @@ export async function syncTodayTasksFromClickUp() {
             ? task.time_estimate / 3600000
             : null; // Convert milliseconds to hours
 
-          await upsertTaskWithTags({
+          const taskData = {
             id: task.id,
             name: task.name,
             sprintId: sprint.id,
-            statusId: task.status.id,
+            statusName: task.status.status,
             categoryId,
             parentTaskId: task.parent,
             storyPoint,
+          };
+          await upsertTask(taskData).then(async () => {
+            await linkTagsToTask({
+              id: task.id,
+              tags: task.tags,
+            });
+            await linkAssigneesToTask({
+              id: task.id,
+              assignees: task.assignees,
+            });
           });
-          console.log(`Task ${task.id} upserted successfully.`);
         }
 
         // Move to next page

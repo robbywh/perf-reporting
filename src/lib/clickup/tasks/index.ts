@@ -7,10 +7,12 @@ export interface ClickUpTask {
   id: string;
   name: string;
   list: { id: string };
-  status: { id: string };
+  status: { status: string };
   parent?: string | null;
   time_estimate?: number | null;
   custom_fields?: { name: string; value?: string[] | null }[];
+  tags?: { name: string }[];
+  assignees?: { id: number; username: string }[];
 }
 
 export async function getListTasks(sprintId: string, page: number = 0) {

@@ -37,7 +37,7 @@ model Category {
 
 model Status {
   id   String @id @db.VarChar(25)
-  name String @db.VarChar(25)
+  name String @db.VarChar(25) @unique
   
   tasks Task[]
 }
@@ -57,7 +57,7 @@ model Task {
   name        String  @db.VarChar(255)
   sprintId    String  @db.VarChar(25) @map("sprint_id")
   statusId    String?  @db.VarChar(25) @map("status_id")
-  categoryId  String?  @db.VarChar(25) @map("category_id")
+  categoryId  String?  @db.VarChar(36) @map("category_id")
   parentTaskId String? @db.VarChar(25) @map("parent_task_id")
   storyPoint  Decimal? @db.Decimal @map("story_point")
 
@@ -99,6 +99,7 @@ model Engineer {
   id         Int     @id @db.Integer
   name       String  @db.VarChar(50)
   jobLevelId String  @db.VarChar(25) @map("job_level_id")
+  gitlabUserId Int?   @db.Integer @map("gitlab_user_id")
   
   jobLevel    JobLevel  @relation(fields: [jobLevelId], references: [id])
   assignments TaskAssignee[]
@@ -116,15 +117,17 @@ model JobLevel {
 }
 
 model SprintEngineer {
-  id          Int    @id @db.Integer
-  sprintId    String @db.VarChar(25) @map("sprint_id")
-  engineerId  Int    @db.Integer @map("engineer_id")
-  jobLevelId  String @db.VarChar(25) @map("job_level_id")
+  sprintId    String  @db.VarChar(25) @map("sprint_id")
+  engineerId  Int     @db.Integer @map("engineer_id")
+  jobLevelId  String  @db.VarChar(25) @map("job_level_id")
   baseline    Decimal @db.Decimal
   target      Decimal @db.Decimal
+  mergedCount Int? @db.Integer @map("merged_count")
   
   sprint   Sprint   @relation(fields: [sprintId], references: [id])
   engineer Engineer @relation(fields: [engineerId], references: [id])
+
+  @@id([sprintId, engineerId]) // Composite Primary Key
 }
 
 model Leave {

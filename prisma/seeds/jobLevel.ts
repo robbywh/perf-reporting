@@ -16,7 +16,11 @@ export async function seedJobLevels() {
   for (const level of jobLevels) {
     await prisma.jobLevel.upsert({
       where: { id: level.id },
-      update: {},
+      update: {
+        name: level.name,
+        baseline: level.baseline,
+        target: level.target,
+      },
       create: level,
     });
   }

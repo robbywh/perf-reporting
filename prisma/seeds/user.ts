@@ -32,7 +32,10 @@ export async function seedUsers() {
   for (const user of users) {
     await prisma.user.upsert({
       where: { id: user.id },
-      update: {},
+      update: {
+        username: user.username,
+        roleId: user.roleId,
+      },
       create: user,
     });
   }

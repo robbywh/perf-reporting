@@ -3,7 +3,7 @@ import { PrismaClient } from "@prisma/client";
 const prisma = new PrismaClient();
 
 export async function sedTags() {
-  const statuses = [
+  const tags = [
     { id: "nodev", name: "nodev" },
     { id: "support", name: "support" },
     { id: "rejected_staging", name: "rejected staging" },
@@ -11,11 +11,13 @@ export async function sedTags() {
     { id: "rejected_production", name: "rejected production" },
   ];
 
-  for (const status of statuses) {
+  for (const tag of tags) {
     await prisma.tag.upsert({
-      where: { id: status.id },
-      update: {},
-      create: status,
+      where: { id: tag.id },
+      update: {
+        name: tag.name,
+      },
+      create: tag,
     });
   }
 

@@ -1,0 +1,138 @@
+import { getMergedMRsBySprintPeriod } from "@/lib/gitlab/mr"; // Ensure this function is defined
+import { prisma } from "@/services/db";
+
+export async function linkSprintsToEngineers(sprintId: string) {
+  try {
+    // ✅ Fetch Sprint start_date and end_date
+    const sprint = await prisma.sprint.findUnique({
+      where: { id: sprintId },
+      select: { startDate: true, endDate: true },
+    });
+
+    if (!sprint) {
+      console.log(`❌ Sprint ID ${sprintId} not found.`);
+      return;
+    }
+
+    const { startDate: sprintStartDate, endDate: sprintEndDate } = sprint;
+
+    // ✅ Fetch merged MRs within the sprint period
+    const allMergedMRs = await getMergedMRsBySprintPeriod(
+      sprintStartDate.toISOString(),
+      sprintEndDate.toISOString()
+    );
+
+    // ✅ Count MRs per assignee
+    const mrCountByAssignee = new Map<number, number>();
+    for (const merged of allMergedMRs) {
+      const assigneeId = merged.assignee?.id;
+      if (!assigneeId) continue;
+
+      mrCountByAssignee.set(
+        assigneeId,
+        (mrCountByAssignee.get(assigneeId) || 0) + 1
+      );
+    }
+
+    const totalSprintDays = 10; // Default sprint length
+
+    // ✅ Fetch engineers & job levels
+    const engineers = await prisma.engineer.findMany({
+      select: {
+        id: true,
+        gitlabUserId: true, // Ensure engineer has a GitLab user ID
+        jobLevelId: true,
+        jobLevel: { select: { baseline: true, target: true } },
+      },
+    });
+
+    // ✅ Fetch leave days & public holidays in one query for all engineers
+    const [leaveDaysData, publicHolidays] = await Promise.all([
+      prisma.leave.groupBy({
+        by: ["engineerId"],
+        where: { date: { gte: sprintStartDate, lte: sprintEndDate } },
+        _count: true,
+      }),
+      prisma.publicHoliday.count({
+        where: { date: { gte: sprintStartDate, lte: sprintEndDate } },
+      }),
+    ]);
+
+    // Convert leave days to a Map for quick lookup
+    const leaveDaysMap = new Map(
+      leaveDaysData.map((leave) => [leave.engineerId, leave._count])
+    );
+
+    // ✅ Process each engineer in parallel using `Promise.all()`
+    await Promise.all(
+      engineers.map(async (engineer) => {
+        const { id: engineerId, gitlabUserId, jobLevelId, jobLevel } = engineer;
+
+        if (!gitlabUserId) {
+          console.log(
+            `⏩ Skipping Engineer ID ${engineerId} - No GitLab user ID.`
+          );
+          return;
+        }
+
+        if (!jobLevelId) {
+          console.log(
+            `⏩ Skipping Engineer ID ${engineerId} - No job level found.`
+          );
+          return;
+        }
+
+        const { baseline, target } = jobLevel;
+        const baselineStoryPoints = Number(baseline.toString());
+        const targetStoryPoints = Number(target.toString());
+
+        const leaveDays = leaveDaysMap.get(engineerId) || 0;
+        const availableDays = totalSprintDays - leaveDays - publicHolidays;
+
+        if (availableDays <= 0) {
+          console.log(
+            `⏩ No available working days for Sprint ${sprintId}, Engineer ${engineerId}`
+          );
+          return;
+        }
+
+        // ✅ Calculate adjusted values
+        const adjustedTarget =
+          (availableDays * targetStoryPoints) / totalSprintDays;
+        const adjustedBaseline =
+          (availableDays * baselineStoryPoints) / totalSprintDays;
+
+        // ✅ Get merged count for this engineer
+        const mergedCount = mrCountByAssignee.get(gitlabUserId) || 0;
+
+        // ✅ Upsert into `sprint_engineer` table
+        await prisma.sprintEngineer.upsert({
+          where: { sprintId_engineerId: { sprintId, engineerId } },
+          update: {
+            jobLevelId,
+            baseline: adjustedBaseline,
+            target: adjustedTarget,
+            mergedCount, // Update merged count
+          },
+          create: {
+            sprintId,
+            engineerId,
+            jobLevelId,
+            baseline: adjustedBaseline,
+            target: adjustedTarget,
+            mergedCount, // Insert merged count
+          },
+        });
+
+        console.log(
+          `✅ Sprint Engineer Updated: Sprint ${sprintId}, Engineer ${engineerId}, Job Level: ${jobLevelId}, Merged Count: ${mergedCount}`
+        );
+      })
+    );
+  } catch (error) {
+    console.error(
+      `❌ Error updating sprint engineers for Sprint ${sprintId}:`,
+      error
+    );
+  }
+}

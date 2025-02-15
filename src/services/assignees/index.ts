@@ -1,51 +1,64 @@
 import { prisma } from "@/services/db";
 
-interface Assignee {
-  id: number;
-  username: string;
-  email: string;
-  profilePicture?: string | null;
-}
-
 interface TaskAssignee {
   id: string;
-  assignees?: Assignee[];
+  assignees?: { id: number; username: string }[];
 }
 
 export async function linkAssigneesToTask(task: TaskAssignee) {
-  if (!task.assignees || task.assignees.length === 0) return;
+  if (!task.id) {
+    console.error(
+      "❌ Task ID is null or undefined, skipping assignee linking."
+    );
+    return;
+  }
+
+  if (!task.assignees || task.assignees.length === 0) {
+    console.warn(`🟡 No assignees found for Task ID ${task.id}, skipping.`);
+    return;
+  }
+
+  // ✅ Ensure the task exists to prevent foreign key errors
+  const existingTask = await prisma.task.findUnique({
+    where: { id: task.id },
+    select: { id: true },
+  });
+
+  if (!existingTask) {
+    console.error(
+      `❌ Task ID ${task.id} does not exist in the database, skipping.`
+    );
+    return;
+  }
+
+  // ✅ Fetch all engineers in one query for performance
+  const engineerIds = task.assignees.map((a) => a.id);
+  const existingEngineers = await prisma.engineer.findMany({
+    where: { id: { in: engineerIds } },
+    select: { id: true },
+  });
+
+  const existingEngineerSet = new Set(existingEngineers.map((e) => e.id));
+  const taskAssigneeData = [];
 
   for (const assignee of task.assignees) {
-    try {
-      // Check if the assignee is an engineer (exists in the engineer table)
-      const existingEngineer = await prisma.engineer.findUnique({
-        where: { id: assignee.id },
-      });
-
-      if (!existingEngineer) {
-        console.log(`Skipping ${assignee.username} - Not an engineer.`);
-        continue; // Skip non-engineers
-      }
-
-      // Insert into task_assignee table to link the assignee (engineer) with the task
-      const taskEngineer = {
-        taskId: task.id,
-        engineerId: existingEngineer.id,
-      };
-      await prisma.taskAssignee.upsert({
-        where: {
-          taskId_engineerId: taskEngineer,
-        },
-        update: {}, // No need to update anything
-        create: taskEngineer,
-      });
-
-      console.log(`Engineer ${assignee.username} linked to task ${task.id}.`);
-    } catch (error) {
-      console.error(
-        `Error linking engineer ${assignee.username} to task ${task.id}:`,
-        error
-      );
+    if (!existingEngineerSet.has(assignee.id)) {
+      console.warn(`⏩ Skipping ${assignee.username} - Not an engineer.`);
+      continue;
     }
+
+    taskAssigneeData.push({ taskId: task.id, engineerId: assignee.id });
+  }
+
+  if (taskAssigneeData.length > 0) {
+    // ✅ Use batch `createMany()` for efficiency
+    await prisma.taskAssignee.createMany({
+      data: taskAssigneeData,
+      skipDuplicates: true, // Avoid duplicate inserts
+    });
+
+    console.log(
+      `✅ ${taskAssigneeData.length} assignees linked to Task ID ${task.id}.`
+    );
   }
 }

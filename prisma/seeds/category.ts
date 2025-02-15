@@ -16,7 +16,9 @@ export async function seedCategories() {
   for (const category of categories) {
     await prisma.category.upsert({
       where: { id: category.id },
-      update: {},
+      update: {
+        name: category.name,
+      },
       create: category,
     });
   }
