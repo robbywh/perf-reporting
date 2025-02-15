@@ -51,21 +51,8 @@ async function syncSprintsFromClickUp() {
 
 export async function syncTodayTasksFromClickUp() {
   try {
-    // const todaySprints = await getTodaySprints();
-    const todaySprints = [
-      {
-        id: "901605588869",
-      },
-      {
-        id: "901605843977",
-      },
-      {
-        id: "901606113456",
-      },
-      {
-        id: "901606315079",
-      },
-    ];
+    const todaySprints = await getTodaySprints();
+
     for (const sprint of todaySprints) {
       await linkSprintsToEngineers(sprint.id);
       let page = 0;
