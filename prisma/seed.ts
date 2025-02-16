@@ -13,11 +13,11 @@ async function main() {
   console.log("🌱 Seeding database...");
 
   await seedRoles();
+  await seedJobLevels();
+  await seedEngineers();
   await seedUsers();
   await seedCategories();
   await seedStatuses();
-  await seedJobLevels();
-  await seedEngineers();
   await sedTags();
 
   console.log("✅ Seeding completed!");

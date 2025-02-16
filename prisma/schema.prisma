@@ -24,7 +24,9 @@ model User {
   id       String @id @db.VarChar(36)
   username String @db.VarChar(36)
   roleId   String @db.VarChar(25) @map("role_id")
+  engineerId  Int? @db.Integer @map("engineer_id") @unique
 
+  engineer  Engineer? @relation(fields: [engineerId], references: [id])
   role Role @relation(fields: [roleId], references: [id])
 }
 
@@ -105,6 +107,7 @@ model Engineer {
   assignments TaskAssignee[]
   sprintEngineers  SprintEngineer[]
   leaves      Leave[]
+  user User?
 }
 
 model JobLevel {
@@ -112,6 +115,8 @@ model JobLevel {
   name   String @db.VarChar(50)
   baseline Decimal @db.Decimal
   target   Decimal @db.Decimal
+  baselineCh Decimal? @db.Decimal @map("baseline_ch")
+  targetCh   Decimal? @db.Decimal @map("target_ch")
   
   engineers Engineer[]
 }
@@ -119,10 +124,16 @@ model JobLevel {
 model SprintEngineer {
   sprintId    String  @db.VarChar(25) @map("sprint_id")
   engineerId  Int     @db.Integer @map("engineer_id")
-  jobLevelId  String  @db.VarChar(25) @map("job_level_id")
-  baseline    Decimal @db.Decimal
-  target      Decimal @db.Decimal
+  jobLevelId  String?  @db.VarChar(25) @map("job_level_id")
+  storyPoints Decimal? @db.Decimal @map("story_points") @default(0)
+  baseline    Decimal? @db.Decimal
+  target      Decimal? @db.Decimal
+  codingHours Decimal? @db.Decimal @map("coding_hours") @default(0)
+  baselineCh Decimal? @db.Decimal @map("baseline_ch")
+  targetCh   Decimal? @db.Decimal @map("target_ch")
+  codingHoursUrl String? @db.VarChar(255) @map("coding_hours_url")
   mergedCount Int? @db.Integer @map("merged_count")
+
   
   sprint   Sprint   @relation(fields: [sprintId], references: [id])
   engineer Engineer @relation(fields: [engineerId], references: [id])

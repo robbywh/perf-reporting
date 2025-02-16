@@ -52,6 +52,7 @@ async function syncSprintsFromClickUp() {
 export async function syncTodayTasksFromClickUp() {
   try {
     const todaySprints = await getTodaySprints();
+    console.log("TODAy", todaySprints);
 
     for (const sprint of todaySprints) {
       await linkSprintsToEngineers(sprint.id);
@@ -73,7 +74,7 @@ export async function syncTodayTasksFromClickUp() {
 
           const storyPoint = task.time_estimate
             ? task.time_estimate / 3600000
-            : null; // Convert milliseconds to hours
+            : 0;
 
           const taskData = {
             id: task.id,
@@ -92,6 +93,9 @@ export async function syncTodayTasksFromClickUp() {
             await linkAssigneesToTask({
               id: task.id,
               assignees: task.assignees,
+              sprintId: sprint.id,
+              storyPoint,
+              statusName: task.status.status,
             });
           });
         }

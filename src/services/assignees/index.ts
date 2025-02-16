@@ -3,6 +3,9 @@ import { prisma } from "@/services/db";
 interface TaskAssignee {
   id: string;
   assignees?: { id: number; username: string }[];
+  sprintId: string;
+  storyPoint: number;
+  statusName: string;
 }
 
 export async function linkAssigneesToTask(task: TaskAssignee) {
@@ -48,6 +51,30 @@ export async function linkAssigneesToTask(task: TaskAssignee) {
     }
 
     taskAssigneeData.push({ taskId: task.id, engineerId: assignee.id });
+
+    // Calculate story point for each sprint per engineer
+    console.log("TASK", task.statusName, task.storyPoint);
+    if (
+      task.statusName === "product approval" ||
+      task.statusName === "product review"
+    ) {
+      await prisma.sprintEngineer.upsert({
+        where: {
+          sprintId_engineerId: {
+            sprintId: task.sprintId,
+            engineerId: assignee.id,
+          },
+        },
+        create: {
+          sprintId: task.sprintId,
+          engineerId: assignee.id,
+          storyPoints: task.storyPoint,
+        },
+        update: {
+          storyPoints: { increment: task.storyPoint },
+        },
+      });
+    }
   }
 
   if (taskAssigneeData.length > 0) {

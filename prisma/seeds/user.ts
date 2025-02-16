@@ -6,6 +6,7 @@ export async function seedUsers() {
       id: "user_2pOMuf7777zPYloRhu6uyfKA9XSL",
       username: "briananggriawan",
       roleId: "se",
+      engineerId: 5753351,
     },
     {
       id: "user_2pQwywdUzRGDRiL4nz9NtuCjfc",
@@ -35,6 +36,7 @@ export async function seedUsers() {
       update: {
         username: user.username,
         roleId: user.roleId,
+        engineerId: user.engineerId,
       },
       create: user,
     });

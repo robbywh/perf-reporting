@@ -10,5 +10,6 @@ export async function getTodaySprints() {
     },
   });
 
+  // const sprints = await prisma.sprint.findMany();
   return sprints;
 }

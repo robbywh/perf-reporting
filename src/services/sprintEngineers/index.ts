@@ -42,7 +42,14 @@ export async function linkSprintsToEngineers(sprintId: string) {
         id: true,
         gitlabUserId: true, // Ensure engineer has a GitLab user ID
         jobLevelId: true,
-        jobLevel: { select: { baseline: true, target: true } },
+        jobLevel: {
+          select: {
+            baseline: true,
+            target: true,
+            baselineCh: true,
+            targetCh: true,
+          },
+        },
       },
     });
 
@@ -82,7 +89,7 @@ export async function linkSprintsToEngineers(sprintId: string) {
           return;
         }
 
-        const { baseline, target } = jobLevel;
+        const { baseline, target, baselineCh, targetCh } = jobLevel;
         const baselineStoryPoints = Number(baseline.toString());
         const targetStoryPoints = Number(target.toString());
 
@@ -112,7 +119,8 @@ export async function linkSprintsToEngineers(sprintId: string) {
             jobLevelId,
             baseline: adjustedBaseline,
             target: adjustedTarget,
-            mergedCount, // Update merged count
+            storyPoints: 0,
+            mergedCount,
           },
           create: {
             sprintId,
@@ -120,7 +128,10 @@ export async function linkSprintsToEngineers(sprintId: string) {
             jobLevelId,
             baseline: adjustedBaseline,
             target: adjustedTarget,
-            mergedCount, // Insert merged count
+            baselineCh,
+            targetCh,
+            mergedCount,
+            storyPoints: 0,
           },
         });
 
