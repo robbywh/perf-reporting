@@ -124,6 +124,8 @@ export default function LeavePublicHoliday() {
     date: "",
   });
 
+  const [mounted, setMounted] = React.useState(false);
+
   /**
    * Handle simpan data (Leave / Holiday) ke sprints[activeSprintIndex]
    */
@@ -163,6 +165,12 @@ export default function LeavePublicHoliday() {
     setIsLeaveForm(true);
   }, [activeSprintIndex, formData, isLeaveForm]);
 
+  React.useEffect(() => {
+    setMounted(true); // Ensures it only runs on client
+  }, []);
+
+  if (!mounted) return null;
+
   return (
     <Card className="p-6">
       {/* Header dan tombol Add */}
@@ -195,7 +203,7 @@ export default function LeavePublicHoliday() {
                     <TableHeader>
                       <TableRow>
                         <TableHead>Leave</TableHead>
-                        <TableHead>Tanggal</TableHead>
+                        <TableHead>Date</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -220,7 +228,7 @@ export default function LeavePublicHoliday() {
                     <TableHeader>
                       <TableRow>
                         <TableHead>Public Holiday</TableHead>
-                        <TableHead>Tanggal</TableHead>
+                        <TableHead>Date</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>

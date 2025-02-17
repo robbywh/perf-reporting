@@ -53,7 +53,6 @@ export async function linkAssigneesToTask(task: TaskAssignee) {
     taskAssigneeData.push({ taskId: task.id, engineerId: assignee.id });
 
     // Calculate story point for each sprint per engineer
-    console.log("TASK", task.statusName, task.storyPoint);
     if (
       task.statusName === "product approval" ||
       task.statusName === "product review"

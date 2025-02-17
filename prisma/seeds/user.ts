@@ -3,13 +3,13 @@ const prisma = new PrismaClient();
 export async function seedUsers() {
   const users = [
     {
-      id: "user_2pOMuf7777zPYloRhu6uyfKA9XSL",
+      id: "user_2pOMuf777zPYloRhu6uyfKA9XSL",
       username: "briananggriawan",
       roleId: "se",
       engineerId: 5753351,
     },
     {
-      id: "user_2pQwywdUzRGDRiL4nz9NtuCjfc",
+      id: "user_2pQwywdUzRGDRiL4nz9NtuCiJfc",
       username: "robbywh",
       roleId: "em",
     },

@@ -42,6 +42,14 @@ export function PieDonutChart({
   const formattedRejectionRatio =
     rejectionRatio % 1 !== 0 ? rejectionRatio.toFixed(2) : rejectionRatio;
 
+  const [mounted, setMounted] = React.useState(false);
+
+  React.useEffect(() => {
+    setMounted(true); // Ensures it only runs on client
+  }, []);
+
+  if (!mounted) return null;
+
   return (
     <Card className="flex flex-col">
       <CardHeader className="items-center pb-0">

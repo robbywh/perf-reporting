@@ -1,4 +1,6 @@
-import React from "react";
+"use client";
+
+import { useEffect, useState } from "react";
 import {
   LineChart,
   Line,
@@ -83,6 +85,13 @@ const colorMap = {
 };
 
 export function LineChartSPCoding() {
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true); // Ensures it only runs on client
+  }, []);
+
+  if (!mounted) return null;
   return (
     <Card>
       <CardHeader>

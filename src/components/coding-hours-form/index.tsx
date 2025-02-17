@@ -1,6 +1,7 @@
+"use client";
 import { Edit2 } from "lucide-react";
 import Image from "next/image";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -12,6 +13,14 @@ export function CodingHoursForm() {
   const [codingHours, setCodingHours] = useState<string>("");
   const [isEditing, setIsEditing] = useState<boolean>(true);
   const [isValid, setIsValid] = useState<boolean>(false);
+
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true); // Ensures it only runs on client
+  }, []);
+
+  if (!mounted) return null;
 
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];

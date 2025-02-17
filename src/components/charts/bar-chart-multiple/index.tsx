@@ -1,4 +1,5 @@
 "use client";
+import { useState, useEffect } from "react";
 import { Bar, BarChart, CartesianGrid, XAxis } from "recharts";
 
 import {
@@ -67,6 +68,13 @@ const renderCustomLabel = (props: CustomBarLabelProps, key: string) => {
 };
 
 export function BarChartMultiple() {
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true); // Ensures it only runs on client
+  }, []);
+
+  if (!mounted) return null;
   return (
     <Card>
       <CardHeader>

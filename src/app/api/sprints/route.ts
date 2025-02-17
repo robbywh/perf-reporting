@@ -52,7 +52,6 @@ async function syncSprintsFromClickUp() {
 export async function syncTodayTasksFromClickUp() {
   try {
     const todaySprints = await getTodaySprints();
-    console.log("TODAy", todaySprints);
 
     for (const sprint of todaySprints) {
       await linkSprintsToEngineers(sprint.id);

@@ -1,4 +1,5 @@
-import { useState } from "react";
+"use client";
+import { useEffect, useState } from "react";
 import Select, { MultiValue } from "react-select";
 
 type Option = {
@@ -19,10 +20,17 @@ export function SprintMultiSelect() {
   const [selectedOptions, setSelectedOptions] = useState<MultiValue<Option>>(
     []
   );
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true); // Ensures it only runs on client
+  }, []);
 
   const handleChange = (options: MultiValue<Option>) => {
     setSelectedOptions(options);
   };
+
+  if (!mounted) return null; // Prevents hydration mismatch
 
   return (
     <div className="flex-1">

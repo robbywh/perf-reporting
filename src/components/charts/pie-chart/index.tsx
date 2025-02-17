@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { Pie, PieChart as PieRechart, Cell } from "recharts";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -18,6 +19,13 @@ interface ChartProps {
 }
 
 export function PieChart({ title, config, data }: ChartProps) {
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true); // Ensures it only runs on client
+  }, []);
+
+  if (!mounted) return null;
   return (
     <Card className="flex flex-col">
       <CardHeader className="items-center pb-0">
