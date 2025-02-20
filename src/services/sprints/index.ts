@@ -20,6 +20,7 @@ export async function findAllSprints() {
       name: true,
     },
     orderBy: { startDate: "desc" },
+    take: 12,
   });
 
   return sprints;

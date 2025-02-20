@@ -18,6 +18,12 @@ const chartData = [
   { name: "Sprint 44", capacity: 300, reality: 250 },
   { name: "Sprint 45", capacity: 300, reality: 320 },
   { name: "Sprint 46", capacity: 300, reality: 270 },
+  { name: "Sprint 41", capacity: 300, reality: 120 },
+  { name: "Sprint 42", capacity: 300, reality: 180 },
+  { name: "Sprint 43", capacity: 300, reality: 150 },
+  { name: "Sprint 44", capacity: 300, reality: 250 },
+  { name: "Sprint 45", capacity: 300, reality: 320 },
+  { name: "Sprint 46", capacity: 300, reality: 270 },
 ];
 
 const chartConfig = {
