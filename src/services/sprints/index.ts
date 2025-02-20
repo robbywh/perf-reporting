@@ -14,5 +14,13 @@ export async function findTodaySprints() {
 }
 
 export async function findAllSprints() {
-  return prisma.sprint.findMany();
+  const sprints = await prisma.sprint.findMany({
+    select: {
+      id: true,
+      name: true,
+    },
+    orderBy: { startDate: "desc" },
+  });
+
+  return sprints;
 }

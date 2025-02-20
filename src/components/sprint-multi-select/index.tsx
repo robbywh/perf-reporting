@@ -1,29 +1,25 @@
 "use client";
+
 import { useEffect, useState } from "react";
 import Select, { MultiValue } from "react-select";
 
 type Option = {
-  value: string;
-  label: string;
+  value: string; // Stores `id` for filtering
+  label: string; // Displays `name`
 };
 
-const sprints: Option[] = [
-  { value: "Sprint 41", label: "Sprint 41" },
-  { value: "Sprint 42", label: "Sprint 42" },
-  { value: "Sprint 43", label: "Sprint 43" },
-  { value: "Sprint 44", label: "Sprint 44" },
-  { value: "Sprint 45", label: "Sprint 45" },
-  { value: "Sprint 46", label: "Sprint 46" },
-];
+type SprintMultiSelectProps = {
+  sprints: Option[];
+};
 
-export function SprintMultiSelect() {
+export function SprintMultiSelect({ sprints }: SprintMultiSelectProps) {
   const [selectedOptions, setSelectedOptions] = useState<MultiValue<Option>>(
     []
   );
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    setMounted(true); // Ensures it only runs on client
+    setMounted(true);
   }, []);
 
   const handleChange = (options: MultiValue<Option>) => {

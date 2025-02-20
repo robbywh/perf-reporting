@@ -8,7 +8,9 @@ import { PieDonutTaskChart } from "@/components/charts/pie-donut-chart/pie-donut
 import LeavePublicHoliday from "@/components/leave-public-holiday-form";
 import { SprintMultiSelect } from "@/components/sprint-multi-select";
 import { TopPerformers } from "@/components/top-performers";
+import { Skeleton } from "@/components/ui/skeleton";
 import { getWelcomeMessage } from "@/lib/utils/global";
+import { findAllSprints } from "@/services/sprints";
 import { findRoleIdByUserId } from "@/services/users";
 
 // eslint-disable-next-line camelcase
@@ -23,36 +25,57 @@ const WelcomeMessage = async () => {
   return <div className="flex-1 text-lg font-bold">{welcomeMessage}</div>;
 };
 
-export default function Home() {
+export default async function Home() {
+  const sprints = await findAllSprints();
+
+  const formattedSprints = sprints.map((sprint) => ({
+    value: sprint.id,
+    label: sprint.name,
+  }));
+
   return (
     <div>
       <div className="mb-6 flex flex-row items-center gap-4">
-        <Suspense fallback={<div>Loading ...</div>}>
+        <Suspense fallback={<Skeleton className="h-6 w-60 rounded-md" />}>
           <WelcomeMessage />
         </Suspense>
-        <SprintMultiSelect />
+        <Suspense fallback={<Skeleton className="h-6 w-60 rounded-md" />}>
+          <SprintMultiSelect sprints={formattedSprints} />
+        </Suspense>
       </div>
       <div className="mb-6 flex flex-row justify-center gap-4">
         <div className="flex-[7]">
-          <BarChartCapacity />
+          <Suspense fallback={<Skeleton className="h-48 w-full rounded-md" />}>
+            <BarChartCapacity />
+          </Suspense>
         </div>
         <div className="flex-[3]">
-          <TopPerformers />
+          <Suspense fallback={<Skeleton className="h-48 w-full rounded-md" />}>
+            <TopPerformers />
+          </Suspense>
         </div>
       </div>
       <div className="mb-6">
-        <LineChartSPCoding />
+        <Suspense fallback={<Skeleton className="h-48 w-full rounded-md" />}>
+          <LineChartSPCoding />
+        </Suspense>
       </div>
       <div className="mb-6 flex flex-row justify-center gap-4">
         <div className="flex-[2]">
-          <PieTaskCategoryChart />
+          <Suspense fallback={<Skeleton className="h-40 w-full rounded-md" />}>
+            <PieTaskCategoryChart />
+          </Suspense>
         </div>
         <div className="flex-[1]">
-          <PieDonutTaskChart />
+          <Suspense fallback={<Skeleton className="h-40 w-full rounded-md" />}>
+            <PieDonutTaskChart />
+          </Suspense>
         </div>
       </div>
       <div>
-        <LeavePublicHoliday />
+        <Suspense fallback={<Skeleton className="h-20 w-full rounded-md" />}>
+          <LeavePublicHoliday />
+        </Suspense>
       </div>
     </div>
   );
