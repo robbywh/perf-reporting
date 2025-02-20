@@ -5,9 +5,8 @@ import {
 } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 
-import { Role, ROLE } from "@/types/roles";
-
 import { API_KEY } from "./constants/server.constant";
+import { Role, ROLE } from "./types/roles";
 
 // Define which routes are public (no auth required)
 const isPublicRoute = createRouteMatcher([
