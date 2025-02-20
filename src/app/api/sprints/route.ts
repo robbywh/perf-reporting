@@ -5,7 +5,7 @@ import { getFolderList } from "@/lib/clickup/lists";
 import { ClickUpTask, getListTasks } from "@/lib/clickup/tasks";
 import { linkAssigneesToTask } from "@/services/assignees";
 import { prisma } from "@/services/db";
-import { linkSprintsToEngineers } from "@/services/sprintEngineers";
+import { linkSprintsToEngineers } from "@/services/sprint-engineers";
 import { getTodaySprints } from "@/services/sprints";
 import { linkTagsToTask } from "@/services/tags";
 import { upsertTask } from "@/services/tasks";
