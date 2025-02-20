@@ -17,7 +17,6 @@ export interface ClickUpTask {
 
 export async function getListTasks(sprintId: string, page: number = 0) {
   const url = `${CLICKUP_BASE_URL}/list/${sprintId}/task?page=${page}&subtasks=true&include_closed=true`;
-  console.log("Fetching tasks from ClickUp list:", url);
 
   try {
     const response = await fetch(url, {

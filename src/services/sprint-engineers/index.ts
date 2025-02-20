@@ -1,3 +1,5 @@
+import { Prisma } from "@prisma/client";
+
 import { getMergedMRsBySprintPeriod } from "@/lib/gitlab/mr"; // Ensure this function is defined
 import { prisma } from "@/services/db";
 
@@ -146,4 +148,28 @@ export async function linkSprintsToEngineers(sprintId: string) {
       error
     );
   }
+}
+
+export async function findCapacityVsRealityBySprintIds(
+  sprintIds: string[]
+): Promise<
+  {
+    sprintId: string;
+    sprintName: string;
+    totalStoryPoints: number;
+    totalBaseline: number;
+  }[]
+> {
+  return prisma.$queryRaw`
+    SELECT 
+      se.sprint_id AS "sprintId", 
+      s.name AS "sprintName", 
+      COALESCE(SUM(se.story_points), 0) AS "totalStoryPoints", 
+      COALESCE(SUM(se.baseline), 0) AS "totalBaseline"
+    FROM Sprint s
+    JOIN SprintEngineer se ON s.id = se.sprint_id
+    WHERE se.sprint_id IN (${Prisma.join(sprintIds)})
+    GROUP BY se.sprint_id
+    ORDER BY se.sprint_id ASC;
+  `;
 }

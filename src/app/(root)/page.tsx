@@ -10,6 +10,7 @@ import { SprintMultiSelect } from "@/components/sprint-multi-select";
 import { TopPerformers } from "@/components/top-performers";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getWelcomeMessage } from "@/lib/utils/global";
+import { findCapacityVsRealityBySprintIds } from "@/services/sprint-engineers";
 import { findAllSprints } from "@/services/sprints";
 import { findRoleIdByUserId } from "@/services/users";
 
@@ -33,6 +34,11 @@ export default async function Home() {
     label: sprint.name,
   }));
 
+  const sprintIds = sprints.map((sprint) => sprint.id);
+  console.log(sprintIds);
+  const data = await findCapacityVsRealityBySprintIds(sprintIds);
+
+  console.log(data);
   return (
     <div>
       <div className="mb-6 flex flex-row items-center gap-4">

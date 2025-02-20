@@ -18,6 +18,7 @@ model Role {
   name String @db.VarChar(50)
   
   users User[]
+  @@map("role") 
 }
 
 model User {
@@ -28,6 +29,7 @@ model User {
 
   engineer  Engineer? @relation(fields: [engineerId], references: [id])
   role Role @relation(fields: [roleId], references: [id])
+  @@map("user") 
 }
 
 model Category {
@@ -35,6 +37,7 @@ model Category {
   name String @db.VarChar(25)
   
   tasks Task[]
+  @@map("category") 
 }
 
 model Status {
@@ -42,6 +45,7 @@ model Status {
   name String @db.VarChar(25) @unique
   
   tasks Task[]
+  @@map("status") 
 }
 
 model Sprint {
@@ -52,6 +56,7 @@ model Sprint {
   
   tasks      Task[]
   sprintEngineers  SprintEngineer[]
+  @@map("sprint") 
 }
 
 model Task {
@@ -69,6 +74,7 @@ model Task {
   
   taskTags     TaskTag[]
   assignees    TaskAssignee[]
+  @@map("task") 
 }
 
 model TaskTag {
@@ -79,6 +85,7 @@ model TaskTag {
   tag  Tag  @relation(fields: [tagId], references: [id])
   
   @@id([taskId, tagId])
+  @@map("task_tag") 
 }
 
 model TaskAssignee {
@@ -88,6 +95,7 @@ model TaskAssignee {
   engineer  Engineer @relation(fields: [engineerId], references: [id])
   
   @@id([taskId, engineerId])
+  @@map("task_assignee") 
 }
 
 model Tag {
@@ -95,6 +103,7 @@ model Tag {
   name String @db.VarChar(25) @unique
   
   taskTags TaskTag[]
+  @@map("tag") 
 }
 
 model Engineer {
@@ -108,6 +117,7 @@ model Engineer {
   sprintEngineers  SprintEngineer[]
   leaves      Leave[]
   user User?
+  @@map("engineer") 
 }
 
 model JobLevel {
@@ -119,6 +129,7 @@ model JobLevel {
   targetCh   Decimal? @db.Decimal @map("target_ch")
   
   engineers Engineer[]
+  @@map("job_level") 
 }
 
 model SprintEngineer {
@@ -139,6 +150,7 @@ model SprintEngineer {
   engineer Engineer @relation(fields: [engineerId], references: [id])
 
   @@id([sprintId, engineerId]) // Composite Primary Key
+  @@map("sprint_engineer") 
 }
 
 model Leave {
@@ -148,10 +160,12 @@ model Leave {
   engineerId Int      @db.Integer @map("engineer_id")
   
   engineer Engineer @relation(fields: [engineerId], references: [id])
+  @@map("leave") 
 }
 
 model PublicHoliday {
   id          Int     @id @db.Integer
   description String  @db.VarChar(50)
   date        DateTime @map("date")
+  @@map("public_holiday") 
 }
