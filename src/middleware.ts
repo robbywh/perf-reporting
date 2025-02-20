@@ -29,7 +29,6 @@ export default clerkMiddleware(async (auth, request) => {
     return;
   }
 
-  // Enforce authentication
   await auth.protect();
 
   const { userId } = await auth();
