@@ -109,6 +109,7 @@ model Tag {
 model Engineer {
   id         Int     @id @db.Integer
   name       String  @db.VarChar(50)
+  email      String?  @db.VarChar(50)
   jobLevelId String  @db.VarChar(25) @map("job_level_id")
   gitlabUserId Int?   @db.Integer @map("gitlab_user_id")
   
