@@ -5,5 +5,4 @@ export const ROLE = {
   VP: "vp",
   PM: "pm",
 } as const;
-
 export type Role = (typeof ROLE)[keyof typeof ROLE];
