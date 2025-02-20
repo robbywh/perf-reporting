@@ -23,7 +23,7 @@ export default function EngineerPage() {
     <div>
       <div className="mb-6 flex flex-row items-center">
         <WelcomeMessage />
-        <SprintMultiSelect />
+        <SprintMultiSelect sprints={[]} />
       </div>
       <div className="mb-6">
         <StatsCards />
