@@ -1,6 +1,6 @@
 import { prisma } from "../db";
 
-export async function getTodaySprints() {
+export async function findTodaySprints() {
   const today = new Date();
 
   const sprints = await prisma.sprint.findMany({
@@ -10,6 +10,9 @@ export async function getTodaySprints() {
     },
   });
 
-  // const sprints = await prisma.sprint.findMany();
   return sprints;
+}
+
+export async function findAllSprints() {
+  return prisma.sprint.findMany();
 }
