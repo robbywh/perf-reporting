@@ -49,7 +49,7 @@ async function syncSprintsFromClickUp() {
   }
 }
 
-export async function syncTodayTasksFromClickUp() {
+async function syncTodayTasksFromClickUp() {
   try {
     const todaySprints = await getTodaySprints();
 
