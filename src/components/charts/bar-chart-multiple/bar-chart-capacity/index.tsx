@@ -27,6 +27,7 @@ interface SprintData {
   sprintName: string;
   totalStoryPoints: number;
   totalBaseline: number;
+  totalTarget: number;
 }
 
 interface BarChartCapacityProps {
@@ -75,7 +76,7 @@ export function BarChartCapacity({ sprints }: BarChartCapacityProps) {
   // Format sprint data for the chart
   const chartData = sprints.map((sprint) => ({
     name: sprint.sprintName.substring(0, 10),
-    capacity: sprint.totalBaseline,
+    capacity: (sprint.totalBaseline + sprint.totalTarget) / 2,
     reality: sprint.totalStoryPoints,
   }));
 

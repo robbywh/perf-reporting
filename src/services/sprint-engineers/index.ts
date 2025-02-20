@@ -156,6 +156,7 @@ interface SprintCapacityReality {
   sprintName: string;
   totalStoryPoints: number;
   totalBaseline: number;
+  totalTarget: number;
 }
 
 export async function findCapacityVsRealityBySprintIds(
@@ -166,6 +167,7 @@ export async function findCapacityVsRealityBySprintIds(
     sprintName: string;
     totalStoryPoints: Prisma.Decimal | null;
     totalBaseline: Prisma.Decimal | null;
+    totalTarget: Prisma.Decimal | null;
   }[] = await prisma.$queryRaw`
     SELECT 
       se.sprint_id AS "sprintId", 
@@ -187,5 +189,6 @@ export async function findCapacityVsRealityBySprintIds(
       ? Number(sprint.totalStoryPoints)
       : 0,
     totalBaseline: sprint.totalBaseline ? Number(sprint.totalBaseline) : 0,
+    totalTarget: sprint.totalTarget ? Number(sprint.totalTarget) : 0,
   }));
 }
