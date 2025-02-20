@@ -150,26 +150,42 @@ export async function linkSprintsToEngineers(sprintId: string) {
   }
 }
 
+// Define the expected return type
+interface SprintCapacityReality {
+  sprintId: string;
+  sprintName: string;
+  totalStoryPoints: number;
+  totalBaseline: number;
+}
+
 export async function findCapacityVsRealityBySprintIds(
   sprintIds: string[]
-): Promise<
-  {
+): Promise<SprintCapacityReality[]> {
+  const sprintEngineer: {
     sprintId: string;
     sprintName: string;
-    totalStoryPoints: number;
-    totalBaseline: number;
-  }[]
-> {
-  return prisma.$queryRaw`
+    totalStoryPoints: Prisma.Decimal | null;
+    totalBaseline: Prisma.Decimal | null;
+  }[] = await prisma.$queryRaw`
     SELECT 
       se.sprint_id AS "sprintId", 
       s.name AS "sprintName", 
       COALESCE(SUM(se.story_points), 0) AS "totalStoryPoints", 
       COALESCE(SUM(se.baseline), 0) AS "totalBaseline"
-    FROM Sprint s
-    JOIN SprintEngineer se ON s.id = se.sprint_id
+    FROM sprint s
+    JOIN sprint_engineer se ON s.id = se.sprint_id
     WHERE se.sprint_id IN (${Prisma.join(sprintIds)})
-    GROUP BY se.sprint_id
+    GROUP BY se.sprint_id, s.name
     ORDER BY se.sprint_id ASC;
   `;
+
+  // Convert Prisma Decimal values to plain JavaScript numbers
+  return sprintEngineer.map((sprint) => ({
+    sprintId: sprint.sprintId,
+    sprintName: sprint.sprintName, // Use actual sprint name
+    totalStoryPoints: sprint.totalStoryPoints
+      ? Number(sprint.totalStoryPoints)
+      : 0,
+    totalBaseline: sprint.totalBaseline ? Number(sprint.totalBaseline) : 0,
+  }));
 }

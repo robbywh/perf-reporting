@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts";
 
 import {
@@ -11,21 +11,6 @@ import {
 } from "@/components/ui/card";
 import { ChartConfig, ChartContainer } from "@/components/ui/chart";
 
-const chartData = [
-  { name: "Sprint 41", capacity: 300, reality: 120 },
-  { name: "Sprint 42", capacity: 300, reality: 180 },
-  { name: "Sprint 43", capacity: 300, reality: 150 },
-  { name: "Sprint 44", capacity: 300, reality: 250 },
-  { name: "Sprint 45", capacity: 300, reality: 320 },
-  { name: "Sprint 46", capacity: 300, reality: 270 },
-  { name: "Sprint 41", capacity: 300, reality: 120 },
-  { name: "Sprint 42", capacity: 300, reality: 180 },
-  { name: "Sprint 43", capacity: 300, reality: 150 },
-  { name: "Sprint 44", capacity: 300, reality: 250 },
-  { name: "Sprint 45", capacity: 300, reality: 320 },
-  { name: "Sprint 46", capacity: 300, reality: 270 },
-];
-
 const chartConfig = {
   capacity: {
     label: "Capacity",
@@ -36,6 +21,17 @@ const chartConfig = {
     color: "hsl(var(--chart-2))",
   },
 } satisfies ChartConfig;
+
+interface SprintData {
+  sprintId: string;
+  sprintName: string;
+  totalStoryPoints: number;
+  totalBaseline: number;
+}
+
+interface BarChartCapacityProps {
+  sprints: SprintData[]; // Receiving sprint data as a prop
+}
 
 interface CustomBarLabelProps {
   x: number;
@@ -50,9 +46,9 @@ const renderCustomLabel = (props: CustomBarLabelProps, key: string) => {
   return (
     <g>
       <text
-        x={x + width / 2} // Center horizontally
-        y={y + height / 2} // Center vertically
-        dy={5} // Adjust vertical alignment
+        x={x + width / 2}
+        y={y + height / 2}
+        dy={5}
         fill="white"
         fontSize={12}
         fontWeight="bold"
@@ -61,8 +57,8 @@ const renderCustomLabel = (props: CustomBarLabelProps, key: string) => {
         {value}
       </text>
       <text
-        x={x + width / 2} // Center horizontally
-        y={y + height / 2 + 16} // Slightly below the value
+        x={x + width / 2}
+        y={y + height / 2 + 16}
         fill="white"
         fontSize={10}
         textAnchor="middle"
@@ -73,11 +69,18 @@ const renderCustomLabel = (props: CustomBarLabelProps, key: string) => {
   );
 };
 
-export function BarChartCapacity() {
+export function BarChartCapacity({ sprints }: BarChartCapacityProps) {
   const [mounted, setMounted] = useState(false);
 
+  // Format sprint data for the chart
+  const chartData = sprints.map((sprint) => ({
+    name: sprint.sprintName.substring(0, 10),
+    capacity: sprint.totalBaseline,
+    reality: sprint.totalStoryPoints,
+  }));
+
   useEffect(() => {
-    setMounted(true); // Ensures it only runs on client
+    setMounted(true);
   }, []);
 
   if (!mounted) return null;
@@ -87,29 +90,41 @@ export function BarChartCapacity() {
       <CardHeader>
         <CardTitle>Capacity VS Reality</CardTitle>
         <CardDescription>
-          Your team&apos;s sprint velocity is 263
+          Your team&apos;s sprint velocity is{" "}
+          {chartData.length > 0
+            ? (
+                chartData.reduce((acc, sprint) => acc + sprint.reality, 0) /
+                chartData.length
+              ).toFixed(2)
+            : 0}
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <ChartContainer config={chartConfig}>
-          <BarChart accessibilityLayer data={chartData}>
-            <CartesianGrid vertical={false} />
-            <XAxis dataKey="name" tickLine tickMargin={10} axisLine />
-            <YAxis />
-            <Bar
-              dataKey="reality"
-              fill="var(--color-reality)"
-              radius={4}
-              label={(props) => renderCustomLabel(props, "Reality")}
-            />
-            <Bar
-              dataKey="capacity"
-              fill="var(--color-capacity)"
-              radius={4}
-              label={(props) => renderCustomLabel(props, "Capacity")}
-            />
-          </BarChart>
-        </ChartContainer>
+        {chartData.length === 0 ? (
+          <div className="text-center text-sm text-gray-500">
+            No data available
+          </div>
+        ) : (
+          <ChartContainer config={chartConfig}>
+            <BarChart accessibilityLayer data={chartData}>
+              <CartesianGrid vertical={false} />
+              <XAxis dataKey="name" tickLine tickMargin={10} axisLine />
+              <YAxis />
+              <Bar
+                dataKey="reality"
+                fill="var(--color-reality)"
+                radius={4}
+                label={(props) => renderCustomLabel(props, "Reality")}
+              />
+              <Bar
+                dataKey="capacity"
+                fill="var(--color-capacity)"
+                radius={4}
+                label={(props) => renderCustomLabel(props, "Capacity")}
+              />
+            </BarChart>
+          </ChartContainer>
+        )}
       </CardContent>
     </Card>
   );

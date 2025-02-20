@@ -35,10 +35,8 @@ export default async function Home() {
   }));
 
   const sprintIds = sprints.map((sprint) => sprint.id);
-  console.log(sprintIds);
-  const data = await findCapacityVsRealityBySprintIds(sprintIds);
+  const sprintsCapacity = await findCapacityVsRealityBySprintIds(sprintIds);
 
-  console.log(data);
   return (
     <div>
       <div className="mb-6 flex flex-row items-center gap-4">
@@ -52,7 +50,7 @@ export default async function Home() {
       <div className="mb-6 flex flex-row justify-center gap-4">
         <div className="flex-[7]">
           <Suspense fallback={<Skeleton className="h-48 w-full rounded-md" />}>
-            <BarChartCapacity />
+            <BarChartCapacity sprints={sprintsCapacity} />
           </Suspense>
         </div>
         <div className="flex-[3]">
