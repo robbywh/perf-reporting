@@ -174,6 +174,7 @@ export async function findCapacityVsRealityBySprintIds(
       s.name AS "sprintName", 
       COALESCE(SUM(se.story_points), 0) AS "totalStoryPoints", 
       COALESCE(SUM(se.baseline), 0) AS "totalBaseline"
+      COALESCE(SUM(se.target), 0) AS "totalTarget"
     FROM sprint s
     JOIN sprint_engineer se ON s.id = se.sprint_id
     WHERE se.sprint_id IN (${Prisma.join(sprintIds)})
