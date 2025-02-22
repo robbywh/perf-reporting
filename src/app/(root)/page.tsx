@@ -26,16 +26,12 @@ import { findAllSprints } from "@/services/sprints";
 // eslint-disable-next-line camelcase
 export const experimental_ppr = true;
 
-export async function TopPerformersContainer({
-  sprintIds,
-}: {
-  sprintIds: string[];
-}) {
+async function TopPerformersContainer({ sprintIds }: { sprintIds: string[] }) {
   const topPerformersData = await findTopPerformersBySprintIds(sprintIds);
   return <TopPerformers performers={topPerformersData} />;
 }
 
-export async function BarChartCapacityContainer({
+async function BarChartCapacityContainer({
   sprintIds,
 }: {
   sprintIds: string[];
@@ -44,7 +40,7 @@ export async function BarChartCapacityContainer({
   return <BarChartCapacity sprints={sprintsCapacity} />;
 }
 
-export async function LineChartSPCodingContainer({
+async function LineChartSPCodingContainer({
   sprintIds,
 }: {
   sprintIds: string[];
