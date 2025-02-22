@@ -244,3 +244,44 @@ export async function findTopPerformersBySprintIds(sprintIds: string[]) {
     };
   });
 }
+
+export async function findEngineerTrendBySprintIds(sprintIds: string[]) {
+  const sprintStoryPoints = await prisma.sprintEngineer.findMany({
+    where: { sprintId: { in: sprintIds } },
+    select: {
+      sprintId: true,
+      sprint: { select: { name: true } },
+      engineerId: true,
+      engineer: { select: { id: true, name: true } },
+      storyPoints: true,
+    },
+    orderBy: [{ sprintId: "asc" }, { storyPoints: "desc" }],
+  });
+
+  const sprintMap = new Map<
+    string,
+    {
+      sprintId: string;
+      sprintName: string;
+      engineers: { id: number; name: string; storyPoints: number }[];
+    }
+  >();
+
+  sprintStoryPoints.forEach(({ sprintId, sprint, engineer, storyPoints }) => {
+    if (!sprintMap.has(sprintId)) {
+      sprintMap.set(sprintId, {
+        sprintId,
+        sprintName: sprint.name,
+        engineers: [],
+      });
+    }
+
+    sprintMap.get(sprintId)!.engineers.push({
+      id: engineer.id,
+      name: engineer.name,
+      storyPoints: storyPoints ? Number(storyPoints) : 0,
+    });
+  });
+
+  return Array.from(sprintMap.values());
+}

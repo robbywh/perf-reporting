@@ -1,14 +1,21 @@
 import { Suspense } from "react";
 
-import { BarChartCapacity } from "@/components/charts/bar-chart-capacity";
+import {
+  BarChartCapacity,
+  BarChartCapacitySkeleton,
+} from "@/components/charts/bar-chart-capacity";
 import { LineChartSPCoding } from "@/components/charts/line-chart-sp-coding";
 import { PieDonutTaskChart } from "@/components/charts/pie-donut-task";
 import { PieTaskCategoryChart } from "@/components/charts/pie-task-category";
 import LeavePublicHoliday from "@/components/leave-public-holiday-form";
-import { TopPerformers } from "@/components/top-performers";
+import {
+  TopPerformers,
+  TopPerformersSkeleton,
+} from "@/components/top-performers";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   findCapacityVsRealityBySprintIds,
+  findEngineerTrendBySprintIds,
   findTopPerformersBySprintIds,
 } from "@/services/sprint-engineers";
 import { findAllSprints } from "@/services/sprints";
@@ -16,29 +23,55 @@ import { findAllSprints } from "@/services/sprints";
 // eslint-disable-next-line camelcase
 export const experimental_ppr = true;
 
+export async function TopPerformersContainer({
+  sprintIds,
+}: {
+  sprintIds: string[];
+}) {
+  const topPerformersData = await findTopPerformersBySprintIds(sprintIds);
+  return <TopPerformers performers={topPerformersData} />;
+}
+
+export async function BarChartCapacityContainer({
+  sprintIds,
+}: {
+  sprintIds: string[];
+}) {
+  const sprintsCapacity = await findCapacityVsRealityBySprintIds(sprintIds);
+  return <BarChartCapacity sprints={sprintsCapacity} />;
+}
+
+export async function LineChartSPCodingContainer({
+  sprintIds,
+}: {
+  sprintIds: string[];
+}) {
+  const sprintData = await findEngineerTrendBySprintIds(sprintIds);
+  return <LineChartSPCoding sprintData={sprintData} />;
+}
+
 export default async function Home() {
   const sprints = await findAllSprints();
 
   const sprintIds = sprints.map((sprint) => sprint.id);
-  const sprintsCapacity = await findCapacityVsRealityBySprintIds(sprintIds);
-  const topPerformersData = await findTopPerformersBySprintIds(sprintIds);
+
   return (
     <div>
       <div className="mb-6 flex flex-row justify-center gap-4">
         <div className="flex-[7]">
-          <Suspense fallback={<Skeleton className="h-48 w-full rounded-md" />}>
-            <BarChartCapacity sprints={sprintsCapacity} />
+          <Suspense fallback={<BarChartCapacitySkeleton />}>
+            <BarChartCapacityContainer sprintIds={sprintIds} />
           </Suspense>
         </div>
         <div className="flex-[3]">
-          <Suspense fallback={<Skeleton className="h-48 w-full rounded-md" />}>
-            <TopPerformers performers={topPerformersData} />
+          <Suspense fallback={<TopPerformersSkeleton />}>
+            <TopPerformersContainer sprintIds={sprintIds} />
           </Suspense>
         </div>
       </div>
       <div className="mb-6">
         <Suspense fallback={<Skeleton className="h-48 w-full rounded-md" />}>
-          <LineChartSPCoding />
+          <LineChartSPCodingContainer sprintIds={sprintIds} />
         </Suspense>
       </div>
       <div className="mb-6 flex flex-row justify-center gap-4">

@@ -10,6 +10,8 @@ import {
   CardDescription,
 } from "@/components/ui/card";
 
+import { Skeleton } from "../ui/skeleton";
+
 interface Performer {
   id: number;
   name: string | undefined;
@@ -63,6 +65,43 @@ export function TopPerformers({ performers }: TopPerformersProps) {
                 </div>
               </div>
             </Link>
+          ))}
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+export function TopPerformersSkeleton() {
+  return (
+    <Card className="w-full max-w-md">
+      <CardHeader>
+        <CardTitle>Top Performers</CardTitle>
+        <CardDescription>
+          <Skeleton className="h-5 w-1/2" /> {/* Simulating loading text */}
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <div className="space-y-4">
+          {Array.from({ length: 5 }).map((_, index) => (
+            <div
+              key={index}
+              className="flex items-center justify-between rounded-md p-3"
+            >
+              <div className="flex items-center space-x-4">
+                <Skeleton className="size-10 rounded-full" /> {/* Avatar */}
+                <div>
+                  <Skeleton className="h-4 w-24" /> {/* Name Placeholder */}
+                  <Skeleton className="mt-1 h-3 w-32" />{" "}
+                  {/* Email Placeholder */}
+                </div>
+              </div>
+              <div className="flex items-center space-x-2">
+                <Skeleton className="h-4 w-12" />{" "}
+                {/* Story Points Placeholder */}
+                <ChevronRight className="size-4 text-gray-400 opacity-50" />
+              </div>
+            </div>
           ))}
         </div>
       </CardContent>

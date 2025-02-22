@@ -10,6 +10,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { ChartConfig, ChartContainer } from "@/components/ui/chart";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const chartConfig = {
   capacity: {
@@ -126,6 +127,23 @@ export function BarChartCapacity({ sprints }: BarChartCapacityProps) {
             </BarChart>
           </ChartContainer>
         )}
+      </CardContent>
+    </Card>
+  );
+}
+
+export function BarChartCapacitySkeleton() {
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Capacity VS Reality</CardTitle>
+        <CardDescription>
+          <Skeleton className="h-5 w-1/3" /> {/* Placeholder for velocity */}
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <Skeleton className="h-56 w-full rounded-md" />{" "}
+        {/* Placeholder for chart */}
       </CardContent>
     </Card>
   );
