@@ -1,5 +1,3 @@
-import { Prisma } from "@prisma/client";
-
 import { getMergedMRsBySprintPeriod } from "@/lib/gitlab/mr"; // Ensure this function is defined
 import { prisma } from "@/services/db";
 
@@ -162,34 +160,87 @@ interface SprintCapacityReality {
 export async function findCapacityVsRealityBySprintIds(
   sprintIds: string[]
 ): Promise<SprintCapacityReality[]> {
-  const sprintEngineer: {
-    sprintId: string;
-    sprintName: string;
-    totalStoryPoints: Prisma.Decimal | null;
-    totalBaseline: Prisma.Decimal | null;
-    totalTarget: Prisma.Decimal | null;
-  }[] = await prisma.$queryRaw`
-    SELECT 
-      se.sprint_id AS "sprintId", 
-      s.name AS "sprintName", 
-      COALESCE(SUM(se.story_points), 0) AS "totalStoryPoints", 
-      COALESCE(SUM(se.baseline), 0) AS "totalBaseline",
-      COALESCE(SUM(se.target), 0) AS "totalTarget"
-    FROM sprint s
-    JOIN sprint_engineer se ON s.id = se.sprint_id
-    WHERE se.sprint_id IN (${Prisma.join(sprintIds)})
-    GROUP BY se.sprint_id, s.name
-    ORDER BY se.sprint_id ASC;
-  `;
+  const sprints = await prisma.sprint.findMany({
+    where: { id: { in: sprintIds } },
+    select: {
+      id: true,
+      name: true,
+      sprintEngineers: {
+        select: {
+          storyPoints: true,
+          baseline: true,
+          target: true,
+        },
+      },
+    },
+    orderBy: { id: "asc" },
+  });
 
-  // Convert Prisma Decimal values to plain JavaScript numbers
-  return sprintEngineer.map((sprint) => ({
-    sprintId: sprint.sprintId,
-    sprintName: sprint.sprintName, // Use actual sprint name
-    totalStoryPoints: sprint.totalStoryPoints
-      ? Number(sprint.totalStoryPoints)
-      : 0,
-    totalBaseline: sprint.totalBaseline ? Number(sprint.totalBaseline) : 0,
-    totalTarget: sprint.totalTarget ? Number(sprint.totalTarget) : 0,
-  }));
+  // Map and aggregate the results
+  return sprints.map((sprint) => {
+    const totalStoryPoints = sprint.sprintEngineers.reduce(
+      (sum, se) => sum + (se.storyPoints ? Number(se.storyPoints) : 0),
+      0
+    );
+
+    const totalBaseline = sprint.sprintEngineers.reduce(
+      (sum, se) => sum + (se.baseline ? Number(se.baseline) : 0),
+      0
+    );
+
+    const totalTarget = sprint.sprintEngineers.reduce(
+      (sum, se) => sum + (se.target ? Number(se.target) : 0),
+      0
+    );
+
+    return {
+      sprintId: sprint.id,
+      sprintName: sprint.name,
+      totalStoryPoints,
+      totalBaseline,
+      totalTarget,
+    };
+  });
+}
+
+export async function findTopPerformersBySprintIds(sprintIds: string[]) {
+  const avgStoryPoints = await prisma.sprintEngineer.groupBy({
+    by: ["engineerId"], // Group only by engineerId
+    where: {
+      sprintId: { in: sprintIds },
+    },
+    _avg: {
+      storyPoints: true, // Calculate the average story points
+    },
+    orderBy: {
+      _avg: {
+        storyPoints: "desc",
+      },
+    },
+  });
+
+  // Fetch engineer details in one query
+  const engineerIds = avgStoryPoints.map((perf) => perf.engineerId);
+
+  const engineers = await prisma.engineer.findMany({
+    where: { id: { in: engineerIds } },
+    select: {
+      id: true,
+      name: true,
+      email: true,
+    },
+  });
+
+  // Merge results
+  return avgStoryPoints.map((performer) => {
+    const engineer = engineers.find((eng) => eng.id === performer.engineerId);
+    return {
+      id: performer.engineerId,
+      name: engineer?.name,
+      email: engineer?.email,
+      storyPoints: performer._avg.storyPoints
+        ? Number(performer._avg.storyPoints)
+        : 0,
+    };
+  });
 }

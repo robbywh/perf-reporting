@@ -1,6 +1,6 @@
 import { ChartConfig } from "@/components/ui/chart";
 
-import { PieChart } from "..";
+import { PieChart } from "../pie-chart";
 
 const chartData = [
   { type: "newFeature", value: 275, fill: "var(--color-newFeature)" },

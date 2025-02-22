@@ -1,46 +1,48 @@
-import { currentUser } from "@clerk/nextjs/server";
+import { Suspense } from "react";
 
 import { BarChartMultiple } from "@/components/charts/bar-chart-multiple";
-import { PieDonutTaskChart } from "@/components/charts/pie-donut-chart/pie-donut-task";
+import { PieDonutTaskChart } from "@/components/charts/pie-donut-task";
 import { CodingHoursForm } from "@/components/coding-hours-form";
 import LeavePublicHoliday from "@/components/leave-public-holiday-form";
-import { SprintMultiSelect } from "@/components/sprint-multi-select";
 import { StatsCards } from "@/components/stats-cards";
-import { getWelcomeMessage } from "@/lib/utils/global";
-import { findRoleIdByUserId } from "@/services/users";
-
-const WelcomeMessage = async () => {
-  const user = await currentUser(); // Fetch the logged-in user
-  const firstName = user?.firstName || "Guest";
-  const role = await findRoleIdByUserId(user?.id || "");
-  const welcomeMessage = getWelcomeMessage(role || "", firstName);
-
-  return <div className="flex-1 text-lg font-bold">{welcomeMessage}</div>;
-};
+import { Skeleton } from "@/components/ui/skeleton"; // ✅ Import ShadCN Skeleton
 
 export default function EngineerPage() {
   return (
     <div>
-      <div className="mb-6 flex flex-row items-center">
-        <WelcomeMessage />
-        <SprintMultiSelect sprints={[]} />
-      </div>
+      {/* Stats Cards */}
       <div className="mb-6">
-        <StatsCards />
+        <Suspense fallback={<Skeleton className="h-28 w-full rounded-lg" />}>
+          <StatsCards />
+        </Suspense>
       </div>
+
+      {/* Charts Section */}
       <div className="flex flex-row items-stretch gap-4">
-        <div className="flex-[6] ">
-          <BarChartMultiple />
+        <div className="flex-[6]">
+          <Suspense fallback={<Skeleton className="h-64 w-full rounded-lg" />}>
+            <BarChartMultiple />
+          </Suspense>
         </div>
-        <div className="flex-[4] ">
-          <PieDonutTaskChart />
+        <div className="flex-[4]">
+          <Suspense fallback={<Skeleton className="h-64 w-full rounded-lg" />}>
+            <PieDonutTaskChart />
+          </Suspense>
         </div>
       </div>
+
+      {/* Coding Hours Form */}
       <div className="mb-6 flex">
-        <CodingHoursForm />
+        <Suspense fallback={<Skeleton className="h-40 w-full rounded-lg" />}>
+          <CodingHoursForm />
+        </Suspense>
       </div>
+
+      {/* Leave & Public Holiday Form */}
       <div>
-        <LeavePublicHoliday />
+        <Suspense fallback={<Skeleton className="h-40 w-full rounded-lg" />}>
+          <LeavePublicHoliday />
+        </Suspense>
       </div>
     </div>
   );
