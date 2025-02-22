@@ -134,7 +134,6 @@ export async function linkSprintsToEngineers(sprintId: string) {
             storyPoints: 0,
           },
         });
-
         console.log(
           `✅ Sprint Engineer Updated: Sprint ${sprintId}, Engineer ${engineerId}, Job Level: ${jobLevelId}, Merged Count: ${mergedCount}`
         );
