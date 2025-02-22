@@ -76,7 +76,7 @@ export function BarChartCapacity({ sprints }: BarChartCapacityProps) {
 
   // Format sprint data for the chart
   const chartData = sprints.map((sprint) => ({
-    name: sprint.sprintName.substring(0, 10),
+    name: sprint.sprintName,
     capacity: (sprint.totalBaseline + sprint.totalTarget) / 2,
     reality: sprint.totalStoryPoints,
   }));

@@ -13,6 +13,7 @@ import {
 } from "recharts";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 
 // ✅ Function to generate unique colors for engineers dynamically
 const generateColor = (index: number) => {
@@ -51,7 +52,7 @@ export function LineChartSPCoding({ sprintData }: LineChartSPCodingProps) {
 
   sprintData.forEach(({ sprintName, engineers }) => {
     const sprintEntry: Record<string, number | string> = {
-      sprint: sprintName.substring(0, 10),
+      sprint: sprintName,
     };
 
     engineers.forEach(({ name, storyPoints }) => {
@@ -109,6 +110,32 @@ export function LineChartSPCoding({ sprintData }: LineChartSPCodingProps) {
             </LineChart>
           </ResponsiveContainer>
         )}
+      </CardContent>
+    </Card>
+  );
+}
+
+export function LineChartSPCodingSkeleton() {
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Engineers&apos; Story Points Trends</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {/* Chart Placeholder */}
+        <div className="flex h-[500px] w-full flex-col items-center justify-center rounded-lg bg-gray-100">
+          <Skeleton className="mb-2 h-4 w-3/4" />
+          <Skeleton className="mb-2 h-4 w-1/2" />
+          <Skeleton className="h-4 w-1/4" />
+        </div>
+        {/* X-Axis Labels Placeholder */}
+        <div className="flex justify-between px-4">
+          <Skeleton className="h-4 w-12" />
+          <Skeleton className="h-4 w-12" />
+          <Skeleton className="h-4 w-12" />
+          <Skeleton className="h-4 w-12" />
+          <Skeleton className="h-4 w-12" />
+        </div>
       </CardContent>
     </Card>
   );

@@ -4,7 +4,10 @@ import {
   BarChartCapacity,
   BarChartCapacitySkeleton,
 } from "@/components/charts/bar-chart-capacity";
-import { LineChartSPCoding } from "@/components/charts/line-chart-sp-coding";
+import {
+  LineChartSPCoding,
+  LineChartSPCodingSkeleton,
+} from "@/components/charts/line-chart-sp-coding";
 import { PieDonutTaskChart } from "@/components/charts/pie-donut-task";
 import { PieTaskCategoryChart } from "@/components/charts/pie-task-category";
 import LeavePublicHoliday from "@/components/leave-public-holiday-form";
@@ -70,7 +73,7 @@ export default async function Home() {
         </div>
       </div>
       <div className="mb-6">
-        <Suspense fallback={<Skeleton className="h-48 w-full rounded-md" />}>
+        <Suspense fallback={<LineChartSPCodingSkeleton />}>
           <LineChartSPCodingContainer sprintIds={sprintIds} />
         </Suspense>
       </div>

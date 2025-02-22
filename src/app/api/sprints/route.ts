@@ -40,7 +40,7 @@ async function syncSprintsFromClickUp() {
       await prisma.sprint.create({
         data: {
           id,
-          name,
+          name: name.substring(0, 10),
           startDate: startDateUTC,
           endDate: endDateUTC,
         },
