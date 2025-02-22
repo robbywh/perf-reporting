@@ -4,5 +4,6 @@
       "path": "/api/sprints",
       "schedule": "0 17 * * *"
     }
-  ]
+  ],
+  "regions": ["sin1"]
 }
