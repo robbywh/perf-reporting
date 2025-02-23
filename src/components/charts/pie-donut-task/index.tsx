@@ -1,31 +1,49 @@
+"use client";
+
 import { PieDonutChart } from "@/components/charts/pie-donut-chart";
 
-const chartData = [
-  { status: "approved", value: 38, fill: "var(--color-approved)" },
-  { status: "rejected", value: 1, fill: "var(--color-rejected)" },
-]
-
-const chartConfig = {
-  value: {
-    label: "Task",
-  },
-  approved: {
-    label: "Approved",
-    color: "hsl(var(--chart-2))",
-  },
-  rejected: {
-    label: "Rejected",
-    color: "hsl(var(--chart-1))",
-  }
+interface TaskChartProps {
+  data: {
+    averageApprovedTasks: number;
+    averageRejectedTasks: number;
+  };
 }
 
-export function PieDonutTaskChart() {
+export function PieDonutTaskChart({ data }: TaskChartProps) {
+  // Dynamically map data to chart format
+  const chartData = [
+    {
+      status: "approved",
+      value: data.averageApprovedTasks,
+      fill: "hsl(var(--chart-2))",
+    },
+    {
+      status: "rejected",
+      value: data.averageRejectedTasks,
+      fill: "hsl(var(--chart-1))",
+    },
+  ];
+
+  const chartConfig = {
+    value: {
+      label: "Task",
+    },
+    approved: {
+      label: "Approved",
+      color: "hsl(var(--chart-2))",
+    },
+    rejected: {
+      label: "Rejected",
+      color: "hsl(var(--chart-1))",
+    },
+  };
+
   return (
     <PieDonutChart
-      title="Task"
-      totalLabel="Task to QA"
+      title="Tasks to QA"
+      totalLabel="Total QA Tasks"
       data={chartData}
       config={chartConfig}
     />
-  )
+  );
 }

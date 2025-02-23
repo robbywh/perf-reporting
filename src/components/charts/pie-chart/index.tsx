@@ -5,6 +5,7 @@ import { Pie, PieChart as PieRechart, Cell } from "recharts";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ChartConfig, ChartContainer } from "@/components/ui/chart";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface ChartData {
   type: string;
@@ -53,6 +54,19 @@ export function PieChart({ title, config, data }: ChartProps) {
             </Pie>
           </PieRechart>
         </ChartContainer>
+      </CardContent>
+    </Card>
+  );
+}
+
+export function PieChartSkeleton({ title }: { title: string }) {
+  return (
+    <Card className="flex flex-col">
+      <CardHeader className="mb-10 items-center">
+        <CardTitle>{title || "Loading Chart..."}</CardTitle>
+      </CardHeader>
+      <CardContent className="mb-10 flex flex-1 items-center justify-center">
+        <Skeleton className="size-[200px] rounded-full" />
       </CardContent>
     </Card>
   );

@@ -142,7 +142,7 @@ export function BarChartCapacitySkeleton() {
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <Skeleton className="h-56 w-full rounded-md" />{" "}
+        <Skeleton className="h-96 w-full rounded-md" />{" "}
         {/* Placeholder for chart */}
       </CardContent>
     </Card>

@@ -16,6 +16,7 @@ import {
   ChartTooltip,
   ChartTooltipContent,
 } from "@/components/ui/chart";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface ChartData {
   status: string;
@@ -109,6 +110,27 @@ export function PieDonutChart({
         <div className="flex items-center gap-2 font-medium leading-none">
           {title} Rejection Ratio {formattedRejectionRatio} %
         </div>
+      </CardFooter>
+    </Card>
+  );
+}
+
+export function PieDonutChartSkeleton({ title }: { title: string }) {
+  return (
+    <Card className="flex flex-col">
+      {/* Header */}
+      <CardHeader className="mb-10 items-center pb-0">
+        <CardTitle>{title}</CardTitle>
+      </CardHeader>
+
+      {/* Chart Content */}
+      <CardContent className="mb-10 flex flex-1 items-center justify-center pb-0">
+        <Skeleton className="size-[200px] rounded-full" />
+      </CardContent>
+
+      {/* Footer */}
+      <CardFooter className="flex-col gap-2 text-sm">
+        <Skeleton className="h-4 w-40" />
       </CardFooter>
     </Card>
   );
