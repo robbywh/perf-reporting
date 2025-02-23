@@ -34,8 +34,6 @@ export async function linkSprintsToEngineers(sprintId: string) {
       );
     }
 
-    const totalSprintDays = 10; // Default sprint length
-
     // ✅ Fetch engineers & job levels
     const engineers = await prisma.engineer.findMany({
       select: {
@@ -52,23 +50,6 @@ export async function linkSprintsToEngineers(sprintId: string) {
         },
       },
     });
-
-    // ✅ Fetch leave days & public holidays in one query for all engineers
-    const [leaveDaysData, publicHolidays] = await Promise.all([
-      prisma.leave.groupBy({
-        by: ["engineerId"],
-        where: { date: { gte: sprintStartDate, lte: sprintEndDate } },
-        _count: true,
-      }),
-      prisma.publicHoliday.count({
-        where: { date: { gte: sprintStartDate, lte: sprintEndDate } },
-      }),
-    ]);
-
-    // Convert leave days to a Map for quick lookup
-    const leaveDaysMap = new Map(
-      leaveDaysData.map((leave) => [leave.engineerId, leave._count])
-    );
 
     // ✅ Process each engineer in parallel using `Promise.all()`
     await Promise.all(
@@ -90,24 +71,6 @@ export async function linkSprintsToEngineers(sprintId: string) {
         }
 
         const { baseline, target, baselineCh, targetCh } = jobLevel;
-        const baselineStoryPoints = Number(baseline.toString());
-        const targetStoryPoints = Number(target.toString());
-
-        const leaveDays = leaveDaysMap.get(engineerId) || 0;
-        const availableDays = totalSprintDays - leaveDays - publicHolidays;
-
-        if (availableDays <= 0) {
-          console.log(
-            `⏩ No available working days for Sprint ${sprintId}, Engineer ${engineerId}`
-          );
-          return;
-        }
-
-        // ✅ Calculate adjusted values
-        const adjustedTarget =
-          (availableDays * targetStoryPoints) / totalSprintDays;
-        const adjustedBaseline =
-          (availableDays * baselineStoryPoints) / totalSprintDays;
 
         // ✅ Get merged count for this engineer
         const mergedCount = mrCountByAssignee.get(gitlabUserId) || 0;
@@ -117,8 +80,8 @@ export async function linkSprintsToEngineers(sprintId: string) {
           where: { sprintId_engineerId: { sprintId, engineerId } },
           update: {
             jobLevelId,
-            baseline: adjustedBaseline,
-            target: adjustedTarget,
+            baseline,
+            target,
             storyPoints: 0,
             mergedCount,
           },
@@ -126,8 +89,8 @@ export async function linkSprintsToEngineers(sprintId: string) {
             sprintId,
             engineerId,
             jobLevelId,
-            baseline: adjustedBaseline,
-            target: adjustedTarget,
+            baseline,
+            target,
             baselineCh,
             targetCh,
             mergedCount,

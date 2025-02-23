@@ -112,7 +112,7 @@ export function BarChartMultiple() {
           target!
         </div>
         <div className="flex gap-2 font-bold leading-none text-chart-1">
-          Your working hours have not yet reached the baseline, but don’t give
+          Your coding hours have not yet reached the baseline, but don’t give
           up—every effort brings us closer to success!
         </div>
       </CardFooter>

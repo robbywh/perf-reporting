@@ -1,15 +1,13 @@
 "use client";
 
+import { Trash2 } from "lucide-react";
 import * as React from "react";
-// 1. Import Swiper dan modul2 pendukung
 import { Navigation, Pagination } from "swiper/modules";
 import { Swiper, SwiperSlide } from "swiper/react";
-// 2. Import stylesheet default Swiper
 import "swiper/css";
 import "swiper/css/navigation";
 import "swiper/css/pagination";
 
-// 3. Import komponen UI shadcn (atau sesuaikan path)
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import {
@@ -30,214 +28,202 @@ import {
   TableRow,
 } from "@/components/ui/table";
 
-// Struktur data
+import { Skeleton } from "../ui/skeleton";
+
+// Data structure
 interface LeaveData {
   name: string;
-  type: string;
+  description: string;
   date: string;
 }
 
 interface HolidayData {
-  name: string;
+  description: string;
   date: string;
 }
 
 interface SprintData {
-  sprintNumber: number;
+  sprintName: string;
   leaves: LeaveData[];
   holidays: HolidayData[];
 }
 
-export default function LeavePublicHoliday() {
-  /**
-   * Data sprints (41–46), setiap sprint memiliki daftar leave & holiday sendiri.
-   * Anda bisa mengganti data dummy di bawah dengan data dari API atau sumber lain.
-   */
-  const [sprints, setSprints] = React.useState<SprintData[]>([
-    {
-      sprintNumber: 41,
-      leaves: [
-        { name: "Fatur", type: "Cuti Tahunan", date: "2025-01-02" },
-        { name: "Brian", type: "Cuti Sakit", date: "2025-01-03" },
-      ],
-      holidays: [{ name: "Hari Raya Natal", date: "2025-12-25" }],
-    },
-    {
-      sprintNumber: 42,
-      leaves: [
-        { name: "Gharis", type: "Cuti Tahunan", date: "2025-02-01" },
-        { name: "Adi", type: "Cuti Sakit", date: "2025-02-03" },
-      ],
-      holidays: [{ name: "Tahun Baru Imlek", date: "2025-02-19" }],
-    },
-    {
-      sprintNumber: 43,
-      leaves: [
-        { name: "Aaron", type: "Cuti Tahunan", date: "2025-03-11" },
-        { name: "Aaron", type: "Cuti Sakit", date: "2025-03-15" },
-      ],
-      holidays: [{ name: "Libur Nasional", date: "2025-03-25" }],
-    },
-    {
-      sprintNumber: 44,
-      leaves: [
-        { name: "Reinaldi", type: "Cuti Tahunan", date: "2025-04-10" },
-        { name: "Brian", type: "Cuti Sakit", date: "2025-04-12" },
-      ],
-      holidays: [{ name: "Waisak", date: "2025-04-17" }],
-    },
-    {
-      sprintNumber: 45,
-      leaves: [
-        { name: "Fatur", type: "Cuti Tahunan", date: "2025-05-02" },
-        { name: "Adi", type: "Cuti Sakit", date: "2025-05-05" },
-      ],
-      holidays: [{ name: "Kenaikan Isa Almasih", date: "2025-05-09" }],
-    },
-    {
-      sprintNumber: 46,
-      leaves: [
-        { name: "Gharis", type: "Cuti Tahunan", date: "2025-06-10" },
-        { name: "Aaron", type: "Cuti Sakit", date: "2025-06-12" },
-      ],
-      holidays: [{ name: "Hari Lahir Pancasila", date: "2025-06-01" }],
-    },
-  ]);
+interface LeavePublicHolidayProps {
+  sprints: SprintData[];
+}
 
-  // Index sprint aktif (slide yang sedang ditampilkan)
-  const [activeSprintIndex, setActiveSprintIndex] = React.useState<number>(0);
-
-  // Kontrol dialog tambah data
-  const [openDialog, setOpenDialog] = React.useState<boolean>(false);
-
-  // Apakah form untuk menambah Leave atau Holiday
-  const [isLeaveForm, setIsLeaveForm] = React.useState<boolean>(true);
-
-  // State form
-  const [formData, setFormData] = React.useState<{
-    name: string;
-    type: string; // hanya dipakai kalau isLeaveForm = true
-    date: string;
-  }>({
+export function LeavePublicHoliday({ sprints }: LeavePublicHolidayProps) {
+  const [mounted, setMounted] = React.useState(false);
+  const [openDialog, setOpenDialog] = React.useState(false);
+  const [deleteDialog, setDeleteDialog] = React.useState(false);
+  const [isLeaveForm, setIsLeaveForm] = React.useState(true);
+  const [formData, setFormData] = React.useState({
     name: "",
-    type: "",
+    description: "",
     date: "",
   });
+  const [deleteTarget, setDeleteTarget] = React.useState<{
+    type: "leave" | "holiday";
+    sprintIndex: number;
+    index: number;
+  } | null>(null);
 
-  const [mounted, setMounted] = React.useState(false);
-
-  /**
-   * Handle simpan data (Leave / Holiday) ke sprints[activeSprintIndex]
-   */
-  const handleSave = React.useCallback(() => {
-    setSprints((prevSprints) => {
-      const newSprints = [...prevSprints];
-      const currentSprint = newSprints[activeSprintIndex];
-
-      if (isLeaveForm) {
-        // Tambah ke leaves
-        currentSprint.leaves = [
-          ...currentSprint.leaves,
-          {
-            name: formData.name,
-            type: formData.type,
-            date: formData.date,
-          },
-        ];
-      } else {
-        // Tambah ke holidays
-        currentSprint.holidays = [
-          ...currentSprint.holidays,
-          {
-            name: formData.name,
-            date: formData.date,
-          },
-        ];
-      }
-
-      newSprints[activeSprintIndex] = currentSprint;
-      return newSprints;
-    });
-
-    // Reset form dan tutup dialog
-    setOpenDialog(false);
-    setFormData({ name: "", type: "", date: "" });
-    setIsLeaveForm(true);
-  }, [activeSprintIndex, formData, isLeaveForm]);
+  const [sprintData, setSprintData] = React.useState<SprintData[]>(sprints);
 
   React.useEffect(() => {
-    setMounted(true); // Ensures it only runs on client
+    setMounted(true); // Prevent hydration mismatch
   }, []);
 
   if (!mounted) return null;
 
+  // ✅ Open delete confirmation dialog
+  const confirmDelete = (
+    type: "leave" | "holiday",
+    sprintIndex: number,
+    index: number
+  ) => {
+    setDeleteTarget({ type, sprintIndex, index });
+    setDeleteDialog(true);
+  };
+
+  // ✅ Handle actual delete after confirmation
+  const handleDelete = () => {
+    if (!deleteTarget) return;
+
+    setSprintData((prevSprints) => {
+      const newSprints = [...prevSprints];
+      const { type, sprintIndex, index } = deleteTarget;
+
+      if (type === "leave") {
+        newSprints[sprintIndex].leaves.splice(index, 1);
+      } else {
+        newSprints[sprintIndex].holidays.splice(index, 1);
+      }
+
+      return newSprints;
+    });
+
+    // Close dialog after deletion
+    setDeleteDialog(false);
+    setDeleteTarget(null);
+  };
+
   return (
     <Card className="p-6">
-      {/* Header dan tombol Add */}
+      {/* Header */}
       <div className="mb-6 flex items-center justify-between">
         <h1 className="text-xl font-bold">Public Holiday &amp; Leave</h1>
-        {/* <Button onClick={() => setOpenDialog(true)}>
+        <Button onClick={() => setOpenDialog(true)}>
           Add Public Holiday / Leave
-        </Button> */}
+        </Button>
       </div>
 
-      {/* Swiper berisi 6 Sprint (41–46) */}
+      {/* Swiper for Sprint Data */}
       <Swiper
         modules={[Navigation, Pagination]}
         navigation
         pagination={{ clickable: true }}
         spaceBetween={30}
         slidesPerView={1}
-        onSlideChange={(swiper) => setActiveSprintIndex(swiper.activeIndex)}
       >
-        {sprints.map((sprint) => (
-          <SwiperSlide key={sprint.sprintNumber}>
+        {sprintData.map((sprint, sprintIndex) => (
+          <SwiperSlide key={sprint.sprintName}>
             <div className="space-y-4 px-20 pb-20">
               <h2 className="text-center text-xl font-semibold">
-                Sprint {sprint.sprintNumber}
+                {sprint.sprintName}
               </h2>
               <div className="grid grid-cols-2 gap-8">
-                {/* Tabel Leaves */}
+                {/* Leaves Table */}
                 <div className="border-r border-gray-300 pr-6">
                   <Table>
                     <TableHeader>
                       <TableRow>
                         <TableHead>Leave</TableHead>
                         <TableHead>Date</TableHead>
+                        <TableHead className="text-right">Actions</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {sprint.leaves.map((leave, idx) => (
-                        <TableRow key={idx}>
-                          <TableCell>
-                            <div className="font-semibold">{leave.name}</div>
-                            <div className="text-sm text-muted-foreground">
-                              {leave.type}
-                            </div>
+                      {sprint.leaves.length > 0 ? (
+                        sprint.leaves.map((leave, leaveIndex) => (
+                          <TableRow key={leaveIndex}>
+                            <TableCell>
+                              <div className="font-semibold">{leave.name}</div>
+                              <div className="text-sm text-muted-foreground">
+                                {leave.description}
+                              </div>
+                            </TableCell>
+                            <TableCell>{leave.date}</TableCell>
+                            <TableCell className="text-right">
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() =>
+                                  confirmDelete(
+                                    "leave",
+                                    sprintIndex,
+                                    leaveIndex
+                                  )
+                                }
+                              >
+                                <Trash2 className="size-4 text-red-500" />
+                              </Button>
+                            </TableCell>
+                          </TableRow>
+                        ))
+                      ) : (
+                        <TableRow>
+                          <TableCell colSpan={3} className="text-center">
+                            <p className="mt-10 text-lg">No leaves recorded</p>
                           </TableCell>
-                          <TableCell>{leave.date}</TableCell>
                         </TableRow>
-                      ))}
+                      )}
                     </TableBody>
                   </Table>
                 </div>
 
-                {/* Tabel Holidays */}
+                {/* Holidays Table */}
                 <div className="pl-6">
                   <Table>
                     <TableHeader>
                       <TableRow>
                         <TableHead>Public Holiday</TableHead>
                         <TableHead>Date</TableHead>
+                        <TableHead className="text-right">Actions</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {sprint.holidays.map((holiday, idx) => (
-                        <TableRow key={idx}>
-                          <TableCell>{holiday.name}</TableCell>
-                          <TableCell>{holiday.date}</TableCell>
+                      {sprint.holidays.length > 0 ? (
+                        sprint.holidays.map((holiday, holidayIndex) => (
+                          <TableRow key={holidayIndex}>
+                            <TableCell>{holiday.description}</TableCell>
+                            <TableCell>{holiday.date}</TableCell>
+                            <TableCell className="text-right">
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() =>
+                                  confirmDelete(
+                                    "holiday",
+                                    sprintIndex,
+                                    holidayIndex
+                                  )
+                                }
+                              >
+                                <Trash2 className="size-4 text-red-500" />
+                              </Button>
+                            </TableCell>
+                          </TableRow>
+                        ))
+                      ) : (
+                        <TableRow>
+                          <TableCell colSpan={3} className="text-center">
+                            <p className="mt-10 text-lg">
+                              No holidays recorded
+                            </p>
+                          </TableCell>
                         </TableRow>
-                      ))}
+                      )}
                     </TableBody>
                   </Table>
                 </div>
@@ -247,7 +233,7 @@ export default function LeavePublicHoliday() {
         ))}
       </Swiper>
 
-      {/* Dialog: Tambah Data */}
+      {/* Dialog: Add Leave/Public Holiday */}
       <Dialog open={openDialog} onOpenChange={setOpenDialog}>
         <DialogContent>
           <DialogHeader>
@@ -255,66 +241,169 @@ export default function LeavePublicHoliday() {
           </DialogHeader>
 
           <div className="py-2">
-            <div className="mb-2">
-              <Label htmlFor="typeSelect">Type</Label>
-              <select
-                id="typeSelect"
-                className="h-9 w-full rounded-md border px-2"
-                value={isLeaveForm ? "leave" : "holiday"}
-                onChange={(e) => setIsLeaveForm(e.target.value === "leave")}
-              >
-                <option value="leave">Leave</option>
-                <option value="holiday">Public Holiday</option>
-              </select>
-            </div>
+            <Label htmlFor="typeSelect">Type</Label>
+            <select
+              id="typeSelect"
+              className="h-9 w-full rounded-md border px-2"
+              value={isLeaveForm ? "leave" : "holiday"}
+              onChange={(e) => setIsLeaveForm(e.target.value === "leave")}
+            >
+              <option value="leave">Leave</option>
+              <option value="holiday">Public Holiday</option>
+            </select>
 
-            <div className="mb-2">
-              <Label htmlFor="name">Name</Label>
-              <Input
-                id="name"
-                placeholder={isLeaveForm ? "Engineer Name" : "Holiday Name"}
-                value={formData.name}
-                onChange={(e) =>
-                  setFormData((prev) => ({ ...prev, name: e.target.value }))
-                }
-              />
-            </div>
+            <Label htmlFor="name">Name</Label>
+            <Input
+              id="name"
+              placeholder={isLeaveForm ? "Engineer Name" : "Holiday Name"}
+              value={formData.name}
+              onChange={(e) =>
+                setFormData((prev) => ({ ...prev, name: e.target.value }))
+              }
+            />
 
             {isLeaveForm && (
-              <div className="mb-2">
-                <Label htmlFor="leaveType">Leave Type</Label>
+              <>
+                <Label htmlFor="description">Leave Type</Label>
                 <Input
-                  id="leaveType"
+                  id="description"
                   placeholder="Cuti Tahunan / Cuti Sakit"
-                  value={formData.type}
+                  value={formData.description}
                   onChange={(e) =>
-                    setFormData((prev) => ({ ...prev, type: e.target.value }))
+                    setFormData((prev) => ({
+                      ...prev,
+                      description: e.target.value,
+                    }))
                   }
                 />
-              </div>
+              </>
             )}
 
-            <div className="mb-2">
-              <Label htmlFor="date">Date</Label>
-              <Input
-                id="date"
-                type="date"
-                value={formData.date}
-                onChange={(e) =>
-                  setFormData((prev) => ({ ...prev, date: e.target.value }))
-                }
-              />
-            </div>
+            <Label htmlFor="date">Date</Label>
+            <Input
+              id="date"
+              type="date"
+              value={formData.date}
+              onChange={(e) =>
+                setFormData((prev) => ({ ...prev, date: e.target.value }))
+              }
+            />
           </div>
 
           <DialogFooter>
             <Button variant="outline" onClick={() => setOpenDialog(false)}>
               Cancel
             </Button>
-            <Button onClick={handleSave}>Save</Button>
+            <Button onClick={() => setOpenDialog(false)}>Save</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      {/* ✅ Delete Confirmation Dialog */}
+      <Dialog open={deleteDialog} onOpenChange={setDeleteDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Are you sure you want to delete?</DialogTitle>
+          </DialogHeader>
+          <div className="py-2 text-center">
+            <p className="text-lg">This action cannot be undone.</p>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeleteDialog(false)}>
+              Cancel
+            </Button>
+            <Button variant="destructive" onClick={handleDelete}>
+              Delete
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </Card>
+  );
+}
+
+export function LeavePublicHolidaySkeleton() {
+  return (
+    <Card className="p-6">
+      {/* Header */}
+      <div className="mb-6 flex items-center justify-between">
+        <h1 className="text-xl font-bold">Public Holiday &amp; Leave</h1>
+      </div>
+
+      <div className="space-y-4 px-20 pb-20">
+        <div className="text-center">
+          <Skeleton className="mx-auto h-6 w-56" />
+        </div>
+        <div className="grid grid-cols-2 gap-8">
+          {/* Leaves Table Skeleton */}
+          <div className="border-r border-gray-300 pr-6">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>
+                    <Skeleton className="h-4 w-24" />
+                  </TableHead>
+                  <TableHead>
+                    <Skeleton className="h-4 w-24" />
+                  </TableHead>
+                  <TableHead className="text-right">
+                    <Skeleton className="h-4 w-16" />
+                  </TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {[...Array(3)].map((_, i) => (
+                  <TableRow key={i}>
+                    <TableCell>
+                      <Skeleton className="h-4 w-36" />
+                      <Skeleton className="mt-1 h-3 w-24" />
+                    </TableCell>
+                    <TableCell>
+                      <Skeleton className="h-4 w-24" />
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <Skeleton className="h-4 w-10" />
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+
+          {/* Holidays Table Skeleton */}
+          <div className="pl-6">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>
+                    <Skeleton className="h-4 w-32" />
+                  </TableHead>
+                  <TableHead>
+                    <Skeleton className="h-4 w-24" />
+                  </TableHead>
+                  <TableHead className="text-right">
+                    <Skeleton className="h-4 w-16" />
+                  </TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {[...Array(3)].map((_, i) => (
+                  <TableRow key={i}>
+                    <TableCell>
+                      <Skeleton className="h-4 w-48" />
+                    </TableCell>
+                    <TableCell>
+                      <Skeleton className="h-4 w-24" />
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <Skeleton className="h-4 w-10" />
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        </div>
+      </div>
     </Card>
   );
 }

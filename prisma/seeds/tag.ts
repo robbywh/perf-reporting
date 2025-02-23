@@ -2,7 +2,7 @@ import { PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();
 
-export async function sedTags() {
+export async function seedTags() {
   const tags = [
     { id: "nodev", name: "nodev" },
     { id: "support", name: "support" },

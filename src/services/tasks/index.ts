@@ -1,3 +1,8 @@
+import {
+  APPROVED_STATUS_IDS,
+  REJECTED_STATUS_IDS,
+} from "@/constants/client.constant";
+
 import { prisma } from "../db";
 
 interface Task {
@@ -56,7 +61,7 @@ export async function upsertTask(task: Task) {
   }
 }
 
-export async function countTasksByCategory(sprintIds: string[]) {
+export async function findCountTasksByCategory(sprintIds: string[]) {
   const groupedTasks = await prisma.task.groupBy({
     by: ["categoryId"],
     where: {
@@ -123,15 +128,11 @@ export async function findAverageTaskToQACounts(sprintIds: string[]) {
 
   const approvedTasks = tasks.filter(
     (task) =>
-      !task.taskTags.some((tag) =>
-        ["rejected_mainfeat", "rejected_staging"].includes(tag.tagId)
-      )
+      !task.taskTags.some((tag) => REJECTED_STATUS_IDS.includes(tag.tagId))
   ).length;
 
   const rejectedTasks = tasks.filter((task) =>
-    task.taskTags.some((tag) =>
-      ["rejected_mainfeat", "rejected_staging"].includes(tag.tagId)
-    )
+    task.taskTags.some((tag) => REJECTED_STATUS_IDS.includes(tag.tagId))
   ).length;
 
   // Compute the averages
@@ -141,5 +142,80 @@ export async function findAverageTaskToQACounts(sprintIds: string[]) {
   return {
     averageApprovedTasks: Number(averageApprovedTasks.toFixed(2)),
     averageRejectedTasks: Number(averageRejectedTasks.toFixed(2)),
+  };
+}
+
+export async function findAverageSPAndMergedCountBySprintIds(
+  sprintIds: string[],
+  engineerId: number
+) {
+  // Fetch tasks and sprint engineer data in parallel
+  const [tasks, sprintEngineerData] = await Promise.all([
+    prisma.task.findMany({
+      where: {
+        sprintId: { in: sprintIds },
+        assignees: { some: { engineerId } },
+      },
+      select: {
+        storyPoint: true,
+        statusId: true,
+        sprintId: true,
+        taskTags: { select: { tag: { select: { id: true } } } },
+      },
+    }),
+    prisma.sprintEngineer.findMany({
+      where: { sprintId: { in: sprintIds }, engineerId },
+      select: { mergedCount: true },
+    }),
+  ]);
+
+  // Define category mappings for story point sum per sprint
+  const categorySums: Record<string, number> = {
+    ongoingDev: 0,
+    ongoingSupport: 0,
+    nonDevelopment: 0,
+    supportApproved: 0,
+    devApproved: 0,
+  };
+
+  tasks.forEach(({ storyPoint, statusId, taskTags }) => {
+    const sp = Number(storyPoint) || 0;
+    const tags = taskTags.map(({ tag }) => tag.id);
+    const isSupport = tags.includes("support");
+    const isNonDev = tags.includes("nodev");
+    const isApproved = APPROVED_STATUS_IDS.includes(statusId || "");
+
+    const category = isApproved
+      ? isSupport
+        ? "supportApproved"
+        : isNonDev
+          ? "nonDevelopment"
+          : "devApproved"
+      : isSupport
+        ? "ongoingSupport"
+        : isNonDev
+          ? "ongoingNonDev"
+          : "ongoingDev";
+
+    categorySums[category] += sp;
+  });
+
+  // Compute averages by dividing by sprint count
+  const computeAverage = (total: number) =>
+    sprintIds.length > 0 ? Number((total / sprintIds.length).toFixed(2)) : 0;
+
+  // Compute merged count average
+  const mergedCounts = sprintEngineerData.map((se) => se.mergedCount || 0);
+  const averageMergedCount = computeAverage(
+    mergedCounts.reduce((sum, v) => sum + v, 0)
+  );
+
+  return {
+    averageOngoingDev: computeAverage(categorySums.ongoingDev),
+    averageOngoingSupport: computeAverage(categorySums.ongoingSupport),
+    averageNonDevelopment: computeAverage(categorySums.nonDevelopment),
+    averageSupportApproved: computeAverage(categorySums.supportApproved),
+    averageDevApproved: computeAverage(categorySums.devApproved),
+    averageMergedCount,
   };
 }

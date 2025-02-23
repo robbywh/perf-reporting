@@ -1,3 +1,4 @@
+import { APPROVES_STATUS_NAMES } from "@/constants/client.constant";
 import { prisma } from "@/services/db";
 
 interface TaskAssignee {
@@ -53,10 +54,7 @@ export async function linkAssigneesToTask(task: TaskAssignee) {
     taskAssigneeData.push({ taskId: task.id, engineerId: assignee.id });
 
     // Calculate story point for each sprint per engineer
-    if (
-      task.statusName === "product approval" ||
-      task.statusName === "product review"
-    ) {
+    if (APPROVED_STATUS_NAMES.includes(task.statusName)) {
       await prisma.sprintEngineer.upsert({
         where: {
           sprintId_engineerId: {

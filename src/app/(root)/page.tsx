@@ -12,20 +12,25 @@ import { PieChartSkeleton } from "@/components/charts/pie-chart";
 import { PieDonutChartSkeleton } from "@/components/charts/pie-donut-chart";
 import { PieDonutTaskChart } from "@/components/charts/pie-donut-task";
 import { PieTaskCategoryChart } from "@/components/charts/pie-task-category";
-import LeavePublicHoliday from "@/components/leave-public-holiday-form";
+import {
+  LeavePublicHoliday,
+  LeavePublicHolidaySkeleton,
+} from "@/components/leave-public-holiday-form";
 import {
   TopPerformers,
   TopPerformersSkeleton,
 } from "@/components/top-performers";
-import { Skeleton } from "@/components/ui/skeleton";
 import {
   findCapacityVsRealityBySprintIds,
   findEngineerTrendBySprintIds,
   findTopPerformersBySprintIds,
 } from "@/services/sprint-engineers";
-import { findAllSprints } from "@/services/sprints";
 import {
-  countTasksByCategory,
+  findAllSprints,
+  findSprintsWithLeavesAndHolidays,
+} from "@/services/sprints";
+import {
+  findCountTasksByCategory,
   findAverageTaskToQACounts,
 } from "@/services/tasks";
 
@@ -60,7 +65,7 @@ async function PieTaskCategoryChartContainer({
 }: {
   sprintIds: string[];
 }) {
-  const taskData = await countTasksByCategory(sprintIds);
+  const taskData = await findCountTasksByCategory(sprintIds);
   return <PieTaskCategoryChart taskData={taskData} />;
 }
 
@@ -71,6 +76,16 @@ async function PieDonutTaskChartContainer({
 }) {
   const data = await findAverageTaskToQACounts(sprintIds);
   return <PieDonutTaskChart data={data} />;
+}
+
+async function LeavePublicHolidayContainer({
+  sprintIds,
+}: {
+  sprintIds: string[];
+}) {
+  const data = await findSprintsWithLeavesAndHolidays(sprintIds);
+  console.log(data);
+  return <LeavePublicHoliday sprints={data} />;
 }
 
 export default async function Home() {
@@ -109,39 +124,10 @@ export default async function Home() {
         </div>
       </div>
       <div>
-        <Suspense fallback={<Skeleton className="h-20 w-full rounded-md" />}>
-          <LeavePublicHoliday />
+        <Suspense fallback={<LeavePublicHolidaySkeleton />}>
+          <LeavePublicHolidayContainer sprintIds={sprintIds} />
         </Suspense>
       </div>
     </div>
   );
-
-  // return (
-  //     <div>
-  //       <div className="mb-6 flex flex-row justify-center gap-4">
-  //         <div className="flex-[7]">
-  //           <BarChartCapacitySkeleton />
-  //         </div>
-  //         <div className="flex-[3]">
-  //           <TopPerformersSkeleton />
-  //         </div>
-  //       </div>
-  //       <div className="mb-6">
-  //         <LineChartSPCodingSkeleton />
-  //       </div>
-  //       <div className="mb-6 flex flex-row justify-center gap-4">
-  //         <div className="flex-[2]">
-  //           <PieChartSkeleton title="Task Category" />
-  //         </div>
-  //         <div className="flex-[1]">
-  //           <PieDonutChartSkeleton title="Tasks to QA" />
-  //         </div>
-  //       </div>
-  //       <div>
-  //         <Suspense fallback={<Skeleton className="h-20 w-full rounded-md" />}>
-  //           <LeavePublicHoliday />
-  //         </Suspense>
-  //       </div>
-  //     </div>
-  //   );
 }

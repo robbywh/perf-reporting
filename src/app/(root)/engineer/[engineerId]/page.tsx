@@ -3,17 +3,24 @@ import { Suspense } from "react";
 import { BarChartMultiple } from "@/components/charts/bar-chart-multiple";
 import { PieDonutTaskChart } from "@/components/charts/pie-donut-task";
 import { CodingHoursForm } from "@/components/coding-hours-form";
-import LeavePublicHoliday from "@/components/leave-public-holiday-form";
+import { LeavePublicHoliday } from "@/components/leave-public-holiday-form";
 import { StatsCards } from "@/components/stats-cards";
 import { Skeleton } from "@/components/ui/skeleton"; // ✅ Import ShadCN Skeleton
+import { findAllSprints } from "@/services/sprints";
+import { findAverageSPAndMergedCountBySprintIds } from "@/services/tasks";
 
-export default function EngineerPage() {
+export default async function EngineerPage() {
+  const sprints = await findAllSprints();
+  const sprintIds = sprints.map((sprint) => sprint.id);
+  const data = await findAverageSPAndMergedCountBySprintIds(sprintIds, 5753351);
+
+  console.log(data);
   return (
     <div>
       {/* Stats Cards */}
       <div className="mb-6">
         <Suspense fallback={<Skeleton className="h-28 w-full rounded-lg" />}>
-          <StatsCards />
+          <StatsCards data={data} />
         </Suspense>
       </div>
 
@@ -26,7 +33,12 @@ export default function EngineerPage() {
         </div>
         <div className="flex-[4]">
           <Suspense fallback={<Skeleton className="h-64 w-full rounded-lg" />}>
-            <PieDonutTaskChart />
+            <PieDonutTaskChart
+              data={{
+                averageApprovedTasks: 0,
+                averageRejectedTasks: 0,
+              }}
+            />
           </Suspense>
         </div>
       </div>
@@ -41,7 +53,7 @@ export default function EngineerPage() {
       {/* Leave & Public Holiday Form */}
       <div>
         <Suspense fallback={<Skeleton className="h-40 w-full rounded-lg" />}>
-          <LeavePublicHoliday />
+          <LeavePublicHoliday sprints={[]} />
         </Suspense>
       </div>
     </div>

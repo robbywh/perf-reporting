@@ -1,33 +1,28 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
-const stats = [
-  {
-    title: "On Going Dev",
-    value: "8 SP",
-  },
-  {
-    title: "On Going Support",
-    value: "2 SP",
-  },
-  {
-    title: "Non Development",
-    value: "4 SP",
-  },
-  {
-    title: "Support Approved",
-    value: "2 SP",
-  },
-  {
-    title: "Dev Approved",
-    value: "54 SP",
-  },
-  {
-    title: "MR Submitted",
-    value: "30",
-  },
-];
+interface StatsData {
+  averageOngoingDev: number;
+  averageOngoingSupport: number;
+  averageNonDevelopment: number;
+  averageSupportApproved: number;
+  averageDevApproved: number;
+  averageMergedCount: number;
+}
 
-export function StatsCards() {
+interface StatsCardsProps {
+  data: StatsData;
+}
+
+export function StatsCards({ data }: StatsCardsProps) {
+  const stats = [
+    { title: "On Going Dev", value: `${data.averageOngoingDev} SP` },
+    { title: "On Going Support", value: `${data.averageOngoingSupport} SP` },
+    { title: "Non Dev Approved", value: `${data.averageNonDevelopment} SP` },
+    { title: "Support Approved", value: `${data.averageSupportApproved} SP` },
+    { title: "Dev Approved", value: `${data.averageDevApproved} SP` },
+    { title: "MR Submitted", value: `${data.averageMergedCount}` },
+  ];
+
   return (
     <div className="grid grid-cols-1 gap-4 md:grid-cols-6">
       {stats.map((stat, index) => (
