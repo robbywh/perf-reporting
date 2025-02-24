@@ -105,7 +105,7 @@ export async function findCountTasksByCategory(sprintIds: string[]) {
   return finalResult;
 }
 
-export async function findAverageTaskToQACounts(
+export async function findTotalTaskToQACounts(
   sprintIds: string[],
   engineerId?: number
 ) {
@@ -172,13 +172,9 @@ export async function findAverageTaskToQACounts(
     task.taskTags.some((tag) => REJECTED_STATUS_IDS.includes(tag.tagId))
   ).length;
 
-  // Compute the averages
-  const computeAverage = (count: number) =>
-    sprintIds.length ? Number((count / sprintIds.length).toFixed(2)) : 0;
-
   return {
-    averageApprovedTasks: computeAverage(approvedTasks),
-    averageRejectedTasks: computeAverage(rejectedTasks),
+    approvedTasks,
+    rejectedTasks,
   };
 }
 

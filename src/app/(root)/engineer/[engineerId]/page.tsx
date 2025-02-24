@@ -14,7 +14,7 @@ import { findAveragesByEngineerAndSprintIds } from "@/services/sprint-engineers"
 import { findAllSprints } from "@/services/sprints";
 import {
   findAverageSPAndMergedCountBySprintIds,
-  findAverageTaskToQACounts,
+  findTotalTaskToQACounts,
 } from "@/services/tasks";
 
 async function StatsCardsContainer({ sprintIds }: { sprintIds: string[] }) {
@@ -27,7 +27,7 @@ async function PieDonutTaskChartContainer({
 }: {
   sprintIds: string[];
 }) {
-  const data = await findAverageTaskToQACounts(sprintIds, 5753351);
+  const data = await findTotalTaskToQACounts(sprintIds, 5753351);
   return <PieDonutTaskChart data={data} />;
 }
 

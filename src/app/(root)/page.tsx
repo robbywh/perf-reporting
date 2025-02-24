@@ -31,7 +31,7 @@ import {
 } from "@/services/sprints";
 import {
   findCountTasksByCategory,
-  findAverageTaskToQACounts,
+  findTotalTaskToQACounts,
 } from "@/services/tasks";
 
 // eslint-disable-next-line camelcase
@@ -74,7 +74,7 @@ async function PieDonutTaskChartContainer({
 }: {
   sprintIds: string[];
 }) {
-  const data = await findAverageTaskToQACounts(sprintIds);
+  const data = await findTotalTaskToQACounts(sprintIds);
   return <PieDonutTaskChart data={data} />;
 }
 

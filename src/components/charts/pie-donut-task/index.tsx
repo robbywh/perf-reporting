@@ -4,8 +4,8 @@ import { PieDonutChart } from "@/components/charts/pie-donut-chart";
 
 interface TaskChartProps {
   data: {
-    averageApprovedTasks: number;
-    averageRejectedTasks: number;
+    approvedTasks: number;
+    rejectedTasks: number;
   };
 }
 
@@ -14,12 +14,12 @@ export function PieDonutTaskChart({ data }: TaskChartProps) {
   const chartData = [
     {
       status: "approved",
-      value: data.averageApprovedTasks,
+      value: data.approvedTasks,
       fill: "hsl(var(--chart-2))",
     },
     {
       status: "rejected",
-      value: data.averageRejectedTasks,
+      value: data.rejectedTasks,
       fill: "hsl(var(--chart-1))",
     },
   ];
