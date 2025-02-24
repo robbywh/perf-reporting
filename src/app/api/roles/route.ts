@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 
-import { API_KEY } from "@/constants/server.constant";
+import { API_KEY } from "@/constants/server";
 import { findRoleIdByUserId } from "@/services/users";
 
 export async function GET(request: Request) {

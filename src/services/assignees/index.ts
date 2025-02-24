@@ -1,4 +1,4 @@
-import { APPROVES_STATUS_NAMES } from "@/constants/client.constant";
+import { APPROVED_STATUS_NAMES } from "@/constants/client";
 import { prisma } from "@/services/db";
 
 interface TaskAssignee {

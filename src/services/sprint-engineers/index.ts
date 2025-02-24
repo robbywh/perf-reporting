@@ -247,3 +247,58 @@ export async function findEngineerTrendBySprintIds(sprintIds: string[]) {
 
   return Array.from(sprintMap.values());
 }
+
+export async function findAveragesByEngineerAndSprintIds(
+  sprintIds: string[],
+  engineerId: number
+) {
+  // ✅ Fetch all required metrics from `sprintEngineer`
+  const sprintEngineerData = await prisma.sprintEngineer.findMany({
+    where: { sprintId: { in: sprintIds }, engineerId },
+    select: {
+      storyPoints: true,
+      target: true,
+      baseline: true,
+      codingHours: true,
+      targetCh: true,
+      baselineCh: true,
+    },
+  });
+
+  // Compute averages function (dividing by sprintIds.length)
+  const computeAverage = (arr: number[]) =>
+    sprintIds.length
+      ? Number(
+          (
+            arr.reduce((sum, v) => (sum ?? 0) + (v ?? 0), 0) / sprintIds.length
+          ).toFixed(2)
+        )
+      : 0;
+
+  return {
+    averageStoryPoint: computeAverage(
+      sprintEngineerData.map((se) =>
+        se.storyPoints ? Number(se.storyPoints) : 0
+      )
+    ),
+    averageTarget: computeAverage(
+      sprintEngineerData.map((se) => (se.target ? Number(se.target) : 0))
+    ),
+    averageBaseline: computeAverage(
+      sprintEngineerData.map((se) => (se.baseline ? Number(se.baseline) : 0))
+    ),
+    averageCodingHours: computeAverage(
+      sprintEngineerData.map((se) =>
+        se.codingHours ? Number(se.codingHours) : 0
+      )
+    ),
+    averageTargetCh: computeAverage(
+      sprintEngineerData.map((se) => (se.targetCh ? Number(se.targetCh) : 0))
+    ),
+    averageBaselineCh: computeAverage(
+      sprintEngineerData.map((se) =>
+        se.baselineCh ? Number(se.baselineCh) : 0
+      )
+    ),
+  };
+}

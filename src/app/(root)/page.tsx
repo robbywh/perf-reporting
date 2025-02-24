@@ -84,7 +84,6 @@ async function LeavePublicHolidayContainer({
   sprintIds: string[];
 }) {
   const data = await findSprintsWithLeavesAndHolidays(sprintIds);
-  console.log(data);
   return <LeavePublicHoliday sprints={data} />;
 }
 

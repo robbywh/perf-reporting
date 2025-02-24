@@ -1,7 +1,4 @@
-import {
-  CLICKUP_API_TOKEN,
-  CLICKUP_BASE_URL,
-} from "@/constants/server.constant";
+import { CLICKUP_API_TOKEN, CLICKUP_BASE_URL } from "@/constants/server";
 
 export interface ClickUpTask {
   id: string;

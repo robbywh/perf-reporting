@@ -2,7 +2,7 @@ import {
   GITLAB_BASE_URL,
   GITLAB_PERSONAL_ACCESS_TOKEN,
   GITLAB_GROUP_ID,
-} from "@/constants/server.constant";
+} from "@/constants/server";
 
 interface GitLabMergeRequest {
   id: number;

@@ -1,5 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
+import { Skeleton } from "../ui/skeleton";
+
 interface StatsData {
   averageOngoingDev: number;
   averageOngoingSupport: number;
@@ -32,6 +34,23 @@ export function StatsCards({ data }: StatsCardsProps) {
           </CardHeader>
           <CardContent>
             <p className="text-2xl font-bold">{stat.value}</p>
+          </CardContent>
+        </Card>
+      ))}
+    </div>
+  );
+}
+
+export function StatsCardsSkeleton() {
+  return (
+    <div className="grid grid-cols-1 gap-4 md:grid-cols-6">
+      {Array.from({ length: 6 }).map((_, index) => (
+        <Card key={index} className="shadow-md">
+          <CardHeader className="flex items-start justify-between">
+            <Skeleton className="h-6 w-3/4" />
+          </CardHeader>
+          <CardContent>
+            <Skeleton className="h-8 w-2/3" />
           </CardContent>
         </Card>
       ))}

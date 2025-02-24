@@ -1,4 +1,5 @@
 "use client";
+
 import { useState, useEffect } from "react";
 import { Bar, BarChart, CartesianGrid, XAxis } from "recharts";
 
@@ -10,11 +11,16 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { ChartConfig, ChartContainer } from "@/components/ui/chart";
+import { Skeleton } from "@/components/ui/skeleton";
 
-const chartData = [
-  { name: "Story Points", done: 60, baseline: 58.5, target: 78 },
-  { name: "Coding Hours", done: 20, baseline: 25, target: 50 },
-];
+interface ChartDataProps {
+  averageStoryPoint: number;
+  averageTarget: number;
+  averageBaseline: number;
+  averageCodingHours: number;
+  averageTargetCh: number;
+  averageBaselineCh: number;
+}
 
 const chartConfig = {
   done: {
@@ -44,9 +50,9 @@ const renderCustomLabel = (props: CustomBarLabelProps, key: string) => {
   return (
     <g>
       <text
-        x={x + width / 2} // Center horizontally
-        y={y + height / 2} // Center vertically
-        dy={5} // Adjust vertical alignment
+        x={x + width / 2}
+        y={y + height / 2}
+        dy={5}
         fill="white"
         fontSize={12}
         fontWeight="bold"
@@ -55,8 +61,8 @@ const renderCustomLabel = (props: CustomBarLabelProps, key: string) => {
         {value}
       </text>
       <text
-        x={x + width / 2} // Center horizontally
-        y={y + height / 2 + 16} // Slightly below the value
+        x={x + width / 2}
+        y={y + height / 2 + 16}
         fill="white"
         fontSize={10}
         textAnchor="middle"
@@ -67,7 +73,7 @@ const renderCustomLabel = (props: CustomBarLabelProps, key: string) => {
   );
 };
 
-export function BarChartMultiple() {
+export function BarChartMultiple({ data }: { data: ChartDataProps }) {
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -75,6 +81,22 @@ export function BarChartMultiple() {
   }, []);
 
   if (!mounted) return null;
+
+  const chartData = [
+    {
+      name: "Story Points",
+      done: data.averageStoryPoint,
+      baseline: data.averageBaseline,
+      target: data.averageTarget,
+    },
+    {
+      name: "Coding Hours",
+      done: data.averageCodingHours,
+      baseline: data.averageBaselineCh,
+      target: data.averageTargetCh,
+    },
+  ];
+
   return (
     <Card>
       <CardHeader>
@@ -89,32 +111,84 @@ export function BarChartMultiple() {
               dataKey="done"
               fill="var(--color-done)"
               radius={4}
-              label={(props) => renderCustomLabel(props, "Done")} // Attach custom label with "Done"
+              label={(props) => renderCustomLabel(props, "Done")}
             />
             <Bar
               dataKey="baseline"
               fill="var(--color-baseline)"
               radius={4}
-              label={(props) => renderCustomLabel(props, "Baseline")} // Attach custom label with "Baseline"
+              label={(props) => renderCustomLabel(props, "Baseline")}
             />
             <Bar
               dataKey="target"
               fill="var(--color-target)"
               radius={4}
-              label={(props) => renderCustomLabel(props, "Target")} // Attach custom label with "Target"
+              label={(props) => renderCustomLabel(props, "Target")}
             />
           </BarChart>
         </ChartContainer>
       </CardContent>
-      <CardFooter className="flex-col items-start gap-2 text-sm">
-        <div className="flex gap-2 font-bold leading-none text-chart-4">
-          Your story points have exceeded the baseline. Let’s aim to hit the
-          target!
+      <CardFooter className="flex flex-col gap-1 text-sm font-bold">
+        {(() => {
+          const belowTarget = chartData.filter(
+            ({ done, target }) => done < target
+          );
+          if (!belowTarget.length) return null;
+
+          type ChartItem = {
+            name: string;
+            done: number;
+            baseline: number;
+            target: number;
+          };
+
+          const messages = [
+            {
+              condition: (item: ChartItem) => item.done > item.baseline,
+              text: "exceeded the baseline but have not yet reached the target. Keep going!",
+              className: "text-chart-4",
+            },
+            {
+              condition: (item: ChartItem) => item.done <= item.baseline,
+              text: "not yet reached the baseline, but don’t give up—every effort brings us closer to success!",
+              className: "text-chart-1",
+            },
+          ]
+            .map(({ condition, text, className }) => {
+              const filteredItems = belowTarget.filter(condition);
+              return filteredItems.length
+                ? { items: filteredItems, text, className }
+                : null;
+            })
+            .filter((msg) => msg !== null);
+
+          return messages.map(({ items, text, className }, index) => (
+            <div key={index} className={className}>
+              {`Your ${items.map(({ name }) => name).join(" and ")} ${
+                items.length > 1 ? "have" : "has"
+              } ${text}`}
+            </div>
+          ));
+        })()}
+      </CardFooter>
+    </Card>
+  );
+}
+
+export function BarChartMultipleSkeleton() {
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Story Points & Coding Hours</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="flex flex-col gap-6">
+          <Skeleton className="h-96 w-full" />
         </div>
-        <div className="flex gap-2 font-bold leading-none text-chart-1">
-          Your coding hours have not yet reached the baseline, but don’t give
-          up—every effort brings us closer to success!
-        </div>
+      </CardContent>
+      <CardFooter className="flex flex-col gap-1 text-sm font-bold">
+        <Skeleton className="h-5 w-3/4" />
+        <Skeleton className="h-5 w-2/3" />
       </CardFooter>
     </Card>
   );

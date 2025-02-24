@@ -1,7 +1,4 @@
-import {
-  APPROVED_STATUS_IDS,
-  REJECTED_STATUS_IDS,
-} from "@/constants/client.constant";
+import { APPROVED_STATUS_IDS, REJECTED_STATUS_IDS } from "@/constants/client";
 
 import { prisma } from "../db";
 
@@ -108,7 +105,10 @@ export async function findCountTasksByCategory(sprintIds: string[]) {
   return finalResult;
 }
 
-export async function findAverageTaskToQACounts(sprintIds: string[]) {
+export async function findAverageTaskToQACounts(
+  sprintIds: string[],
+  engineerId?: number
+) {
   const tasks = await prisma.task.findMany({
     where: {
       sprintId: { in: sprintIds },
@@ -120,28 +120,65 @@ export async function findAverageTaskToQACounts(sprintIds: string[]) {
     select: {
       id: true,
       sprintId: true,
-      taskTags: {
-        select: { tagId: true },
-      },
+      parentTaskId: true,
+      taskTags: { select: { tagId: true } },
+      assignees: { select: { engineerId: true } },
     },
   });
 
-  const approvedTasks = tasks.filter(
+  // Fetch parent tasks separately
+  const parentTaskIds = tasks
+    .map((task) => task.parentTaskId)
+    .filter((id): id is string => id !== null);
+
+  const parentTasks = parentTaskIds.length
+    ? await prisma.task.findMany({
+        where: { id: { in: parentTaskIds } },
+        select: {
+          id: true,
+          assignees: { select: { engineerId: true } },
+        },
+      })
+    : [];
+
+  // Convert parentTasks to a map for quick lookup
+  const parentTaskMap = new Map(
+    parentTasks.map((task) => [
+      task.id,
+      task.assignees.map((a) => a.engineerId),
+    ])
+  );
+
+  // Filtering tasks: Check if engineerId is assigned directly or through parentTaskId
+  const filteredTasks = engineerId
+    ? tasks.filter(
+        (task) =>
+          // Task has direct engineer assignment
+          task.assignees.some(
+            (assignee) => assignee.engineerId === engineerId
+          ) ||
+          // Parent task has engineer assigned
+          (task.parentTaskId &&
+            parentTaskMap.get(task.parentTaskId)?.includes(engineerId))
+      )
+    : tasks; // If no engineerId, include all tasks
+
+  const approvedTasks = filteredTasks.filter(
     (task) =>
       !task.taskTags.some((tag) => REJECTED_STATUS_IDS.includes(tag.tagId))
   ).length;
 
-  const rejectedTasks = tasks.filter((task) =>
+  const rejectedTasks = filteredTasks.filter((task) =>
     task.taskTags.some((tag) => REJECTED_STATUS_IDS.includes(tag.tagId))
   ).length;
 
   // Compute the averages
-  const averageApprovedTasks = approvedTasks / sprintIds.length;
-  const averageRejectedTasks = rejectedTasks / sprintIds.length;
+  const computeAverage = (count: number) =>
+    sprintIds.length ? Number((count / sprintIds.length).toFixed(2)) : 0;
 
   return {
-    averageApprovedTasks: Number(averageApprovedTasks.toFixed(2)),
-    averageRejectedTasks: Number(averageRejectedTasks.toFixed(2)),
+    averageApprovedTasks: computeAverage(approvedTasks),
+    averageRejectedTasks: computeAverage(rejectedTasks),
   };
 }
 

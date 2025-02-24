@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 
-import { API_KEY } from "@/constants/server.constant";
+import { API_KEY } from "@/constants/server";
 import { getFolderList } from "@/lib/clickup/lists";
 import { ClickUpTask, getListTasks } from "@/lib/clickup/tasks";
 import { linkAssigneesToTask } from "@/services/assignees";

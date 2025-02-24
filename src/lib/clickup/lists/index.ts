@@ -2,7 +2,7 @@ import {
   CLICKUP_API_TOKEN,
   CLICKUP_BASE_URL,
   CLICKUP_FOLDER_ID,
-} from "@/constants/server.constant";
+} from "@/constants/server";
 
 export async function getFolderList() {
   const url = `${CLICKUP_BASE_URL}/folder/${CLICKUP_FOLDER_ID}/list`;
