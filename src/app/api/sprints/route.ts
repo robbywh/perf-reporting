@@ -3,11 +3,11 @@ import { NextResponse } from "next/server";
 import { API_KEY } from "@/constants/server";
 import { getFolderList } from "@/lib/clickup/lists";
 import { ClickUpTask, getListTasks } from "@/lib/clickup/tasks";
-import { linkAssigneesToTask } from "@/services/assignees";
 import { prisma } from "@/services/db";
 import { linkSprintsToEngineers } from "@/services/sprint-engineers";
 import { findTodaySprints } from "@/services/sprints";
 import { linkTagsToTask } from "@/services/tags";
+import { linkAssigneesToTask } from "@/services/task-assignees";
 import { upsertTask } from "@/services/tasks";
 
 async function syncSprintsFromClickUp() {

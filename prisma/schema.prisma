@@ -155,7 +155,7 @@ model SprintEngineer {
 }
 
 model Leave {
-  id         Int     @id @db.Integer
+  id          Int      @id @default(autoincrement()) @db.Integer
   description String @db.VarChar(50)
   date       DateTime @map("date")
   engineerId Int      @db.Integer @map("engineer_id")
@@ -165,7 +165,7 @@ model Leave {
 }
 
 model PublicHoliday {
-  id          Int     @id @db.Integer
+  id          Int      @id @default(autoincrement()) @db.Integer
   description String  @db.VarChar(50)
   date        DateTime @map("date")
   @@map("public_holiday") 

@@ -20,15 +20,13 @@ import {
   TopPerformers,
   TopPerformersSkeleton,
 } from "@/components/top-performers";
+import { findAllEngineers } from "@/services/engineers";
 import {
   findCapacityVsRealityBySprintIds,
   findEngineerTrendBySprintIds,
   findTopPerformersBySprintIds,
 } from "@/services/sprint-engineers";
-import {
-  findAllSprints,
-  findSprintsWithLeavesAndHolidays,
-} from "@/services/sprints";
+import { findSprintsWithLeavesAndHolidays } from "@/services/sprints";
 import {
   findCountTasksByCategory,
   findTotalTaskToQACounts,
@@ -84,12 +82,19 @@ async function LeavePublicHolidayContainer({
   sprintIds: string[];
 }) {
   const data = await findSprintsWithLeavesAndHolidays(sprintIds);
-  return <LeavePublicHoliday sprints={data} />;
+  const engineers = await findAllEngineers();
+  return <LeavePublicHoliday sprints={data} engineers={engineers} />;
 }
 
-export default async function Home() {
-  const sprints = await findAllSprints();
-  const sprintIds = sprints.map((sprint) => sprint.id);
+export default async function Home({
+  searchParams,
+}: {
+  searchParams: Promise<{ sprintIds?: string }>;
+}) {
+  const parameters = await searchParams;
+  const sprintIds = parameters?.sprintIds
+    ? parameters.sprintIds.split(",").filter(Boolean)
+    : ["901606315079"];
 
   return (
     <div>

@@ -37,7 +37,10 @@ export default async function RootLayout({
           <WelcomeMessage />
         </Suspense>
         <Suspense fallback={<Skeleton className="h-6 w-60 rounded-md" />}>
-          <SprintMultiSelect sprints={formattedSprints} />
+          <SprintMultiSelect
+            sprints={formattedSprints}
+            defaultSprintId={formattedSprints[0].value}
+          />
         </Suspense>
       </div>
       <div className="p-10">{children}</div>

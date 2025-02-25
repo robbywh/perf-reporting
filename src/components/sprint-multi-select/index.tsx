@@ -1,30 +1,53 @@
 "use client";
 
+import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import Select, { MultiValue } from "react-select";
 
 type Option = {
-  value: string; // Stores `id` for filtering
-  label: string; // Displays `name`
+  value: string;
+  label: string;
 };
 
 type SprintMultiSelectProps = {
   sprints: Option[];
+  defaultSprintId: string; // Latest sprint ID
 };
 
-export function SprintMultiSelect({ sprints }: SprintMultiSelectProps) {
+export function SprintMultiSelect({
+  sprints,
+  defaultSprintId,
+}: SprintMultiSelectProps) {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const [mounted, setMounted] = useState(false);
   const [selectedOptions, setSelectedOptions] = useState<MultiValue<Option>>(
     []
   );
-  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
+    if (!searchParams) return;
+    const sprintIdsFromUrl = searchParams.get("sprintIds")?.split(",") || [
+      defaultSprintId,
+    ];
+    setSelectedOptions(
+      sprints.filter((sprint) => sprintIdsFromUrl.includes(sprint.value))
+    );
     setMounted(true);
-  }, []);
+  }, [searchParams, defaultSprintId, sprints]);
 
-  const handleChange = (options: MultiValue<Option>) => {
-    setSelectedOptions(options);
-  };
+  useEffect(() => {
+    if (!mounted) return;
+    const params = new URLSearchParams();
+
+    if (selectedOptions.length > 0) {
+      params.set("sprintIds", selectedOptions.map((s) => s.value).join(","));
+    } else {
+      params.set("sprintIds", defaultSprintId);
+    }
+
+    router.replace(`?${params.toString()}`);
+  }, [selectedOptions, router, defaultSprintId, mounted]);
 
   if (!mounted) return null; // Prevents hydration mismatch
 
@@ -34,7 +57,7 @@ export function SprintMultiSelect({ sprints }: SprintMultiSelectProps) {
         isMulti
         options={sprints}
         value={selectedOptions}
-        onChange={handleChange}
+        onChange={setSelectedOptions}
         placeholder="Select sprints..."
       />
     </div>

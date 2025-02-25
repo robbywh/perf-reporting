@@ -32,7 +32,7 @@ import { Skeleton } from "../ui/skeleton";
 
 // Data structure
 interface LeaveData {
-  name: string;
+  engineerId: number;
   description: string;
   date: string;
 }
@@ -48,11 +48,20 @@ interface SprintData {
   holidays: HolidayData[];
 }
 
-interface LeavePublicHolidayProps {
-  sprints: SprintData[];
+interface Engineer {
+  id: number;
+  name: string;
 }
 
-export function LeavePublicHoliday({ sprints }: LeavePublicHolidayProps) {
+interface LeavePublicHolidayProps {
+  sprints: SprintData[];
+  engineers: Engineer[]; // List of engineers to map names
+}
+
+export function LeavePublicHoliday({
+  sprints,
+  engineers,
+}: LeavePublicHolidayProps) {
   const [mounted, setMounted] = React.useState(false);
   const [openDialog, setOpenDialog] = React.useState(false);
   const [deleteDialog, setDeleteDialog] = React.useState(false);
@@ -70,11 +79,9 @@ export function LeavePublicHoliday({ sprints }: LeavePublicHolidayProps) {
 
   const [sprintData, setSprintData] = React.useState<SprintData[]>(sprints);
 
-  React.useEffect(() => {
-    setMounted(true); // Prevent hydration mismatch
-  }, []);
-
-  if (!mounted) return null;
+  const getEngineerName = (engineerId: number) => {
+    return engineers.find((eng) => eng.id === engineerId)?.name || "Unknown";
+  };
 
   // ✅ Open delete confirmation dialog
   const confirmDelete = (
@@ -107,6 +114,12 @@ export function LeavePublicHoliday({ sprints }: LeavePublicHolidayProps) {
     setDeleteDialog(false);
     setDeleteTarget(null);
   };
+
+  React.useEffect(() => {
+    setMounted(true); // Prevent hydration mismatch
+  }, []);
+
+  if (!mounted) return null;
 
   return (
     <Card className="p-6">
@@ -148,7 +161,9 @@ export function LeavePublicHoliday({ sprints }: LeavePublicHolidayProps) {
                         sprint.leaves.map((leave, leaveIndex) => (
                           <TableRow key={leaveIndex}>
                             <TableCell>
-                              <div className="font-semibold">{leave.name}</div>
+                              <div className="font-semibold">
+                                {getEngineerName(leave.engineerId)}
+                              </div>
                               <div className="text-sm text-muted-foreground">
                                 {leave.description}
                               </div>
@@ -252,22 +267,46 @@ export function LeavePublicHoliday({ sprints }: LeavePublicHolidayProps) {
               <option value="holiday">Public Holiday</option>
             </select>
 
-            <Label htmlFor="name">Name</Label>
-            <Input
-              id="name"
-              placeholder={isLeaveForm ? "Engineer Name" : "Holiday Name"}
-              value={formData.name}
-              onChange={(e) =>
-                setFormData((prev) => ({ ...prev, name: e.target.value }))
-              }
-            />
-
-            {isLeaveForm && (
+            {isLeaveForm ? (
               <>
+                <Label htmlFor="engineerName">Name</Label>
+                <select
+                  id="engineerName"
+                  className="h-9 w-full rounded-md border px-2"
+                  value={formData.engineerId}
+                  onChange={(e) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      engineerId: Number(e.target.value),
+                    }))
+                  }
+                >
+                  <option value="">Select Engineer</option>
+                  {engineers.map((eng) => (
+                    <option key={eng.id} value={eng.id}>
+                      {eng.name}
+                    </option>
+                  ))}
+                </select>
                 <Label htmlFor="description">Leave Type</Label>
                 <Input
                   id="description"
                   placeholder="Cuti Tahunan / Cuti Sakit"
+                  value={formData.description}
+                  onChange={(e) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      description: e.target.value,
+                    }))
+                  }
+                />
+              </>
+            ) : (
+              <>
+                <Label htmlFor="description">Holiday Name</Label>
+                <Input
+                  id="description"
+                  placeholder="Tahun Baru 2025"
                   value={formData.description}
                   onChange={(e) =>
                     setFormData((prev) => ({

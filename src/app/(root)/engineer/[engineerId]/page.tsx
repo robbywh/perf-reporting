@@ -11,7 +11,6 @@ import { LeavePublicHoliday } from "@/components/leave-public-holiday-form";
 import { StatsCards, StatsCardsSkeleton } from "@/components/stats-cards";
 import { Skeleton } from "@/components/ui/skeleton"; // ✅ Import ShadCN Skeleton
 import { findAveragesByEngineerAndSprintIds } from "@/services/sprint-engineers";
-import { findAllSprints } from "@/services/sprints";
 import {
   findAverageSPAndMergedCountBySprintIds,
   findTotalTaskToQACounts,
@@ -40,9 +39,15 @@ async function BarChartMultipleContainer({
   return <BarChartMultiple data={data} />;
 }
 
-export default async function EngineerPage() {
-  const sprints = await findAllSprints();
-  const sprintIds = sprints.map((sprint) => sprint.id);
+export default async function EngineerPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ sprintIds?: string }>;
+}) {
+  const parameters = await searchParams;
+  const sprintIds = parameters?.sprintIds
+    ? parameters.sprintIds.split(",").filter(Boolean)
+    : ["901606315079"];
 
   return (
     <div>
@@ -77,7 +82,7 @@ export default async function EngineerPage() {
       {/* Leave & Public Holiday Form */}
       <div>
         <Suspense fallback={<Skeleton className="h-40 w-full rounded-lg" />}>
-          <LeavePublicHoliday sprints={[]} />
+          <LeavePublicHoliday sprints={[]} engineers={[]} />
         </Suspense>
       </div>
     </div>

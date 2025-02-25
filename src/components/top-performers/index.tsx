@@ -24,13 +24,13 @@ interface TopPerformersProps {
 }
 
 export function TopPerformers({ performers }: TopPerformersProps) {
+  const totalSP = performers.reduce((sum, p) => sum + p.storyPoints, 0);
   return (
     <Card className="w-full max-w-md">
       <CardHeader>
         <CardTitle>Top Performers</CardTitle>
         <CardDescription>
-          Your team&apos;s story points total{" "}
-          {performers.reduce((sum, p) => sum + p.storyPoints, 0)}.
+          Your team&apos;s story points total {totalSP.toFixed(2)}.
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -59,7 +59,7 @@ export function TopPerformers({ performers }: TopPerformersProps) {
                 </div>
                 <div className="flex items-center space-x-2">
                   <p className="text-sm font-semibold">
-                    {performer.storyPoints} SP
+                    {performer.storyPoints.toFixed(2)} SP
                   </p>
                   <ChevronRight className="size-4 text-gray-400" />
                 </div>
