@@ -1,5 +1,6 @@
 import { Suspense } from "react";
 
+import { addLeaveOrHolidayAction } from "@/actions/leave-holiday";
 import {
   BarChartMultiple,
   BarChartMultipleSkeleton,
@@ -82,7 +83,11 @@ export default async function EngineerPage({
       {/* Leave & Public Holiday Form */}
       <div>
         <Suspense fallback={<Skeleton className="h-40 w-full rounded-lg" />}>
-          <LeavePublicHoliday sprints={[]} engineers={[]} />
+          <LeavePublicHoliday
+            sprints={[]}
+            engineers={[]}
+            addLeaveOrHolidayAction={addLeaveOrHolidayAction}
+          />
         </Suspense>
       </div>
     </div>
