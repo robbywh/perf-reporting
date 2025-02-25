@@ -125,6 +125,7 @@ export function LeavePublicHoliday({
   };
 
   // ✅ Handle form submission
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   async function onSubmit(data: any) {
     setLoading(true); // Start loading
     const formDataObj = new FormData();
@@ -318,7 +319,9 @@ function TableSection({
               <TableRow key={index}>
                 <TableCell>
                   {getEngineerName
-                    ? getEngineerName(item?.engineerId)
+                    ? "engineerId" in item
+                      ? getEngineerName(item.engineerId)
+                      : item.description
                     : item.description}
                 </TableCell>
                 <TableCell>{item.date}</TableCell>
