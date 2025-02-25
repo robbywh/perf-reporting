@@ -2,8 +2,10 @@
 
 import { Trash2 } from "lucide-react";
 import * as React from "react";
+import { useForm } from "react-hook-form";
 import { Navigation, Pagination } from "swiper/modules";
 import { Swiper, SwiperSlide } from "swiper/react";
+import { z } from "zod";
 import "swiper/css";
 import "swiper/css/navigation";
 import "swiper/css/pagination";
@@ -32,7 +34,7 @@ import { Skeleton } from "../ui/skeleton";
 
 // Data structure
 interface LeaveData {
-  engineerId: number;
+  engineerId?: number;
   description: string;
   date: string;
 }
@@ -55,31 +57,39 @@ interface Engineer {
 
 interface LeavePublicHolidayProps {
   sprints: SprintData[];
-  engineers: Engineer[]; // List of engineers to map names
+  engineers: Engineer[];
+  addLeaveOrHolidayAction: (
+    formData: FormData
+  ) => Promise<{ success: boolean; error?: string | z.ZodIssue[] }>;
 }
 
 export function LeavePublicHoliday({
   sprints,
   engineers,
+  addLeaveOrHolidayAction,
 }: LeavePublicHolidayProps) {
   const [mounted, setMounted] = React.useState(false);
   const [openDialog, setOpenDialog] = React.useState(false);
   const [deleteDialog, setDeleteDialog] = React.useState(false);
   const [isLeaveForm, setIsLeaveForm] = React.useState(true);
-  const [formData, setFormData] = React.useState({
-    name: "",
-    description: "",
-    date: "",
-  });
   const [deleteTarget, setDeleteTarget] = React.useState<{
     type: "leave" | "holiday";
     sprintIndex: number;
     index: number;
   } | null>(null);
-
   const [sprintData, setSprintData] = React.useState<SprintData[]>(sprints);
+  const [loading, setLoading] = React.useState(false);
 
-  const getEngineerName = (engineerId: number) => {
+  const { register, handleSubmit, reset } = useForm({
+    defaultValues: {
+      type: "leave",
+      engineerId: "",
+      description: "",
+      date: "",
+    },
+  });
+
+  const getEngineerName = (engineerId?: number) => {
     return engineers.find((eng) => eng.id === engineerId)?.name || "Unknown";
   };
 
@@ -110,16 +120,32 @@ export function LeavePublicHoliday({
       return newSprints;
     });
 
-    // Close dialog after deletion
     setDeleteDialog(false);
     setDeleteTarget(null);
   };
 
+  // ✅ Handle form submission
+  async function onSubmit(data: any) {
+    setLoading(true); // Start loading
+    const formDataObj = new FormData();
+    Object.keys(data).forEach((key) => {
+      formDataObj.append(key, data[key]);
+    });
+    const result = await addLeaveOrHolidayAction(formDataObj);
+    setLoading(false); // Stop loading
+    if (result.success) {
+      reset(); // Reset form after success
+      setOpenDialog(false);
+    } else {
+      alert(result.error || "Something went wrong");
+    }
+  }
+
   React.useEffect(() => {
-    setMounted(true); // Prevent hydration mismatch
+    setMounted(true);
   }, []);
 
-  if (!mounted) return null;
+  if (!mounted) return null; // Prevent hydration mismatch
 
   return (
     <Card className="p-6">
@@ -147,101 +173,22 @@ export function LeavePublicHoliday({
               </h2>
               <div className="grid grid-cols-2 gap-8">
                 {/* Leaves Table */}
-                <div className="border-r border-gray-300 pr-6">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Leave</TableHead>
-                        <TableHead>Date</TableHead>
-                        <TableHead className="text-right">Actions</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {sprint.leaves.length > 0 ? (
-                        sprint.leaves.map((leave, leaveIndex) => (
-                          <TableRow key={leaveIndex}>
-                            <TableCell>
-                              <div className="font-semibold">
-                                {getEngineerName(leave.engineerId)}
-                              </div>
-                              <div className="text-sm text-muted-foreground">
-                                {leave.description}
-                              </div>
-                            </TableCell>
-                            <TableCell>{leave.date}</TableCell>
-                            <TableCell className="text-right">
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() =>
-                                  confirmDelete(
-                                    "leave",
-                                    sprintIndex,
-                                    leaveIndex
-                                  )
-                                }
-                              >
-                                <Trash2 className="size-4 text-red-500" />
-                              </Button>
-                            </TableCell>
-                          </TableRow>
-                        ))
-                      ) : (
-                        <TableRow>
-                          <TableCell colSpan={3} className="text-center">
-                            <p className="mt-10 text-lg">No leaves recorded</p>
-                          </TableCell>
-                        </TableRow>
-                      )}
-                    </TableBody>
-                  </Table>
-                </div>
-
+                <TableSection
+                  title="Leave"
+                  data={sprint.leaves}
+                  sprintIndex={sprintIndex}
+                  confirmDelete={confirmDelete}
+                  getEngineerName={getEngineerName}
+                  type="leave"
+                />
                 {/* Holidays Table */}
-                <div className="pl-6">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Public Holiday</TableHead>
-                        <TableHead>Date</TableHead>
-                        <TableHead className="text-right">Actions</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {sprint.holidays.length > 0 ? (
-                        sprint.holidays.map((holiday, holidayIndex) => (
-                          <TableRow key={holidayIndex}>
-                            <TableCell>{holiday.description}</TableCell>
-                            <TableCell>{holiday.date}</TableCell>
-                            <TableCell className="text-right">
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() =>
-                                  confirmDelete(
-                                    "holiday",
-                                    sprintIndex,
-                                    holidayIndex
-                                  )
-                                }
-                              >
-                                <Trash2 className="size-4 text-red-500" />
-                              </Button>
-                            </TableCell>
-                          </TableRow>
-                        ))
-                      ) : (
-                        <TableRow>
-                          <TableCell colSpan={3} className="text-center">
-                            <p className="mt-10 text-lg">
-                              No holidays recorded
-                            </p>
-                          </TableCell>
-                        </TableRow>
-                      )}
-                    </TableBody>
-                  </Table>
-                </div>
+                <TableSection
+                  title="Public Holiday"
+                  data={sprint.holidays}
+                  sprintIndex={sprintIndex}
+                  confirmDelete={confirmDelete}
+                  type="holiday"
+                />
               </div>
             </div>
           </SwiperSlide>
@@ -255,31 +202,26 @@ export function LeavePublicHoliday({
             <DialogTitle>Add Public Holiday / Leave</DialogTitle>
           </DialogHeader>
 
-          <div className="py-2">
-            <Label htmlFor="typeSelect">Type</Label>
+          <form onSubmit={handleSubmit(onSubmit)}>
+            <Label htmlFor="type">Type</Label>
             <select
-              id="typeSelect"
+              id="type"
+              {...register("type")}
               className="h-9 w-full rounded-md border px-2"
-              value={isLeaveForm ? "leave" : "holiday"}
               onChange={(e) => setIsLeaveForm(e.target.value === "leave")}
             >
               <option value="leave">Leave</option>
               <option value="holiday">Public Holiday</option>
             </select>
 
-            {isLeaveForm ? (
+            {isLeaveForm && (
               <>
-                <Label htmlFor="engineerName">Name</Label>
+                <Label htmlFor="engineerId">Engineer</Label>
                 <select
-                  id="engineerName"
+                  id="engineerId"
+                  {...register("engineerId")}
                   className="h-9 w-full rounded-md border px-2"
-                  value={formData.engineerId}
-                  onChange={(e) =>
-                    setFormData((prev) => ({
-                      ...prev,
-                      engineerId: Number(e.target.value),
-                    }))
-                  }
+                  required
                 >
                   <option value="">Select Engineer</option>
                   {engineers.map((eng) => (
@@ -288,64 +230,45 @@ export function LeavePublicHoliday({
                     </option>
                   ))}
                 </select>
-                <Label htmlFor="description">Leave Type</Label>
-                <Input
-                  id="description"
-                  placeholder="Cuti Tahunan / Cuti Sakit"
-                  value={formData.description}
-                  onChange={(e) =>
-                    setFormData((prev) => ({
-                      ...prev,
-                      description: e.target.value,
-                    }))
-                  }
-                />
-              </>
-            ) : (
-              <>
-                <Label htmlFor="description">Holiday Name</Label>
-                <Input
-                  id="description"
-                  placeholder="Tahun Baru 2025"
-                  value={formData.description}
-                  onChange={(e) =>
-                    setFormData((prev) => ({
-                      ...prev,
-                      description: e.target.value,
-                    }))
-                  }
-                />
               </>
             )}
 
-            <Label htmlFor="date">Date</Label>
+            <Label htmlFor="description">Description</Label>
             <Input
-              id="date"
-              type="date"
-              value={formData.date}
-              onChange={(e) =>
-                setFormData((prev) => ({ ...prev, date: e.target.value }))
+              id="description"
+              {...register("description")}
+              placeholder={
+                isLeaveForm ? "Cuti Tahunan / Cuti Sakit" : "Tahun Baru 2025"
               }
+              required
             />
-          </div>
 
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setOpenDialog(false)}>
-              Cancel
-            </Button>
-            <Button onClick={() => setOpenDialog(false)}>Save</Button>
-          </DialogFooter>
+            <Label htmlFor="date">Date</Label>
+            <Input id="date" {...register("date")} type="date" required />
+
+            <DialogFooter className="mt-10">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setOpenDialog(false)}
+                disabled={loading} // Disable button while loading
+              >
+                Cancel
+              </Button>
+              <Button type="submit" disabled={loading}>
+                {loading ? "Saving..." : "Save"}
+              </Button>
+            </DialogFooter>
+          </form>
         </DialogContent>
       </Dialog>
-      {/* ✅ Delete Confirmation Dialog */}
+
+      {/* Delete Confirmation Dialog */}
       <Dialog open={deleteDialog} onOpenChange={setDeleteDialog}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Are you sure you want to delete?</DialogTitle>
           </DialogHeader>
-          <div className="py-2 text-center">
-            <p className="text-lg">This action cannot be undone.</p>
-          </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setDeleteDialog(false)}>
               Cancel
@@ -357,6 +280,69 @@ export function LeavePublicHoliday({
         </DialogContent>
       </Dialog>
     </Card>
+  );
+}
+
+function TableSection({
+  title,
+  data,
+  sprintIndex,
+  confirmDelete,
+  getEngineerName,
+  type,
+}: {
+  title: string;
+  data: (LeaveData | HolidayData)[];
+  sprintIndex: number;
+  confirmDelete: (
+    type: "leave" | "holiday",
+    sprintIndex: number,
+    index: number
+  ) => void;
+  getEngineerName?: (engineerId?: number) => string;
+  type: "leave" | "holiday";
+}) {
+  return (
+    <div className="border-r border-gray-300 pr-6">
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>{title}</TableHead>
+            <TableHead>Date</TableHead>
+            <TableHead className="text-right">Actions</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {data.length > 0 ? (
+            data.map((item, index) => (
+              <TableRow key={index}>
+                <TableCell>
+                  {getEngineerName
+                    ? getEngineerName(item?.engineerId)
+                    : item.description}
+                </TableCell>
+                <TableCell>{item.date}</TableCell>
+                <TableCell className="text-right">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => confirmDelete(type, sprintIndex, index)}
+                  >
+                    <Trash2 className="size-4 text-red-500" />
+                  </Button>
+                </TableCell>
+              </TableRow>
+            ))
+          ) : (
+            <TableRow>
+              <TableCell colSpan={3} className="text-center">
+                No records
+              </TableCell>
+            </TableRow>
+          )}
+        </TableBody>
+      </Table>
+    </div>
   );
 }
 

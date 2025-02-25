@@ -1,5 +1,6 @@
 import { Suspense } from "react";
 
+import { addLeaveOrHolidayAction } from "@/actions/leave-holiday";
 import {
   BarChartCapacity,
   BarChartCapacitySkeleton,
@@ -83,7 +84,13 @@ async function LeavePublicHolidayContainer({
 }) {
   const data = await findSprintsWithLeavesAndHolidays(sprintIds);
   const engineers = await findAllEngineers();
-  return <LeavePublicHoliday sprints={data} engineers={engineers} />;
+  return (
+    <LeavePublicHoliday
+      sprints={data}
+      engineers={engineers}
+      addLeaveOrHolidayAction={addLeaveOrHolidayAction}
+    />
+  );
 }
 
 export default async function Home({
