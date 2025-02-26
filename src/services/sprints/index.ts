@@ -18,6 +18,8 @@ export async function findAllSprints() {
     select: {
       id: true,
       name: true,
+      startDate: true,
+      endDate: true,
     },
     orderBy: { startDate: "desc" },
     take: 12,

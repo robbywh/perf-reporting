@@ -29,7 +29,16 @@ export default async function RootLayout({
   const formattedSprints = sprints.map((sprint) => ({
     value: sprint.id,
     label: sprint.name,
+    startDate: new Date(sprint.startDate),
+    endDate: new Date(sprint.endDate),
   }));
+
+  const currentDate = new Date();
+  const defaultSprint =
+    formattedSprints.find(
+      (sprint) =>
+        currentDate >= sprint.startDate && currentDate <= sprint.endDate
+    ) || formattedSprints[0];
   return (
     <div>
       <Header />
@@ -40,7 +49,7 @@ export default async function RootLayout({
         <Suspense fallback={<Skeleton className="h-6 w-60 rounded-md" />}>
           <SprintMultiSelect
             sprints={formattedSprints}
-            defaultSprintId={formattedSprints[0].value}
+            defaultSprintId={defaultSprint.value}
           />
         </Suspense>
       </div>
