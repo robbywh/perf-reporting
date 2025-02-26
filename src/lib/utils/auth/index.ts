@@ -4,14 +4,8 @@ import { redirect } from "next/navigation";
 import { findRoleIdAndEngineerIdByUserId } from "@/services/users";
 import { ROLE } from "@/types/roles";
 
-export default async function RoleBasedRedirect({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export async function authenticateAndRedirect() {
   const { userId } = await auth();
-  console.log("Test");
-
   if (!userId) {
     return redirect("/sign-in"); // Redirect if not logged in
   }
@@ -20,9 +14,8 @@ export default async function RoleBasedRedirect({
 
   if (roleId === ROLE.SOFTWARE_ENGINEER) {
     const targetUrl = `/engineer/${engineerId}`;
-
-    return redirect(targetUrl);
+    return redirect(targetUrl); // Redirect to engineer page if role is SOFTWARE_ENGINEER
   }
 
-  return <>{children}</>;
+  return { userId, roleId, engineerId };
 }

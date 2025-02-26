@@ -3,7 +3,6 @@ import { Suspense } from "react";
 
 import { SprintMultiSelect } from "@/components/sprint-multi-select";
 import { Skeleton } from "@/components/ui/skeleton";
-import RoleBasedRedirect from "@/hoc/role-based-redirect";
 import { getWelcomeMessage } from "@/lib/utils/global";
 import { findAllSprints } from "@/services/sprints";
 import { findRoleIdAndEngineerIdByUserId } from "@/services/users";
@@ -53,9 +52,7 @@ export default async function RootLayout({
           />
         </Suspense>
       </div>
-      <RoleBasedRedirect>
-        <div className="p-10">{children}</div>
-      </RoleBasedRedirect>
+      <div className="p-10">{children}</div>
     </div>
   );
 }

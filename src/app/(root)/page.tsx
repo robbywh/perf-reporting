@@ -22,6 +22,7 @@ import {
   TopPerformers,
   TopPerformersSkeleton,
 } from "@/components/top-performers";
+import { authenticateAndRedirect } from "@/lib/utils/auth";
 import { findAllEngineers } from "@/services/engineers";
 import {
   findCapacityVsRealityBySprintIds,
@@ -104,6 +105,7 @@ export default async function Home({
 }: {
   searchParams: Promise<{ sprintIds?: string }>;
 }) {
+  await authenticateAndRedirect();
   const parameters = await searchParams;
   const sprintIds = parameters?.sprintIds
     ? parameters.sprintIds.split(",").filter(Boolean)
