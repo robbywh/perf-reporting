@@ -1,3 +1,4 @@
+import { auth } from "@clerk/nextjs/server";
 import { Suspense } from "react";
 
 import { addLeaveOrHolidayAction } from "@/actions/leave-holiday";
@@ -32,6 +33,8 @@ import {
   findCountTasksByCategory,
   findTotalTaskToQACounts,
 } from "@/services/tasks";
+import { findRoleIdAndEngineerIdByUserId } from "@/services/users";
+import { ROLE } from "@/types/roles";
 
 // eslint-disable-next-line camelcase
 export const experimental_ppr = true;
@@ -84,11 +87,14 @@ async function LeavePublicHolidayContainer({
 }) {
   const data = await findSprintsWithLeavesAndHolidays(sprintIds);
   const engineers = await findAllEngineers();
+  const { userId } = await auth();
+  const { roleId } = await findRoleIdAndEngineerIdByUserId(userId || "");
   return (
     <LeavePublicHoliday
       sprints={data}
       engineers={engineers}
       addLeaveOrHolidayAction={addLeaveOrHolidayAction}
+      isHideAddButton={roleId !== ROLE.ENGINEERING_MANAGER}
     />
   );
 }
@@ -104,7 +110,7 @@ export default async function Home({
     : ["901606315079"];
 
   return (
-    <div>
+    <main>
       <div className="mb-6 flex flex-row justify-center gap-4">
         <div className="flex-[7]">
           <Suspense fallback={<BarChartCapacitySkeleton />}>
@@ -135,10 +141,10 @@ export default async function Home({
         </div>
       </div>
       <div>
-        <Suspense fallback={<LeavePublicHolidaySkeleton />}>
+        <Suspense key={Math.random()} fallback={<LeavePublicHolidaySkeleton />}>
           <LeavePublicHolidayContainer sprintIds={sprintIds} />
         </Suspense>
       </div>
-    </div>
+    </main>
   );
 }

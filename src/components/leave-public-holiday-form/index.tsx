@@ -56,6 +56,7 @@ interface Engineer {
 }
 
 interface LeavePublicHolidayProps {
+  isHideAddButton?: boolean;
   sprints: SprintData[];
   engineers: Engineer[];
   addLeaveOrHolidayAction: (
@@ -67,6 +68,7 @@ export function LeavePublicHoliday({
   sprints,
   engineers,
   addLeaveOrHolidayAction,
+  isHideAddButton = true,
 }: LeavePublicHolidayProps) {
   const [mounted, setMounted] = React.useState(false);
   const [openDialog, setOpenDialog] = React.useState(false);
@@ -153,9 +155,11 @@ export function LeavePublicHoliday({
       {/* Header */}
       <div className="mb-6 flex items-center justify-between">
         <h1 className="text-xl font-bold">Public Holiday &amp; Leave</h1>
-        <Button onClick={() => setOpenDialog(true)}>
-          Add Public Holiday / Leave
-        </Button>
+        {!isHideAddButton && (
+          <Button onClick={() => setOpenDialog(true)}>
+            Add Public Holiday / Leave
+          </Button>
+        )}
       </div>
 
       {/* Swiper for Sprint Data */}

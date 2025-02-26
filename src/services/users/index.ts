@@ -1,12 +1,18 @@
 import { prisma } from "../db";
 
-export async function findRoleIdByUserId(
+export async function findRoleIdAndEngineerIdByUserId(
   userId: string
-): Promise<string | null> {
+): Promise<{ roleId: string | null; engineerId: number | null }> {
   const user = await prisma.user.findUnique({
     where: { id: userId },
-    select: { role: { select: { id: true } } }, // Fetch only the role name
+    select: {
+      role: { select: { id: true } }, // Fetch only the role id
+      engineerId: true, // Fetch the engineerId if it exists
+    },
   });
 
-  return user?.role?.id ?? null; // Return role name or null if not found
+  return {
+    roleId: user?.role?.id ?? null,
+    engineerId: user?.engineerId ?? null,
+  };
 }

@@ -3,17 +3,18 @@ import { Suspense } from "react";
 
 import { SprintMultiSelect } from "@/components/sprint-multi-select";
 import { Skeleton } from "@/components/ui/skeleton";
+import RoleBasedRedirect from "@/hoc/role-based-redirect";
 import { getWelcomeMessage } from "@/lib/utils/global";
 import { findAllSprints } from "@/services/sprints";
-import { findRoleIdByUserId } from "@/services/users";
+import { findRoleIdAndEngineerIdByUserId } from "@/services/users";
 
 import Header from "../../components/header";
 
 const WelcomeMessage = async () => {
   const user = await currentUser(); // Fetch the logged-in user
   const firstName = user?.firstName || "Guest";
-  const role = await findRoleIdByUserId(user?.id || "");
-  const welcomeMessage = getWelcomeMessage(role || "", firstName);
+  const { roleId } = await findRoleIdAndEngineerIdByUserId(user?.id || "");
+  const welcomeMessage = getWelcomeMessage(roleId || "", firstName);
 
   return <div className="flex-1 text-lg font-bold">{welcomeMessage}</div>;
 };
@@ -43,7 +44,9 @@ export default async function RootLayout({
           />
         </Suspense>
       </div>
-      <div className="p-10">{children}</div>
+      <RoleBasedRedirect>
+        <div className="p-10">{children}</div>
+      </RoleBasedRedirect>
     </div>
   );
 }
