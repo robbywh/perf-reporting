@@ -8,7 +8,10 @@ import {
 import { PieDonutChartSkeleton } from "@/components/charts/pie-donut-chart";
 import { PieDonutTaskChart } from "@/components/charts/pie-donut-task";
 import { CodingHoursForm } from "@/components/coding-hours-form";
-import { LeavePublicHoliday } from "@/components/leave-public-holiday-form";
+import {
+  LeavePublicHoliday,
+  LeavePublicHolidaySkeleton,
+} from "@/components/leave-public-holiday-form";
 import { StatsCards, StatsCardsSkeleton } from "@/components/stats-cards";
 import { Skeleton } from "@/components/ui/skeleton"; // ✅ Import ShadCN Skeleton
 import { findAveragesByEngineerAndSprintIds } from "@/services/sprint-engineers";
@@ -82,7 +85,7 @@ export default async function EngineerPage({
 
       {/* Leave & Public Holiday Form */}
       <div>
-        <Suspense fallback={<Skeleton className="h-40 w-full rounded-lg" />}>
+        <Suspense fallback={<LeavePublicHolidaySkeleton />}>
           <LeavePublicHoliday
             sprints={[]}
             engineers={[]}

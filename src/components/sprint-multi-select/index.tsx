@@ -59,6 +59,7 @@ export function SprintMultiSelect({
         value={selectedOptions}
         onChange={setSelectedOptions}
         placeholder="Select sprints..."
+        aria-label="Select sprints"
       />
     </div>
   );
