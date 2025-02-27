@@ -4,8 +4,9 @@ import { SpeedInsights } from "@vercel/speed-insights/next";
 import "./globals.css";
 
 export const metadata = {
-  title: "This page has a title 🤔",
-  description: "Page description",
+  title: "Performance Reporting Dashboard",
+  description:
+    "View performance reports, charts, and top performers in the Performance Reporting Dashboard.",
 };
 
 export default function RootLayout({
