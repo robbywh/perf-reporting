@@ -10,9 +10,9 @@ export default function Header() {
       </div>
 
       <div className="flex items-center justify-center">
-        <p className="text-center text-xl font-bold text-blue-300">
+        <h2 className="text-center text-xl font-bold text-blue-800">
           Simplifying Performance, Empowering Productivity!
-        </p>
+        </h2>
       </div>
 
       <div className="flex flex-1 justify-end">
