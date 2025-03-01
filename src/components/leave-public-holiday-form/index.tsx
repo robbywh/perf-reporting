@@ -11,7 +11,7 @@ import "swiper/css/navigation";
 import "swiper/css/pagination";
 
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
+import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
@@ -153,8 +153,10 @@ export function LeavePublicHoliday({
   return (
     <Card className="p-6">
       {/* Header */}
-      <div className="mb-6 flex items-center justify-between">
-        <h1 className="text-xl font-bold">Public Holiday &amp; Leave</h1>
+      <div className="flex items-center justify-between">
+        <CardHeader>
+          <CardTitle>Public Holiday &amp; Leave</CardTitle>
+        </CardHeader>
         {!isHideAddButton && (
           <Button onClick={() => setOpenDialog(true)}>
             Add Public Holiday / Leave
@@ -172,10 +174,10 @@ export function LeavePublicHoliday({
       >
         {sprintData.map((sprint, sprintIndex) => (
           <SwiperSlide key={sprint.sprintName}>
+            <h2 className="mb-4 text-center font-semibold">
+              {sprint.sprintName}
+            </h2>
             <div className="space-y-4 px-20 pb-20">
-              <h2 className="text-center text-xl font-semibold">
-                {sprint.sprintName}
-              </h2>
               <div className="grid grid-cols-2 gap-8">
                 {/* Leaves Table */}
                 <TableSection
@@ -356,10 +358,9 @@ function TableSection({
 export function LeavePublicHolidaySkeleton() {
   return (
     <Card className="p-6">
-      {/* Header */}
-      <div className="mb-6 flex items-center justify-between">
-        <h1 className="text-xl font-bold">Public Holiday &amp; Leave</h1>
-      </div>
+      <CardHeader>
+        <CardTitle>Public Holiday &amp; Leave</CardTitle>
+      </CardHeader>
 
       <div className="space-y-4 px-20 pb-20">
         <div className="text-center">

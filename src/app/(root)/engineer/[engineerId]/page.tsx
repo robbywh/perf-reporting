@@ -1,5 +1,7 @@
+import { auth, currentUser } from "@clerk/nextjs/server";
 import { Suspense } from "react";
 
+import { updateCodingHoursAction } from "@/actions/coding-hours";
 import { addLeaveOrHolidayAction } from "@/actions/leave-holiday";
 import {
   BarChartMultiple,
@@ -7,18 +9,27 @@ import {
 } from "@/components/charts/bar-chart-multiple";
 import { PieDonutChartSkeleton } from "@/components/charts/pie-donut-chart";
 import { PieDonutTaskChart } from "@/components/charts/pie-donut-task";
-import { CodingHoursForm } from "@/components/coding-hours-form";
+import {
+  CodingHoursForm,
+  CodingHoursFormSkeleton,
+} from "@/components/coding-hours-form";
 import {
   LeavePublicHoliday,
   LeavePublicHolidaySkeleton,
 } from "@/components/leave-public-holiday-form";
 import { StatsCards, StatsCardsSkeleton } from "@/components/stats-cards";
-import { Skeleton } from "@/components/ui/skeleton"; // ✅ Import ShadCN Skeleton
+import { findAllEngineers } from "@/services/engineers";
 import { findAveragesByEngineerAndSprintIds } from "@/services/sprint-engineers";
+import {
+  findSprintsBySprintIds,
+  findSprintsWithLeavesAndHolidays,
+} from "@/services/sprints";
 import {
   findAverageSPAndMergedCountBySprintIds,
   findTotalTaskToQACounts,
 } from "@/services/tasks";
+import { findRoleIdAndEngineerIdByUserId } from "@/services/users";
+import { ROLE } from "@/types/roles";
 
 async function StatsCardsContainer({ sprintIds }: { sprintIds: string[] }) {
   const data = await findAverageSPAndMergedCountBySprintIds(sprintIds, 5753351);
@@ -43,6 +54,45 @@ async function BarChartMultipleContainer({
   return <BarChartMultiple data={data} />;
 }
 
+async function CodingHoursFormContainer({
+  sprintIds,
+  engineerId = 5753351,
+  roleId,
+}: {
+  sprintIds: string[];
+  engineerId: number;
+  roleId: string | null;
+}) {
+  const data = await findSprintsBySprintIds(sprintIds);
+  return (
+    <CodingHoursForm
+      sprints={data}
+      engineerId={engineerId}
+      roleId={roleId || ""}
+      onSave={updateCodingHoursAction}
+    />
+  );
+}
+
+async function LeavePublicHolidayContainer({
+  sprintIds,
+}: {
+  sprintIds: string[];
+}) {
+  const data = await findSprintsWithLeavesAndHolidays(sprintIds);
+  const engineers = await findAllEngineers();
+  const { userId } = await auth();
+  const { roleId } = await findRoleIdAndEngineerIdByUserId(userId || "");
+  return (
+    <LeavePublicHoliday
+      sprints={data}
+      engineers={engineers}
+      addLeaveOrHolidayAction={addLeaveOrHolidayAction}
+      isHideAddButton={roleId !== ROLE.ENGINEERING_MANAGER}
+    />
+  );
+}
+
 export default async function EngineerPage({
   searchParams,
 }: {
@@ -52,6 +102,8 @@ export default async function EngineerPage({
   const sprintIds = parameters?.sprintIds
     ? parameters.sprintIds.split(",").filter(Boolean)
     : ["901606315079"];
+  const user = await currentUser();
+  const { roleId = "" } = await findRoleIdAndEngineerIdByUserId(user?.id || "");
 
   return (
     <div>
@@ -78,19 +130,19 @@ export default async function EngineerPage({
 
       {/* Coding Hours Form */}
       <div className="mb-6 flex">
-        <Suspense fallback={<Skeleton className="h-40 w-full rounded-lg" />}>
-          <CodingHoursForm />
+        <Suspense fallback={<CodingHoursFormSkeleton />}>
+          <CodingHoursFormContainer
+            sprintIds={sprintIds}
+            engineerId={5753351}
+            roleId={roleId}
+          />
         </Suspense>
       </div>
 
       {/* Leave & Public Holiday Form */}
       <div>
-        <Suspense fallback={<LeavePublicHolidaySkeleton />}>
-          <LeavePublicHoliday
-            sprints={[]}
-            engineers={[]}
-            addLeaveOrHolidayAction={addLeaveOrHolidayAction}
-          />
+        <Suspense key={Math.random()} fallback={<LeavePublicHolidaySkeleton />}>
+          <LeavePublicHolidayContainer sprintIds={sprintIds} />
         </Suspense>
       </div>
     </div>

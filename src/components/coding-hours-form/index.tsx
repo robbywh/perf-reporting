@@ -1,138 +1,210 @@
 "use client";
+
 import { Edit2 } from "lucide-react";
 import Image from "next/image";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useTransition } from "react";
+import { Navigation, Pagination } from "swiper/modules";
+import { Swiper, SwiperSlide } from "swiper/react";
+import { z } from "zod";
+import "swiper/css";
 
+import { uploadFile } from "@/actions/coding-hours";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { ROLE } from "@/types/roles";
 
-export function CodingHoursForm() {
+import { Skeleton } from "../ui/skeleton";
+
+const codingHoursSchema = z.object({
+  sprintId: z.string(),
+  codingHours: z.preprocess(
+    (val) => parseFloat(val as string),
+    z.number().positive()
+  ),
+});
+
+interface SprintData {
+  id: string;
+  name: string;
+}
+
+export function CodingHoursForm({
+  sprints,
+  engineerId,
+  roleId,
+  onSave,
+}: {
+  sprints: SprintData[];
+  engineerId: number;
+  roleId: string;
+  onSave: (data: {
+    sprintId: string;
+    engineerId: number;
+    codingHours: number;
+    codingHoursUrl?: string | null;
+  }) => Promise<void>;
+}) {
   const [screenshot, setScreenshot] = useState<string | null>(null);
   const [codingHours, setCodingHours] = useState<string>("");
   const [isEditing, setIsEditing] = useState<boolean>(true);
   const [isValid, setIsValid] = useState<boolean>(false);
-
-  const [mounted, setMounted] = useState(false);
+  const [isPending, startTransition] = useTransition();
+  const isSoftwareEngineer = roleId === ROLE.SOFTWARE_ENGINEER;
 
   useEffect(() => {
-    setMounted(true); // Ensures it only runs on client
-  }, []);
+    setIsValid(!!screenshot && codingHours.trim() !== "");
+  }, [screenshot, codingHours]);
 
-  if (!mounted) return null;
-
-  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = async (
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
     const file = event.target.files?.[0];
     if (file) {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const image = e.target?.result as string;
-        setScreenshot(image);
-        validateForm(image, codingHours);
-      };
-      reader.readAsDataURL(file);
+      const uploadedUrl = await uploadFile(file);
+      setScreenshot(uploadedUrl);
     }
   };
 
-  const handleRemoveImage = () => {
-    setScreenshot(null);
-    validateForm(null, codingHours);
-  };
+  const handleSave = async (sprintId: string) => {
+    const parsedData = codingHoursSchema.safeParse({
+      sprintId,
+      codingHours,
+    });
+    if (!parsedData.success) return;
 
-  // Validate that a screenshot is present and coding hours is not empty.
-  const validateForm = (screenshotData: string | null, hours: string) => {
-    setIsValid(!!screenshotData && hours.trim() !== "");
-  };
-
-  const handleSave = () => {
     if (isValid) {
-      setIsEditing(false);
+      startTransition(async () => {
+        await onSave({
+          sprintId,
+          engineerId,
+          codingHours: parsedData.data.codingHours,
+          codingHoursUrl: screenshot,
+        });
+        setIsEditing(false);
+      });
     }
   };
 
   return (
     <Card className="mx-auto mt-6 w-full p-4">
-      <CardContent className="flex flex-col items-center gap-4">
-        {isEditing ? (
-          <>
-            <div className="flex w-full flex-col items-center gap-2">
-              <Label htmlFor="screenshot">Upload Coding Hours Screenshot</Label>
-              <Input
-                type="file"
-                accept="image/*"
-                id="screenshot"
-                onChange={handleFileUpload}
-              />
-            </div>
-            {screenshot && (
-              <div className="relative w-full">
-                <Image
-                  src={screenshot}
-                  alt="Uploaded Screenshot"
-                  width={500}
-                  height={300}
-                  className="h-auto w-full rounded-lg border shadow"
+      <CardHeader>
+        <CardTitle>Coding Hours</CardTitle>
+      </CardHeader>
+      <Swiper
+        modules={[Navigation, Pagination]}
+        navigation
+        pagination={{ clickable: true }}
+        spaceBetween={30}
+        slidesPerView={1}
+      >
+        {sprints.map((sprint) => (
+          <SwiperSlide key={sprint.id} className="px-20 pb-5">
+            <h2 className="text-center font-semibold">{sprint.name}</h2>
+            <CardContent className="flex flex-col items-center gap-4">
+              {isEditing && isSoftwareEngineer ? (
+                <>
+                  <div className="mt-4 flex w-full flex-col gap-2">
+                    <Label htmlFor="screenshot">
+                      Upload Coding Hours Screenshot
+                    </Label>
+                    <Input
+                      type="file"
+                      accept="image/*"
+                      id="screenshot"
+                      onChange={handleFileUpload}
+                      disabled={!isSoftwareEngineer}
+                    />
+                  </div>
+                  {screenshot && (
+                    <div className="relative w-full">
+                      <Image
+                        src={screenshot}
+                        alt="Uploaded Screenshot"
+                        width={500}
+                        height={300}
+                        className="h-auto w-full rounded-lg border shadow"
+                      />
+                    </div>
+                  )}
+                </>
+              ) : (
+                <div className="relative w-full">
+                  {screenshot && (
+                    <Image
+                      src={screenshot}
+                      alt="Uploaded Screenshot"
+                      width={500}
+                      height={300}
+                      className="h-auto w-full rounded-lg border shadow"
+                    />
+                  )}
+                  {isSoftwareEngineer && (
+                    <Button
+                      className="absolute right-2 top-2 flex items-center gap-1"
+                      onClick={() => setIsEditing(true)}
+                    >
+                      <Edit2 className="size-5" />
+                      <span>Edit</span>
+                    </Button>
+                  )}
+                </div>
+              )}
+
+              <div className="w-full">
+                <Label htmlFor="codingHours">Coding Hours</Label>
+                <Input
+                  type="number"
+                  id="codingHours"
+                  value={codingHours}
+                  onChange={(e) => setCodingHours(e.target.value)}
+                  placeholder="Enter coding hours"
+                  disabled={!isEditing}
                 />
-                <Button
-                  className="absolute right-2 top-2"
-                  size="sm"
-                  onClick={handleRemoveImage}
-                >
-                  X
-                </Button>
+                <p className="mt-1 text-sm text-gray-500">
+                  Enter coding hours in decimal format. E.g., 17 hours 30
+                  minutes as 17.5
+                </p>
               </div>
-            )}
-          </>
-        ) : (
-          <div className="relative w-full">
-            {screenshot && (
-              <Image
-                src={screenshot}
-                alt="Uploaded Screenshot"
-                width={500}
-                height={300}
-                className="h-auto w-full rounded-lg border shadow"
-              />
-            )}
-            <Button
-              className="absolute right-2 top-2 flex items-center gap-1"
-              onClick={() => setIsEditing(true)}
-            >
-              <Edit2 className="size-5" />
-              <span>Edit</span>
-            </Button>
-          </div>
-        )}
 
-        <div className="w-full">
-          <Label htmlFor="codingHours">Coding Hours</Label>
-          <Input
-            type="number"
-            id="codingHours"
-            value={codingHours}
-            onChange={(e) => {
-              setCodingHours(e.target.value);
-              validateForm(screenshot, e.target.value);
-            }}
-            placeholder="Enter coding hours"
-            disabled={!isEditing}
-          />
-          <p className="mt-1 text-sm text-gray-500">
-            Please enter coding hours in decimal format. For example, 17 hours
-            30 minutes should be entered as 17.5
-          </p>
+              {isEditing && isSoftwareEngineer && (
+                <Button
+                  className="mt-2 w-full"
+                  onClick={() => handleSave(sprint.id)}
+                  disabled={!isValid || isPending}
+                >
+                  {isPending ? "Saving..." : "Save"}
+                </Button>
+              )}
+            </CardContent>
+          </SwiperSlide>
+        ))}
+      </Swiper>
+    </Card>
+  );
+}
+
+export function CodingHoursFormSkeleton() {
+  return (
+    <Card className="mx-auto mt-6 w-full p-4">
+      <CardHeader>
+        <CardTitle>
+          <Skeleton className="h-6 w-32" />
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="flex flex-col items-center gap-4">
+        <div className="mt-4 flex w-full flex-col gap-2">
+          <Skeleton className="h-4 w-48" />
+          <Skeleton className="h-10 w-full" />
         </div>
-
-        {isEditing && (
-          <Button
-            className="mt-2 w-full"
-            onClick={handleSave}
-            disabled={!isValid}
-          >
-            Save
-          </Button>
-        )}
+        <Skeleton className="h-64 w-full rounded-lg" />
+        <div className="w-full">
+          <Skeleton className="h-4 w-32" />
+          <Skeleton className="h-10 w-full" />
+          <Skeleton className="h-4 w-full" />
+        </div>
+        <Skeleton className="mt-2 h-10 w-full" />
       </CardContent>
     </Card>
   );

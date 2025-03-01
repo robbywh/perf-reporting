@@ -91,3 +91,20 @@ export async function findSprintsWithLeavesAndHolidays(sprintIds: string[]) {
       })),
   }));
 }
+
+export async function findSprintsBySprintIds(sprintIds: string[]) {
+  const sprints = await prisma.sprint.findMany({
+    where: {
+      id: { in: sprintIds },
+    },
+    select: {
+      id: true,
+      name: true,
+      startDate: true,
+      endDate: true,
+    },
+    orderBy: { startDate: "desc" },
+  });
+
+  return sprints;
+}
