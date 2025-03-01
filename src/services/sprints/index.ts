@@ -1,3 +1,5 @@
+import { Decimal } from "@prisma/client/runtime/library";
+
 import { prisma } from "../db";
 
 export async function findTodaySprints() {
@@ -46,8 +48,10 @@ export async function findSprintsWithLeavesAndHolidays(sprintIds: string[]) {
               name: true,
               leaves: {
                 select: {
+                  engineerId: true,
                   date: true,
                   description: true,
+                  type: true,
                 },
               },
             },
@@ -73,11 +77,15 @@ export async function findSprintsWithLeavesAndHolidays(sprintIds: string[]) {
 
   return sprints.map((sprint) => ({
     sprintName: sprint.name,
+    startDate: sprint.startDate.toISOString(),
+    endDate: sprint.endDate.toISOString(),
     leaves: sprint.sprintEngineers.flatMap((se) =>
       se.engineer.leaves.map((leave) => ({
+        engineerId: se.engineer.id,
         name: se.engineer.name,
         description: leave.description,
         date: leave.date.toISOString(),
+        type: leave.type,
       }))
     ),
     holidays: publicHolidays
@@ -92,19 +100,50 @@ export async function findSprintsWithLeavesAndHolidays(sprintIds: string[]) {
   }));
 }
 
-export async function findSprintsBySprintIds(sprintIds: string[]) {
+export async function findSprintsBySprintIds(
+  sprintIds: string[],
+  engineerId?: number
+) {
   const sprints = await prisma.sprint.findMany({
     where: {
       id: { in: sprintIds },
+      ...(engineerId && {
+        sprintEngineers: {
+          some: {
+            engineerId,
+          },
+        },
+      }),
     },
     select: {
       id: true,
       name: true,
       startDate: true,
       endDate: true,
+      sprintEngineers: {
+        ...(engineerId && {
+          where: {
+            engineerId,
+          },
+        }),
+        select: {
+          codingHours: true,
+          codingHoursUrl: true,
+        },
+      },
     },
     orderBy: { startDate: "desc" },
   });
 
-  return sprints;
+  return sprints.map((sprint) => ({
+    ...sprint,
+    sprintEngineers: sprint.sprintEngineers.map((se) => ({
+      ...se,
+      codingHours:
+        se.codingHours instanceof Decimal
+          ? se.codingHours.toNumber()
+          : se.codingHours,
+      codingHoursUrl: se.codingHoursUrl ? se.codingHoursUrl.toString() : null,
+    })),
+  }));
 }

@@ -1,9 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -14,159 +8,163 @@ datasource db {
 }
 
 model Role {
-  id   String @id @db.VarChar(25)
-  name String @db.VarChar(50)
-  
+  id    String @id @db.VarChar(25)
+  name  String @db.VarChar(50)
   users User[]
-  @@map("role") 
+
+  @@map("role")
 }
 
 model User {
-  id       String @id @db.VarChar(36)
-  username String @db.VarChar(36)
-  roleId   String @db.VarChar(25) @map("role_id")
-  engineerId  Int? @db.Integer @map("engineer_id") @unique
+  id         String    @id @db.VarChar(36)
+  username   String    @db.VarChar(36)
+  roleId     String    @map("role_id") @db.VarChar(25)
+  engineerId Int?      @unique @map("engineer_id")
+  engineer   Engineer? @relation(fields: [engineerId], references: [id])
+  role       Role      @relation(fields: [roleId], references: [id])
 
-  engineer  Engineer? @relation(fields: [engineerId], references: [id])
-  role Role @relation(fields: [roleId], references: [id])
-  @@map("user") 
+  @@map("user")
 }
 
 model Category {
-  id   String @id @db.Char(36)
-  name String @db.VarChar(25)
-  
+  id    String @id @db.Char(36)
+  name  String @db.VarChar(25)
   tasks Task[]
-  @@map("category") 
+
+  @@map("category")
 }
 
 model Status {
-  id   String @id @db.VarChar(25)
-  name String @db.VarChar(25) @unique
-  
+  id    String @id @db.VarChar(25)
+  name  String @unique @db.VarChar(25)
   tasks Task[]
-  @@map("status") 
+
+  @@map("status")
 }
 
 model Sprint {
-  id        String   @id @db.VarChar(25)
-  name      String   @db.VarChar(36)
-  startDate DateTime @map("start_date")
-  endDate   DateTime @map("end_date")
-  
-  tasks      Task[]
-  sprintEngineers  SprintEngineer[]
-  @@map("sprint") 
+  id              String           @id @db.VarChar(25)
+  name            String           @db.VarChar(36)
+  startDate       DateTime         @map("start_date")
+  endDate         DateTime         @map("end_date")
+  sprintEngineers SprintEngineer[]
+  tasks           Task[]
+
+  @@map("sprint")
 }
 
 model Task {
-  id          String  @id @db.VarChar(25)
-  name        String  @db.VarChar(255)
-  sprintId    String  @db.VarChar(25) @map("sprint_id")
-  statusId    String?  @db.VarChar(25) @map("status_id")
-  categoryId  String?  @db.VarChar(36) @map("category_id")
-  parentTaskId String? @db.VarChar(25) @map("parent_task_id")
-  storyPoint  Decimal? @db.Decimal @map("story_point")
-
-  sprint   Sprint @relation(fields: [sprintId], references: [id])
-  status   Status? @relation(fields: [statusId], references: [id])
-  category Category? @relation(fields: [categoryId], references: [id])
-  
-  taskTags     TaskTag[]
+  id           String         @id @db.VarChar(25)
+  name         String         @db.VarChar(255)
+  sprintId     String         @map("sprint_id") @db.VarChar(25)
+  statusId     String?        @map("status_id") @db.VarChar(25)
+  categoryId   String?        @map("category_id") @db.VarChar(36)
+  parentTaskId String?        @map("parent_task_id") @db.VarChar(25)
+  storyPoint   Decimal?       @map("story_point") @db.Decimal
+  category     Category?      @relation(fields: [categoryId], references: [id])
+  sprint       Sprint         @relation(fields: [sprintId], references: [id])
+  status       Status?        @relation(fields: [statusId], references: [id])
   assignees    TaskAssignee[]
-  @@map("task") 
+  taskTags     TaskTag[]
+
+  @@map("task")
 }
 
 model TaskTag {
-  taskId String @db.VarChar(25) @map("task_id")
-  tagId  String  @db.VarChar(25) @map("tag_id")
-  
-  task Task @relation(fields: [taskId], references: [id])
-  tag  Tag  @relation(fields: [tagId], references: [id])
-  
+  taskId String @map("task_id") @db.VarChar(25)
+  tagId  String @map("tag_id") @db.VarChar(25)
+  tag    Tag    @relation(fields: [tagId], references: [id])
+  task   Task   @relation(fields: [taskId], references: [id])
+
   @@id([taskId, tagId])
-  @@map("task_tag") 
+  @@map("task_tag")
 }
 
 model TaskAssignee {
-  taskId      String @db.VarChar(25) @map("task_id")
-  engineerId  Int    @db.Integer @map("engineer_id")
-  task      Task    @relation(fields: [taskId], references: [id])
-  engineer  Engineer @relation(fields: [engineerId], references: [id])
-  
+  taskId     String   @map("task_id") @db.VarChar(25)
+  engineerId Int      @map("engineer_id")
+  engineer   Engineer @relation(fields: [engineerId], references: [id])
+  task       Task     @relation(fields: [taskId], references: [id])
+
   @@id([taskId, engineerId])
-  @@map("task_assignee") 
+  @@map("task_assignee")
 }
 
 model Tag {
-  id   String @id @db.VarChar(25)
-  name String @db.VarChar(25) @unique
-  
+  id       String    @id @db.VarChar(25)
+  name     String    @unique @db.VarChar(25)
   taskTags TaskTag[]
-  @@map("tag") 
+
+  @@map("tag")
 }
 
 model Engineer {
-  id         Int     @id @db.Integer
-  name       String  @db.VarChar(50)
-  email      String?  @db.VarChar(50)
-  jobLevelId String  @db.VarChar(25) @map("job_level_id")
-  gitlabUserId Int?   @db.Integer @map("gitlab_user_id")
-  
-  jobLevel    JobLevel  @relation(fields: [jobLevelId], references: [id])
-  assignments TaskAssignee[]
-  sprintEngineers  SprintEngineer[]
-  leaves      Leave[]
-  user User?
-  @@map("engineer") 
+  id              Int              @id
+  name            String           @db.VarChar(50)
+  jobLevelId      String           @map("job_level_id") @db.VarChar(25)
+  gitlabUserId    Int?             @map("gitlab_user_id")
+  email           String?          @db.VarChar(50)
+  jobLevel        JobLevel         @relation(fields: [jobLevelId], references: [id])
+  leaves          Leave[]
+  sprintEngineers SprintEngineer[]
+  assignments     TaskAssignee[]
+  user            User?
+
+  @@map("engineer")
 }
 
 model JobLevel {
-  id     String @id @db.VarChar(25)
-  name   String @db.VarChar(50)
-  baseline Decimal @db.Decimal
-  target   Decimal @db.Decimal
-  baselineCh Decimal? @db.Decimal @map("baseline_ch")
-  targetCh   Decimal? @db.Decimal @map("target_ch")
-  
-  engineers Engineer[]
-  @@map("job_level") 
+  id         String     @id @db.VarChar(25)
+  name       String     @db.VarChar(50)
+  baseline   Decimal    @db.Decimal
+  target     Decimal    @db.Decimal
+  baselineCh Decimal?   @map("baseline_ch") @db.Decimal
+  targetCh   Decimal?   @map("target_ch") @db.Decimal
+  engineers  Engineer[]
+
+  @@map("job_level")
 }
 
 model SprintEngineer {
-  sprintId    String  @db.VarChar(25) @map("sprint_id")
-  engineerId  Int     @db.Integer @map("engineer_id")
-  jobLevelId  String?  @db.VarChar(25) @map("job_level_id")
-  storyPoints Decimal? @db.Decimal @map("story_points") @default(0)
-  baseline    Decimal? @db.Decimal
-  target      Decimal? @db.Decimal
-  codingHours Decimal? @db.Decimal @map("coding_hours") @default(0)
-  baselineCh Decimal? @db.Decimal @map("baseline_ch")
-  targetCh   Decimal? @db.Decimal @map("target_ch")
-  codingHoursUrl String? @db.VarChar(255) @map("coding_hours_url")
-  mergedCount Int? @db.Integer @map("merged_count")
+  sprintId       String   @map("sprint_id") @db.VarChar(25)
+  engineerId     Int      @map("engineer_id")
+  jobLevelId     String?  @map("job_level_id") @db.VarChar(25)
+  storyPoints    Decimal? @default(0) @map("story_points") @db.Decimal
+  baseline       Decimal? @db.Decimal
+  target         Decimal? @db.Decimal
+  codingHours    Decimal? @default(0) @map("coding_hours") @db.Decimal
+  baselineCh     Decimal? @map("baseline_ch") @db.Decimal
+  targetCh       Decimal? @map("target_ch") @db.Decimal
+  codingHoursUrl String?  @map("coding_hours_url") @db.VarChar(255)
+  mergedCount    Int?     @map("merged_count")
+  engineer       Engineer @relation(fields: [engineerId], references: [id])
+  sprint         Sprint   @relation(fields: [sprintId], references: [id])
 
-  
-  sprint   Sprint   @relation(fields: [sprintId], references: [id])
-  engineer Engineer @relation(fields: [engineerId], references: [id])
-
-  @@id([sprintId, engineerId]) // Composite Primary Key
-  @@map("sprint_engineer") 
+  @@id([sprintId, engineerId])
+  @@map("sprint_engineer")
 }
 
 model Leave {
-  id          Int      @id @default(autoincrement()) @db.Integer
-  description String @db.VarChar(50)
-  date       DateTime @map("date")
-  engineerId Int      @db.Integer @map("engineer_id")
-  
-  engineer Engineer @relation(fields: [engineerId], references: [id])
-  @@map("leave") 
+  id          Int      @id @default(autoincrement())
+  description String   @db.VarChar(50)
+  date        DateTime
+  engineerId  Int      @map("engineer_id")
+  engineer    Engineer @relation(fields: [engineerId], references: [id])
+  type        LeaveType
+
+  @@map("leave")
 }
 
 model PublicHoliday {
-  id          Int      @id @default(autoincrement()) @db.Integer
-  description String  @db.VarChar(50)
-  date        DateTime @map("date")
-  @@map("public_holiday") 
+  id          Int      @id @default(autoincrement())
+  description String   @db.VarChar(50)
+  date        DateTime
+
+  @@map("public_holiday")
+}
+
+enum LeaveType {
+  half_day_before_break
+  half_day_after_break
+  full_day
 }

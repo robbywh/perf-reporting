@@ -93,6 +93,7 @@ async function LeavePublicHolidayContainer({
   return (
     <LeavePublicHoliday
       sprints={data}
+      roleId={roleId || ""}
       engineers={engineers}
       addLeaveOrHolidayAction={addLeaveOrHolidayAction}
       isHideAddButton={roleId !== ROLE.ENGINEERING_MANAGER}

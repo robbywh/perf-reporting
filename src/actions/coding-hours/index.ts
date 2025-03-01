@@ -12,8 +12,18 @@ const updateCodingHoursSchema = z.object({
   codingHoursUrl: z.string().optional(),
 });
 
-export async function uploadFile(file: File): Promise<string> {
-  const blob = await put(file.name, file, { access: "public" });
+export async function uploadFile({
+  file,
+  fileName,
+  filePath,
+}: {
+  file: File;
+  fileName: string;
+  filePath: string;
+}): Promise<string> {
+  const blob = await put(`${filePath}${fileName}`, file, {
+    access: "public",
+  });
   return blob.url;
 }
 

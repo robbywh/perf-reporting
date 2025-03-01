@@ -1,5 +1,6 @@
 "use client";
 
+import { LeaveType } from "@prisma/client";
 import { Trash2 } from "lucide-react";
 import * as React from "react";
 import { useForm } from "react-hook-form";
@@ -29,6 +30,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { ROLE } from "@/types/roles";
 
 import { Skeleton } from "../ui/skeleton";
 
@@ -37,6 +39,7 @@ interface LeaveData {
   engineerId?: number;
   description: string;
   date: string;
+  type: LeaveType;
 }
 
 interface HolidayData {
@@ -46,6 +49,8 @@ interface HolidayData {
 
 interface SprintData {
   sprintName: string;
+  startDate: string;
+  endDate: string;
   leaves: LeaveData[];
   holidays: HolidayData[];
 }
@@ -59,16 +64,24 @@ interface LeavePublicHolidayProps {
   isHideAddButton?: boolean;
   sprints: SprintData[];
   engineers: Engineer[];
+  roleId: string;
   addLeaveOrHolidayAction: (
     formData: FormData
   ) => Promise<{ success: boolean; error?: string | z.ZodIssue[] }>;
 }
+
+const LeaveTypeMapping: Record<string, string> = {
+  full_day: "Full Day",
+  half_day_before_break: "Half Day Before Break",
+  half_day_after_break: "Half Day After Break",
+};
 
 export function LeavePublicHoliday({
   sprints,
   engineers,
   addLeaveOrHolidayAction,
   isHideAddButton = true,
+  roleId = ROLE.SOFTWARE_ENGINEER,
 }: LeavePublicHolidayProps) {
   const [mounted, setMounted] = React.useState(false);
   const [openDialog, setOpenDialog] = React.useState(false);
@@ -81,6 +94,7 @@ export function LeavePublicHoliday({
   } | null>(null);
   const [sprintData, setSprintData] = React.useState<SprintData[]>(sprints);
   const [loading, setLoading] = React.useState(false);
+  const isSoftwareEngineer = roleId === ROLE.SOFTWARE_ENGINEER;
 
   const { register, handleSubmit, reset } = useForm({
     defaultValues: {
@@ -88,6 +102,7 @@ export function LeavePublicHoliday({
       engineerId: "",
       description: "",
       date: "",
+      leaveType: "",
     },
   });
 
@@ -172,34 +187,53 @@ export function LeavePublicHoliday({
         spaceBetween={30}
         slidesPerView={1}
       >
-        {sprintData.map((sprint, sprintIndex) => (
-          <SwiperSlide key={sprint.sprintName}>
-            <h2 className="mb-4 text-center font-semibold">
-              {sprint.sprintName}
-            </h2>
-            <div className="space-y-4 px-20 pb-20">
-              <div className="grid grid-cols-2 gap-8">
-                {/* Leaves Table */}
-                <TableSection
-                  title="Leave"
-                  data={sprint.leaves}
-                  sprintIndex={sprintIndex}
-                  confirmDelete={confirmDelete}
-                  getEngineerName={getEngineerName}
-                  type="leave"
-                />
-                {/* Holidays Table */}
-                <TableSection
-                  title="Public Holiday"
-                  data={sprint.holidays}
-                  sprintIndex={sprintIndex}
-                  confirmDelete={confirmDelete}
-                  type="holiday"
-                />
+        {sprintData.map((sprint, sprintIndex) => {
+          const sprintStartDate = new Date(sprint.startDate);
+          const sprintEndDate = new Date(sprint.endDate);
+
+          const filteredLeaves = sprint.leaves.filter((leave) => {
+            const leaveDate = new Date(leave.date);
+            return leaveDate >= sprintStartDate && leaveDate <= sprintEndDate;
+          });
+
+          const filteredHolidays = sprint.holidays.filter((holiday) => {
+            const holidayDate = new Date(holiday.date);
+            return (
+              holidayDate >= sprintStartDate && holidayDate <= sprintEndDate
+            );
+          });
+
+          return (
+            <SwiperSlide key={sprint.sprintName}>
+              <h2 className="mb-4 text-center font-semibold">
+                {sprint.sprintName}
+              </h2>
+              <div className="space-y-4 px-20 pb-20">
+                <div className="grid grid-cols-2 gap-8">
+                  {/* Leaves Table */}
+                  <TableSection
+                    title="Leave"
+                    data={filteredLeaves}
+                    sprintIndex={sprintIndex}
+                    confirmDelete={confirmDelete}
+                    getEngineerName={getEngineerName}
+                    type="leave"
+                    isSoftwareEngineer={isSoftwareEngineer}
+                  />
+                  {/* Holidays Table */}
+                  <TableSection
+                    title="Public Holiday"
+                    data={filteredHolidays}
+                    sprintIndex={sprintIndex}
+                    confirmDelete={confirmDelete}
+                    type="holiday"
+                    isSoftwareEngineer={isSoftwareEngineer}
+                  />
+                </div>
               </div>
-            </div>
-          </SwiperSlide>
-        ))}
+            </SwiperSlide>
+          );
+        })}
       </Swiper>
 
       {/* Dialog: Add Leave/Public Holiday */}
@@ -223,6 +257,16 @@ export function LeavePublicHoliday({
 
             {isLeaveForm && (
               <>
+                <Label htmlFor="engineerId">Leave Type</Label>
+                <select
+                  id="leaveType"
+                  {...register("leaveType")}
+                  className="h-9 w-full rounded-md border px-2"
+                  required
+                >
+                  <option value="full">full</option>
+                  <option value="half">half</option>
+                </select>
                 <Label htmlFor="engineerId">Engineer</Label>
                 <select
                   id="engineerId"
@@ -297,6 +341,7 @@ function TableSection({
   confirmDelete,
   getEngineerName,
   type,
+  isSoftwareEngineer,
 }: {
   title: string;
   data: (LeaveData | HolidayData)[];
@@ -308,6 +353,7 @@ function TableSection({
   ) => void;
   getEngineerName?: (engineerId?: number) => string;
   type: "leave" | "holiday";
+  isSoftwareEngineer: boolean;
 }) {
   return (
     <div className="border-r border-gray-300 pr-6">
@@ -316,7 +362,9 @@ function TableSection({
           <TableRow>
             <TableHead>{title}</TableHead>
             <TableHead>Date</TableHead>
-            <TableHead className="text-right">Actions</TableHead>
+            {!isSoftwareEngineer && (
+              <TableHead className="text-right">Actions</TableHead>
+            )}
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -324,22 +372,39 @@ function TableSection({
             data.map((item, index) => (
               <TableRow key={index}>
                 <TableCell>
-                  {getEngineerName
-                    ? "engineerId" in item
-                      ? getEngineerName(item.engineerId)
-                      : item.description
-                    : item.description}
+                  {type === "leave" &&
+                  getEngineerName &&
+                  "engineerId" in item ? (
+                    <div>
+                      <div className="font-semibold">
+                        {getEngineerName(item.engineerId)}
+                      </div>
+                      <div>
+                        {item.description} - {LeaveTypeMapping[item.type]}
+                      </div>
+                    </div>
+                  ) : (
+                    item.description
+                  )}
                 </TableCell>
-                <TableCell>{item.date}</TableCell>
-                <TableCell className="text-right">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => confirmDelete(type, sprintIndex, index)}
-                  >
-                    <Trash2 className="size-4 text-red-500" />
-                  </Button>
+                <TableCell>
+                  {new Date(item.date).toLocaleDateString("en-EN", {
+                    day: "numeric",
+                    month: "long",
+                    year: "numeric",
+                  })}
                 </TableCell>
+                {!isSoftwareEngineer && (
+                  <TableCell className="text-right">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => confirmDelete(type, sprintIndex, index)}
+                    >
+                      <Trash2 className="size-4 text-red-500" />
+                    </Button>
+                  </TableCell>
+                )}
               </TableRow>
             ))
           ) : (

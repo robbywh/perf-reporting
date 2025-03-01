@@ -63,7 +63,7 @@ async function CodingHoursFormContainer({
   engineerId: number;
   roleId: string | null;
 }) {
-  const data = await findSprintsBySprintIds(sprintIds);
+  const data = await findSprintsBySprintIds(sprintIds, engineerId);
   return (
     <CodingHoursForm
       sprints={data}
@@ -86,6 +86,7 @@ async function LeavePublicHolidayContainer({
   return (
     <LeavePublicHoliday
       sprints={data}
+      roleId={roleId || ""}
       engineers={engineers}
       addLeaveOrHolidayAction={addLeaveOrHolidayAction}
       isHideAddButton={roleId !== ROLE.ENGINEERING_MANAGER}
@@ -140,11 +141,16 @@ export default async function EngineerPage({
       </div>
 
       {/* Leave & Public Holiday Form */}
-      <div>
-        <Suspense key={Math.random()} fallback={<LeavePublicHolidaySkeleton />}>
-          <LeavePublicHolidayContainer sprintIds={sprintIds} />
-        </Suspense>
-      </div>
+      {roleId === ROLE.SOFTWARE_ENGINEER && (
+        <div>
+          <Suspense
+            key={Math.random()}
+            fallback={<LeavePublicHolidaySkeleton />}
+          >
+            <LeavePublicHolidayContainer sprintIds={sprintIds} />
+          </Suspense>
+        </div>
+      )}
     </div>
   );
 }

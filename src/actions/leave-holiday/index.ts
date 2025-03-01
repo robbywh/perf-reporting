@@ -12,6 +12,9 @@ const leaveOrHolidaySchema = z.object({
   }),
   type: z.enum(["leave", "holiday"]),
   engineerId: z.number().optional(),
+  leaveType: z
+    .enum(["full_day", "half_day_before_break", "half_day_after_break"])
+    .optional(),
 });
 
 export async function addLeaveOrHolidayAction(formData: FormData) {
@@ -22,13 +25,14 @@ export async function addLeaveOrHolidayAction(formData: FormData) {
     engineerId: formData.get("engineerId")
       ? Number(formData.get("engineerId"))
       : undefined,
+    leaveType: formData.get("leaveType"),
   });
 
   if (!parsedData.success) {
     return { success: false, error: parsedData.error.errors };
   }
 
-  const { description, date, type, engineerId } = parsedData.data;
+  const { description, date, type, engineerId, leaveType } = parsedData.data;
 
   try {
     if (type === "leave" && engineerId) {
@@ -37,6 +41,7 @@ export async function addLeaveOrHolidayAction(formData: FormData) {
           engineerId,
           description: description || "",
           date: new Date(date).toISOString(),
+          type: leaveType || "full_day",
         },
       });
     } else {

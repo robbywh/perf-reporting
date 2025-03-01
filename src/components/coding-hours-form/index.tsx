@@ -1,6 +1,6 @@
 "use client";
 
-import { Edit2 } from "lucide-react";
+import { Edit2, Loader } from "lucide-react";
 import Image from "next/image";
 import { useState, useEffect, useTransition } from "react";
 import { Navigation, Pagination } from "swiper/modules";
@@ -28,6 +28,10 @@ const codingHoursSchema = z.object({
 interface SprintData {
   id: string;
   name: string;
+  sprintEngineers: {
+    codingHours: number | null;
+    codingHoursUrl: string | null;
+  }[];
 }
 
 export function CodingHoursForm({
@@ -46,11 +50,13 @@ export function CodingHoursForm({
     codingHoursUrl?: string | null;
   }) => Promise<void>;
 }) {
+  const [mounted, setMounted] = useState(false);
   const [screenshot, setScreenshot] = useState<string | null>(null);
   const [codingHours, setCodingHours] = useState<string>("");
   const [isEditing, setIsEditing] = useState<boolean>(true);
   const [isValid, setIsValid] = useState<boolean>(false);
   const [isPending, startTransition] = useTransition();
+  const [isUploading, setIsUploading] = useState<boolean>(false);
   const isSoftwareEngineer = roleId === ROLE.SOFTWARE_ENGINEER;
 
   useEffect(() => {
@@ -58,12 +64,19 @@ export function CodingHoursForm({
   }, [screenshot, codingHours]);
 
   const handleFileUpload = async (
-    event: React.ChangeEvent<HTMLInputElement>
+    event: React.ChangeEvent<HTMLInputElement>,
+    sprintName: string
   ) => {
     const file = event.target.files?.[0];
     if (file) {
-      const uploadedUrl = await uploadFile(file);
+      setIsUploading(true); // Set uploading state
+      const uploadedUrl = await uploadFile({
+        file,
+        fileName: `${sprintName}-${engineerId}`,
+        filePath: "/coding-hours/",
+      });
       setScreenshot(uploadedUrl);
+      setIsUploading(false); // Reset uploading state
     }
   };
 
@@ -86,6 +99,12 @@ export function CodingHoursForm({
       });
     }
   };
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!mounted) return null;
 
   return (
     <Card className="mx-auto mt-6 w-full p-4">
@@ -113,14 +132,23 @@ export function CodingHoursForm({
                       type="file"
                       accept="image/*"
                       id="screenshot"
-                      onChange={handleFileUpload}
-                      disabled={!isSoftwareEngineer}
+                      onChange={(event) => handleFileUpload(event, sprint.name)}
+                      disabled={!isSoftwareEngineer || isPending || isUploading}
                     />
+                    {isUploading && (
+                      <div className="mt-2 flex justify-center">
+                        <Loader className="animate-spin" />
+                      </div>
+                    )}
                   </div>
-                  {screenshot && (
+                  {(screenshot || sprint.sprintEngineers[0].codingHoursUrl) && (
                     <div className="relative w-full">
                       <Image
-                        src={screenshot}
+                        src={
+                          screenshot ||
+                          sprint.sprintEngineers[0].codingHoursUrl ||
+                          ""
+                        }
                         alt="Uploaded Screenshot"
                         width={500}
                         height={300}
@@ -133,7 +161,11 @@ export function CodingHoursForm({
                 <div className="relative w-full">
                   {screenshot && (
                     <Image
-                      src={screenshot}
+                      src={
+                        screenshot ||
+                        sprint.sprintEngineers[0].codingHoursUrl ||
+                        ""
+                      }
                       alt="Uploaded Screenshot"
                       width={500}
                       height={300}
@@ -160,7 +192,7 @@ export function CodingHoursForm({
                   value={codingHours}
                   onChange={(e) => setCodingHours(e.target.value)}
                   placeholder="Enter coding hours"
-                  disabled={!isEditing}
+                  disabled={!isEditing || isPending || isUploading}
                 />
                 <p className="mt-1 text-sm text-gray-500">
                   Enter coding hours in decimal format. E.g., 17 hours 30
@@ -172,7 +204,7 @@ export function CodingHoursForm({
                 <Button
                   className="mt-2 w-full"
                   onClick={() => handleSave(sprint.id)}
-                  disabled={!isValid || isPending}
+                  disabled={!isValid || isPending || isUploading}
                 >
                   {isPending ? "Saving..." : "Save"}
                 </Button>
