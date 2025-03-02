@@ -397,6 +397,7 @@ function TableSection({
                 {!isSoftwareEngineer && (
                   <TableCell className="text-right">
                     <Button
+                      aria-label="Delete"
                       variant="ghost"
                       size="icon"
                       onClick={() => confirmDelete(type, sprintIndex, index)}
