@@ -19,6 +19,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogFooter,
+  DialogDescription,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -36,6 +37,7 @@ import { Skeleton } from "../ui/skeleton";
 
 // Data structure
 interface LeaveData {
+  id?: number;
   engineerId?: number;
   description: string;
   date: string;
@@ -43,6 +45,7 @@ interface LeaveData {
 }
 
 interface HolidayData {
+  id?: number;
   description: string;
   date: string;
 }
@@ -60,6 +63,32 @@ interface Engineer {
   name: string;
 }
 
+type LeaveTypeKey =
+  | "cuti_tahunan"
+  | "sakit"
+  | "izin"
+  | "cuti_menikah"
+  | "cuti_menikahkan_anak"
+  | "cuti_khitanan_anak"
+  | "cuti_baptis_anak"
+  | "cuti_istri_melahirkan"
+  | "cuti_keluarga_meninggal"
+  | "cuti_keluarga_serumah_meninggal"
+  | "cuti_ibadah_haji";
+
+interface FormInputs {
+  type: "leave" | "holiday";
+  engineerId: string;
+  description: string;
+  date: string;
+  requestType:
+    | "full_day"
+    | "half_day_before_break"
+    | "half_day_after_break"
+    | "";
+  leaveType: LeaveTypeKey | "";
+}
+
 interface LeavePublicHolidayProps {
   isHideAddButton?: boolean;
   sprints: SprintData[];
@@ -68,24 +97,45 @@ interface LeavePublicHolidayProps {
   addLeaveOrHolidayAction: (
     formData: FormData
   ) => Promise<{ success: boolean; error?: string | z.ZodIssue[] }>;
+  deleteLeaveOrHolidayAction: (
+    formData: FormData
+  ) => Promise<{ success: boolean; error?: string }>;
 }
 
-const LeaveTypeMapping: Record<string, string> = {
+const RequestTypeMapping: Record<string, string> = {
   full_day: "Full Day",
   half_day_before_break: "Half Day Before Break",
   half_day_after_break: "Half Day After Break",
+};
+
+const LeaveTypeMapping: Record<LeaveTypeKey, string> = {
+  cuti_tahunan: "Cuti Tahunan",
+  sakit: "Sakit",
+  izin: "Izin",
+  cuti_menikah: "Cuti Menikah",
+  cuti_menikahkan_anak: "Cuti Menikahkan Anak",
+  cuti_khitanan_anak: "Cuti Khitanan Anak",
+  cuti_baptis_anak: "Cuti Baptis Anak",
+  cuti_istri_melahirkan: "Cuti Istri Melahirkan atau Keguguran",
+  cuti_keluarga_meninggal: "Cuti Keluarga Meninggal",
+  cuti_keluarga_serumah_meninggal:
+    "Cuti Anggota Keluarga Dalam Satu Rumah Meninggal",
+  cuti_ibadah_haji: "Cuti Ibadah Haji",
 };
 
 export function LeavePublicHoliday({
   sprints,
   engineers,
   addLeaveOrHolidayAction,
+  deleteLeaveOrHolidayAction,
   isHideAddButton = true,
   roleId = ROLE.SOFTWARE_ENGINEER,
 }: LeavePublicHolidayProps) {
   const [mounted, setMounted] = React.useState(false);
   const [openDialog, setOpenDialog] = React.useState(false);
   const [deleteDialog, setDeleteDialog] = React.useState(false);
+  const [errorDialog, setErrorDialog] = React.useState(false);
+  const [errorMessage, setErrorMessage] = React.useState<string>("");
   const [isLeaveForm, setIsLeaveForm] = React.useState(true);
   const [deleteTarget, setDeleteTarget] = React.useState<{
     type: "leave" | "holiday";
@@ -96,12 +146,18 @@ export function LeavePublicHoliday({
   const [loading, setLoading] = React.useState(false);
   const isSoftwareEngineer = roleId === ROLE.SOFTWARE_ENGINEER;
 
-  const { register, handleSubmit, reset } = useForm({
+  const {
+    register,
+    handleSubmit,
+    reset,
+    formState: { errors },
+  } = useForm<FormInputs>({
     defaultValues: {
       type: "leave",
       engineerId: "",
       description: "",
       date: "",
+      requestType: "",
       leaveType: "",
     },
   });
@@ -121,43 +177,88 @@ export function LeavePublicHoliday({
   };
 
   // ✅ Handle actual delete after confirmation
-  const handleDelete = () => {
+  const handleDelete = async () => {
     if (!deleteTarget) return;
 
-    setSprintData((prevSprints) => {
-      const newSprints = [...prevSprints];
-      const { type, sprintIndex, index } = deleteTarget;
+    const { type, sprintIndex, index } = deleteTarget;
+    const item =
+      type === "leave"
+        ? sprintData[sprintIndex].leaves[index]
+        : sprintData[sprintIndex].holidays[index];
 
-      if (type === "leave") {
-        newSprints[sprintIndex].leaves.splice(index, 1);
-      } else {
-        newSprints[sprintIndex].holidays.splice(index, 1);
-      }
+    if (!item.id) {
+      console.error("Cannot delete item without id");
+      return;
+    }
 
-      return newSprints;
-    });
+    const formData = new FormData();
+    formData.append("type", type);
+    formData.append("id", item.id.toString());
+    formData.append("date", item.date);
 
-    setDeleteDialog(false);
-    setDeleteTarget(null);
+    // Call the delete action
+    const result = await deleteLeaveOrHolidayAction(formData);
+    if (result.success) {
+      setSprintData((prevSprints) => {
+        const newSprints = [...prevSprints];
+        if (type === "leave") {
+          newSprints[sprintIndex].leaves.splice(index, 1);
+        } else {
+          newSprints[sprintIndex].holidays.splice(index, 1);
+        }
+        return newSprints;
+      });
+      setDeleteDialog(false);
+      setDeleteTarget(null);
+    } else {
+      setErrorMessage(result.error || "Failed to delete");
+      setErrorDialog(true);
+    }
   };
 
   // ✅ Handle form submission
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  async function onSubmit(data: any) {
-    setLoading(true); // Start loading
-    const formDataObj = new FormData();
-    Object.keys(data).forEach((key) => {
-      formDataObj.append(key, data[key]);
-    });
+  const onSubmit = async (data: FormInputs) => {
+    setLoading(true);
+
+    const formDataObj = new globalThis.FormData();
+
+    // For leaves, use the leave type label as the description
+    if (data.type === "leave") {
+      formDataObj.append("type", "leave"); // Always "leave" for leave requests
+      formDataObj.append("leaveType", data.requestType); // This is the full_day/half_day type
+      formDataObj.append("engineerId", data.engineerId);
+      formDataObj.append("date", data.date);
+      if (data.leaveType) {
+        formDataObj.append("description", LeaveTypeMapping[data.leaveType]);
+      }
+    } else {
+      // For holidays
+      formDataObj.append("type", "holiday");
+      formDataObj.append("description", data.description);
+      formDataObj.append("date", data.date);
+    }
+
     const result = await addLeaveOrHolidayAction(formDataObj);
-    setLoading(false); // Stop loading
+    setLoading(false);
     if (result.success) {
-      reset(); // Reset form after success
+      reset();
       setOpenDialog(false);
     } else {
-      alert(result.error || "Something went wrong");
+      // Handle validation errors
+      if (Array.isArray(result.error)) {
+        const errorMessages = result.error.map((err: z.ZodIssue) => {
+          const field = err.path.join(".");
+          return `${field}: ${err.message}`;
+        });
+        setErrorMessage(errorMessages.join("\n"));
+      } else {
+        setErrorMessage(
+          result.error?.toString() || "Something went wrong. Please try again."
+        );
+      }
+      setErrorDialog(true);
     }
-  }
+  };
 
   React.useEffect(() => {
     setMounted(true);
@@ -219,6 +320,7 @@ export function LeavePublicHoliday({
                     getEngineerName={getEngineerName}
                     type="leave"
                     isSoftwareEngineer={isSoftwareEngineer}
+                    isHideDeleteButton={isHideAddButton}
                   />
                   {/* Holidays Table */}
                   <TableSection
@@ -228,6 +330,7 @@ export function LeavePublicHoliday({
                     confirmDelete={confirmDelete}
                     type="holiday"
                     isSoftwareEngineer={isSoftwareEngineer}
+                    isHideDeleteButton={isHideAddButton}
                   />
                 </div>
               </div>
@@ -241,68 +344,135 @@ export function LeavePublicHoliday({
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Add Public Holiday / Leave</DialogTitle>
+            <DialogDescription>
+              Fill in the details to add a new leave request or public holiday.
+            </DialogDescription>
           </DialogHeader>
 
-          <form onSubmit={handleSubmit(onSubmit)}>
-            <Label htmlFor="type">Type</Label>
-            <select
-              id="type"
-              {...register("type")}
-              className="h-9 w-full rounded-md border px-2"
-              onChange={(e) => setIsLeaveForm(e.target.value === "leave")}
-            >
-              <option value="leave">Leave</option>
-              <option value="holiday">Public Holiday</option>
-            </select>
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="type">Type</Label>
+              <select
+                id="type"
+                {...register("type")}
+                className="h-9 w-full rounded-md border px-2"
+                onChange={(e) => setIsLeaveForm(e.target.value === "leave")}
+              >
+                <option value="leave">Leave</option>
+                <option value="holiday">Public Holiday</option>
+              </select>
+              {errors.type && (
+                <p className="text-sm text-destructive">
+                  {errors.type.message}
+                </p>
+              )}
+            </div>
 
             {isLeaveForm && (
               <>
-                <Label htmlFor="engineerId">Leave Type</Label>
-                <select
-                  id="leaveType"
-                  {...register("leaveType")}
-                  className="h-9 w-full rounded-md border px-2"
-                  required
-                >
-                  <option value="full">full</option>
-                  <option value="half">half</option>
-                </select>
-                <Label htmlFor="engineerId">Engineer</Label>
-                <select
-                  id="engineerId"
-                  {...register("engineerId")}
-                  className="h-9 w-full rounded-md border px-2"
-                  required
-                >
-                  <option value="">Select Engineer</option>
-                  {engineers.map((eng) => (
-                    <option key={eng.id} value={eng.id}>
-                      {eng.name}
+                <div className="space-y-2">
+                  <Label htmlFor="leaveType">Leave Type</Label>
+                  <select
+                    id="leaveType"
+                    {...register("leaveType")}
+                    className="h-9 w-full rounded-md border px-2"
+                    required
+                  >
+                    <option value="">Select Leave Type</option>
+                    {Object.entries(LeaveTypeMapping).map(([value, label]) => (
+                      <option key={value} value={value}>
+                        {label}
+                      </option>
+                    ))}
+                  </select>
+                  {errors.leaveType && (
+                    <p className="text-sm text-destructive">
+                      {errors.leaveType.message}
+                    </p>
+                  )}
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="requestType">Request Type</Label>
+                  <select
+                    id="requestType"
+                    {...register("requestType")}
+                    className="h-9 w-full rounded-md border px-2"
+                    required
+                  >
+                    <option value="">Select Request Type</option>
+                    <option value="full_day">Full Day</option>
+                    <option value="half_day_before_break">
+                      Half Day Before Break
                     </option>
-                  ))}
-                </select>
+                    <option value="half_day_after_break">
+                      Half Day After Break
+                    </option>
+                  </select>
+                  {errors.requestType && (
+                    <p className="text-sm text-destructive">
+                      {errors.requestType.message}
+                    </p>
+                  )}
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="engineerId">Engineer</Label>
+                  <select
+                    id="engineerId"
+                    {...register("engineerId")}
+                    className="h-9 w-full rounded-md border px-2"
+                    required
+                  >
+                    <option value="">Select Engineer</option>
+                    {engineers.map((eng) => (
+                      <option key={eng.id} value={eng.id}>
+                        {eng.name}
+                      </option>
+                    ))}
+                  </select>
+                  {errors.engineerId && (
+                    <p className="text-sm text-destructive">
+                      {errors.engineerId.message}
+                    </p>
+                  )}
+                </div>
               </>
             )}
 
-            <Label htmlFor="description">Description</Label>
-            <Input
-              id="description"
-              {...register("description")}
-              placeholder={
-                isLeaveForm ? "Cuti Tahunan / Cuti Sakit" : "Tahun Baru 2025"
-              }
-              required
-            />
+            {!isLeaveForm && (
+              <div className="space-y-2">
+                <Label htmlFor="description">Description</Label>
+                <Input
+                  id="description"
+                  {...register("description")}
+                  placeholder="Tahun Baru 2025"
+                  required
+                />
+                {errors.description && (
+                  <p className="text-sm text-destructive">
+                    {errors.description.message}
+                  </p>
+                )}
+              </div>
+            )}
 
-            <Label htmlFor="date">Date</Label>
-            <Input id="date" {...register("date")} type="date" required />
+            <div className="space-y-2">
+              <Label htmlFor="date">Date</Label>
+              <Input id="date" {...register("date")} type="date" required />
+              {errors.date && (
+                <p className="text-sm text-destructive">
+                  {errors.date.message}
+                </p>
+              )}
+            </div>
 
-            <DialogFooter className="mt-10">
+            <DialogFooter className="mt-6">
               <Button
                 type="button"
                 variant="outline"
                 onClick={() => setOpenDialog(false)}
-                disabled={loading} // Disable button while loading
+                disabled={loading}
               >
                 Cancel
               </Button>
@@ -319,6 +489,10 @@ export function LeavePublicHoliday({
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Are you sure you want to delete?</DialogTitle>
+            <DialogDescription>
+              This action cannot be undone. This will permanently delete the
+              record.
+            </DialogDescription>
           </DialogHeader>
           <DialogFooter>
             <Button variant="outline" onClick={() => setDeleteDialog(false)}>
@@ -326,6 +500,23 @@ export function LeavePublicHoliday({
             </Button>
             <Button variant="destructive" onClick={handleDelete}>
               Delete
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Error Dialog */}
+      <Dialog open={errorDialog} onOpenChange={setErrorDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="text-destructive">Error</DialogTitle>
+            <DialogDescription className="whitespace-pre-line pt-2 text-destructive">
+              {errorMessage}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setErrorDialog(false)}>
+              Close
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -342,6 +533,7 @@ function TableSection({
   getEngineerName,
   type,
   isSoftwareEngineer,
+  isHideDeleteButton = false,
 }: {
   title: string;
   data: (LeaveData | HolidayData)[];
@@ -354,6 +546,7 @@ function TableSection({
   getEngineerName?: (engineerId?: number) => string;
   type: "leave" | "holiday";
   isSoftwareEngineer: boolean;
+  isHideDeleteButton: boolean;
 }) {
   return (
     <div className="border-r border-gray-300 pr-6">
@@ -380,7 +573,7 @@ function TableSection({
                         {getEngineerName(item.engineerId)}
                       </div>
                       <div>
-                        {item.description} - {LeaveTypeMapping[item.type]}
+                        {item.description} - {RequestTypeMapping[item.type]}
                       </div>
                     </div>
                   ) : (
@@ -394,7 +587,7 @@ function TableSection({
                     year: "numeric",
                   })}
                 </TableCell>
-                {!isSoftwareEngineer && (
+                {!isHideDeleteButton && (
                   <TableCell className="text-right">
                     <Button
                       aria-label="Delete"

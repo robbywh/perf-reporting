@@ -48,6 +48,7 @@ export async function findSprintsWithLeavesAndHolidays(sprintIds: string[]) {
               name: true,
               leaves: {
                 select: {
+                  id: true,
                   engineerId: true,
                   date: true,
                   description: true,
@@ -70,6 +71,7 @@ export async function findSprintsWithLeavesAndHolidays(sprintIds: string[]) {
       },
     },
     select: {
+      id: true,
       date: true,
       description: true,
     },
@@ -80,20 +82,31 @@ export async function findSprintsWithLeavesAndHolidays(sprintIds: string[]) {
     startDate: sprint.startDate.toISOString(),
     endDate: sprint.endDate.toISOString(),
     leaves: sprint.sprintEngineers.flatMap((se) =>
-      se.engineer.leaves.map((leave) => ({
-        engineerId: se.engineer.id,
-        name: se.engineer.name,
-        description: leave.description,
-        date: leave.date.toISOString(),
-        type: leave.type,
-      }))
+      se.engineer.leaves
+        .filter((leave) => {
+          const leaveDate = new Date(leave.date);
+          const sprintStart = new Date(sprint.startDate);
+          const sprintEnd = new Date(sprint.endDate);
+          return leaveDate >= sprintStart && leaveDate <= sprintEnd;
+        })
+        .map((leave) => ({
+          id: leave.id,
+          engineerId: se.engineer.id,
+          name: se.engineer.name,
+          description: leave.description,
+          date: leave.date.toISOString(),
+          type: leave.type,
+        }))
     ),
     holidays: publicHolidays
-      .filter(
-        (holiday) =>
-          holiday.date >= sprint.startDate && holiday.date <= sprint.endDate
-      )
+      .filter((holiday) => {
+        const holidayDate = new Date(holiday.date);
+        const sprintStart = new Date(sprint.startDate);
+        const sprintEnd = new Date(sprint.endDate);
+        return holidayDate >= sprintStart && holidayDate <= sprintEnd;
+      })
       .map((holiday) => ({
+        id: holiday.id,
         description: holiday.description,
         date: holiday.date.toISOString(),
       })),

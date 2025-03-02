@@ -2,7 +2,10 @@ import { auth, currentUser } from "@clerk/nextjs/server";
 import { Suspense } from "react";
 
 import { updateCodingHoursAction } from "@/actions/coding-hours";
-import { addLeaveOrHolidayAction } from "@/actions/leave-holiday";
+import {
+  addLeaveOrHolidayAction,
+  deleteLeaveOrHolidayAction,
+} from "@/actions/leave-holiday";
 import {
   BarChartMultiple,
   BarChartMultipleSkeleton,
@@ -109,6 +112,7 @@ async function LeavePublicHolidayContainer({
       roleId={roleId || ""}
       engineers={engineers}
       addLeaveOrHolidayAction={addLeaveOrHolidayAction}
+      deleteLeaveOrHolidayAction={deleteLeaveOrHolidayAction}
       isHideAddButton={roleId !== ROLE.ENGINEERING_MANAGER}
     />
   );

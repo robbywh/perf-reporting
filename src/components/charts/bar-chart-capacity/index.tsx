@@ -56,7 +56,7 @@ const renderCustomLabel = (props: CustomBarLabelProps, key: string) => {
         fontWeight="bold"
         textAnchor="middle"
       >
-        {value}
+        {typeof value === "number" ? value.toFixed(2) : value}
       </text>
       <text
         x={x + width / 2}
