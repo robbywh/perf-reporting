@@ -35,6 +35,9 @@ import { ROLE } from "@/types/roles";
 
 import { Skeleton } from "../ui/skeleton";
 
+// Declare this file as a module
+export {};
+
 // Data structure
 interface LeaveData {
   id?: number;
@@ -123,6 +126,30 @@ const LeaveTypeMapping: Record<LeaveTypeKey, string> = {
   cuti_ibadah_haji: "Cuti Ibadah Haji",
 };
 
+const leaveFormSchema = z.object({
+  type: z.literal("leave"),
+  engineerId: z.string().min(1, "Engineer is required"),
+  description: z.string(),
+  date: z.string().min(1, "Date is required"),
+  requestType: z.enum(
+    ["full_day", "half_day_before_break", "half_day_after_break"],
+    {
+      required_error: "Request type is required",
+    }
+  ),
+  leaveType: z.string().min(1, "Leave type is required"),
+});
+
+const holidayFormSchema = z.object({
+  type: z.literal("holiday"),
+  description: z.string().min(1, "Description is required"),
+  date: z.string().min(1, "Date is required"),
+  // Make these fields optional but with empty string as valid value
+  engineerId: z.string().optional().or(z.literal("")),
+  requestType: z.string().optional().or(z.literal("")),
+  leaveType: z.string().optional().or(z.literal("")),
+});
+
 export function LeavePublicHoliday({
   sprints,
   engineers,
@@ -137,6 +164,7 @@ export function LeavePublicHoliday({
   const [errorDialog, setErrorDialog] = React.useState(false);
   const [errorMessage, setErrorMessage] = React.useState<string>("");
   const [isLeaveForm, setIsLeaveForm] = React.useState(true);
+  const [deleteLoading, setDeleteLoading] = React.useState(false);
   const [deleteTarget, setDeleteTarget] = React.useState<{
     type: "leave" | "holiday";
     sprintIndex: number;
@@ -179,40 +207,55 @@ export function LeavePublicHoliday({
   // ✅ Handle actual delete after confirmation
   const handleDelete = async () => {
     if (!deleteTarget) return;
+    setDeleteLoading(true);
 
-    const { type, sprintIndex, index } = deleteTarget;
-    const item =
-      type === "leave"
-        ? sprintData[sprintIndex].leaves[index]
-        : sprintData[sprintIndex].holidays[index];
+    try {
+      const { type, sprintIndex, index } = deleteTarget;
+      const item =
+        type === "leave"
+          ? sprintData[sprintIndex].leaves[index]
+          : sprintData[sprintIndex].holidays[index];
 
-    if (!item.id) {
-      console.error("Cannot delete item without id");
-      return;
-    }
+      if (!item.id) {
+        console.error("Cannot delete item without id");
+        return;
+      }
 
-    const formData = new FormData();
-    formData.append("type", type);
-    formData.append("id", item.id.toString());
-    formData.append("date", item.date);
+      const formData = new FormData();
+      formData.append("type", type);
+      formData.append("id", item.id.toString());
+      formData.append("date", item.date);
 
-    // Call the delete action
-    const result = await deleteLeaveOrHolidayAction(formData);
-    if (result.success) {
-      setSprintData((prevSprints) => {
-        const newSprints = [...prevSprints];
-        if (type === "leave") {
-          newSprints[sprintIndex].leaves.splice(index, 1);
-        } else {
-          newSprints[sprintIndex].holidays.splice(index, 1);
-        }
-        return newSprints;
-      });
-      setDeleteDialog(false);
-      setDeleteTarget(null);
-    } else {
-      setErrorMessage(result.error || "Failed to delete");
+      // Only append leaveType for leave records
+      if (type === "leave" && "type" in item && item.type) {
+        formData.append("leaveType", item.type.toString());
+      }
+
+      // Call the delete action
+      const result = await deleteLeaveOrHolidayAction(formData);
+      if (result.success) {
+        setSprintData((prevSprints) => {
+          const newSprints = [...prevSprints];
+          if (type === "leave") {
+            newSprints[sprintIndex].leaves.splice(index, 1);
+          } else {
+            newSprints[sprintIndex].holidays.splice(index, 1);
+          }
+          return newSprints;
+        });
+        setDeleteDialog(false);
+        setDeleteTarget(null);
+      } else {
+        console.error("Delete error:", result.error);
+        setErrorMessage("An unexpected error occurred while deleting");
+        setErrorDialog(true);
+      }
+    } catch (error) {
+      console.error("Delete error:", error);
+      setErrorMessage("An unexpected error occurred while deleting");
       setErrorDialog(true);
+    } finally {
+      setDeleteLoading(false);
     }
   };
 
@@ -220,43 +263,87 @@ export function LeavePublicHoliday({
   const onSubmit = async (data: FormInputs) => {
     setLoading(true);
 
-    const formDataObj = new globalThis.FormData();
+    try {
+      // Validate based on form type
+      const validationResult =
+        data.type === "leave"
+          ? leaveFormSchema.safeParse(data)
+          : holidayFormSchema.safeParse(data);
 
-    // For leaves, use the leave type label as the description
-    if (data.type === "leave") {
-      formDataObj.append("type", "leave"); // Always "leave" for leave requests
-      formDataObj.append("leaveType", data.requestType); // This is the full_day/half_day type
-      formDataObj.append("engineerId", data.engineerId);
-      formDataObj.append("date", data.date);
-      if (data.leaveType) {
-        formDataObj.append("description", LeaveTypeMapping[data.leaveType]);
+      if (!validationResult.success) {
+        const errorMessages = validationResult.error.errors
+          .filter((err) => {
+            // For holidays, ignore any leaveType/requestType/engineerId validation errors
+            if (data.type === "holiday") {
+              return !["leaveType", "requestType", "engineerId"].includes(
+                err.path[0] as string
+              );
+            }
+            return true;
+          })
+          .map((err) => `${err.path.join(".")}: ${err.message}`)
+          .join("\n");
+
+        if (errorMessages) {
+          setErrorMessage(errorMessages);
+          setErrorDialog(true);
+          return;
+        }
       }
-    } else {
-      // For holidays
-      formDataObj.append("type", "holiday");
-      formDataObj.append("description", data.description);
-      formDataObj.append("date", data.date);
-    }
 
-    const result = await addLeaveOrHolidayAction(formDataObj);
-    setLoading(false);
-    if (result.success) {
-      reset();
-      setOpenDialog(false);
-    } else {
-      // Handle validation errors
-      if (Array.isArray(result.error)) {
-        const errorMessages = result.error.map((err: z.ZodIssue) => {
-          const field = err.path.join(".");
-          return `${field}: ${err.message}`;
-        });
-        setErrorMessage(errorMessages.join("\n"));
+      const formDataObj = new globalThis.FormData();
+
+      if (data.type === "leave") {
+        formDataObj.append("type", "leave");
+        formDataObj.append("leaveType", data.leaveType);
+        formDataObj.append("requestType", data.requestType);
+        formDataObj.append("engineerId", data.engineerId);
+        formDataObj.append("date", data.date);
+        if (data.leaveType) {
+          formDataObj.append(
+            "description",
+            LeaveTypeMapping[data.leaveType as LeaveTypeKey]
+          );
+        }
       } else {
-        setErrorMessage(
-          result.error?.toString() || "Something went wrong. Please try again."
-        );
+        formDataObj.append("type", "holiday");
+        formDataObj.append("description", data.description);
+        formDataObj.append("date", data.date);
       }
+
+      const result = await addLeaveOrHolidayAction(formDataObj);
+      if (result.success) {
+        reset();
+        setOpenDialog(false);
+      } else {
+        const errorMessages = Array.isArray(result.error)
+          ? result.error
+              .filter((err) => {
+                // Filter out leaveType errors for holidays
+                if (data.type === "holiday") {
+                  return !err.path.includes("leaveType");
+                }
+                return true;
+              })
+              .map((err: z.ZodIssue) => `${err.path.join(".")}: ${err.message}`)
+              .join("\n")
+          : result.error?.toString() ||
+            "Something went wrong. Please try again.";
+
+        if (errorMessages) {
+          setErrorMessage(errorMessages);
+          setErrorDialog(true);
+        } else {
+          // If all errors were filtered out (i.e., only leaveType errors for holiday), proceed
+          reset();
+          setOpenDialog(false);
+        }
+      }
+    } catch {
+      setErrorMessage("An unexpected error occurred. Please try again.");
       setErrorDialog(true);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -289,19 +376,22 @@ export function LeavePublicHoliday({
         slidesPerView={1}
       >
         {sprintData.map((sprint, sprintIndex) => {
+          // Convert dates to UTC midnight for comparison
           const sprintStartDate = new Date(sprint.startDate);
           const sprintEndDate = new Date(sprint.endDate);
 
           const filteredLeaves = sprint.leaves.filter((leave) => {
             const leaveDate = new Date(leave.date);
-            return leaveDate >= sprintStartDate && leaveDate <= sprintEndDate;
+            const isIncluded =
+              leaveDate >= sprintStartDate && leaveDate <= sprintEndDate;
+            return isIncluded;
           });
 
           const filteredHolidays = sprint.holidays.filter((holiday) => {
             const holidayDate = new Date(holiday.date);
-            return (
-              holidayDate >= sprintStartDate && holidayDate <= sprintEndDate
-            );
+            const isIncluded =
+              holidayDate >= sprintStartDate && holidayDate <= sprintEndDate;
+            return isIncluded;
           });
 
           return (
@@ -495,11 +585,19 @@ export function LeavePublicHoliday({
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setDeleteDialog(false)}>
+            <Button
+              variant="outline"
+              onClick={() => setDeleteDialog(false)}
+              disabled={deleteLoading}
+            >
               Cancel
             </Button>
-            <Button variant="destructive" onClick={handleDelete}>
-              Delete
+            <Button
+              variant="destructive"
+              onClick={handleDelete}
+              disabled={deleteLoading}
+            >
+              {deleteLoading ? "Deleting..." : "Delete"}
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -28,7 +28,9 @@ async function syncSprintsFromClickUp() {
     // These Date objects represent UTC dates. When calling toISOString(),
     // they will be in Zulu format (e.g., "2025-01-08T00:00:00.000Z").
     const startDateUTC = new Date(Number(startDate));
+    startDateUTC.setUTCHours(0, 0, 0, 0);
     const endDateUTC = new Date(Number(dueDate));
+    endDateUTC.setUTCHours(23, 59, 59, 999);
 
     // Check if a sprint with the given id already exists.
     const existingSprint = await prisma.sprint.findUnique({

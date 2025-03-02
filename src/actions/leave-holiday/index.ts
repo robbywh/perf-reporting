@@ -13,28 +13,94 @@ type PrismaTransactionClient = Omit<
   "$connect" | "$disconnect" | "$on" | "$transaction" | "$use" | "$extends"
 >;
 
-const leaveOrHolidaySchema = z.object({
-  description: z.string(),
-  date: z.string().refine((val) => !isNaN(Date.parse(val)), {
-    message: "Invalid date format",
+type LeaveTypeKey =
+  | "cuti_tahunan"
+  | "sakit"
+  | "izin"
+  | "cuti_menikah"
+  | "cuti_menikahkan_anak"
+  | "cuti_khitanan_anak"
+  | "cuti_baptis_anak"
+  | "cuti_istri_melahirkan"
+  | "cuti_keluarga_meninggal"
+  | "cuti_keluarga_serumah_meninggal"
+  | "cuti_ibadah_haji";
+
+const LeaveTypeMapping: Record<LeaveTypeKey, string> = {
+  cuti_tahunan: "Cuti Tahunan",
+  sakit: "Sakit",
+  izin: "Izin",
+  cuti_menikah: "Cuti Menikah",
+  cuti_menikahkan_anak: "Cuti Menikahkan Anak",
+  cuti_khitanan_anak: "Cuti Khitanan Anak",
+  cuti_baptis_anak: "Cuti Baptis Anak",
+  cuti_istri_melahirkan: "Cuti Istri Melahirkan atau Keguguran",
+  cuti_keluarga_meninggal: "Cuti Keluarga Meninggal",
+  cuti_keluarga_serumah_meninggal:
+    "Cuti Anggota Keluarga Dalam Satu Rumah Meninggal",
+  cuti_ibadah_haji: "Cuti Ibadah Haji",
+};
+
+const leaveOrHolidaySchema = z.discriminatedUnion("type", [
+  z.object({
+    type: z.literal("leave"),
+    date: z.string().refine((val) => !isNaN(Date.parse(val)), {
+      message: "Invalid date format",
+    }),
+    engineerId: z.string().transform((val) => Number(val)),
+    leaveType: z.string(),
+    requestType: z.enum([
+      "full_day",
+      "half_day_before_break",
+      "half_day_after_break",
+    ]),
+    description: z.string().optional(),
   }),
-  type: z.enum(["leave", "holiday"]),
-  engineerId: z.number().optional(),
-  leaveType: z
-    .enum(["full_day", "half_day_before_break", "half_day_after_break"])
-    .optional(),
-});
+  z.object({
+    type: z.literal("holiday"),
+    date: z.string().refine((val) => !isNaN(Date.parse(val)), {
+      message: "Invalid date format",
+    }),
+    description: z.string().optional(),
+  }),
+]);
 
 async function findSprintByDate(
   date: Date,
   tx: PrismaTransactionClient = prisma
 ) {
+  // Convert date to YYYY-MM-DD format
+  const dateStr = date.toISOString().split("T")[0];
+  console.log("Finding sprint for date:", dateStr);
+
+  const startOfDay = new Date(dateStr + "T00:00:00.000Z");
+  const endOfDay = new Date(dateStr + "T23:59:59.999Z");
+
+  console.log(
+    "Looking for sprint containing time range:",
+    startOfDay.toISOString(),
+    "to",
+    endOfDay.toISOString()
+  );
+
   const sprint = await tx.sprint.findFirst({
     where: {
-      startDate: { lte: date },
-      endDate: { gte: date },
+      AND: [
+        {
+          startDate: {
+            lte: endOfDay,
+          },
+        },
+        {
+          endDate: {
+            gte: startOfDay,
+          },
+        },
+      ],
     },
   });
+
+  console.log("Found sprint:", sprint?.id);
   return sprint;
 }
 
@@ -55,10 +121,7 @@ async function adjustBaselineTarget(
     throw new Error("No sprint found for the given date");
   }
 
-  // Calculate reduction factor based on leave type
-  const reductionFactor = leaveType === "full_day" ? 1 : leaveType ? 0.5 : 1;
-
-  // Query to get affected sprint engineers
+  // Get affected sprint engineers
   const sprintEngineers = await tx.sprintEngineer.findMany({
     where: engineerId
       ? { sprintId: sprint.id, engineerId }
@@ -72,31 +135,25 @@ async function adjustBaselineTarget(
     },
   });
 
-  // Update each affected sprint engineer
-  for (const sprintEngineer of sprintEngineers) {
+  // Calculate reduction factor
+  const reductionFactor = leaveType === "full_day" ? 1 : 0.5;
+
+  // Calculate how much to adjust per day
+  const updates = sprintEngineers.map((sprintEngineer) => {
     const { baseline, target } = sprintEngineer.engineer.jobLevel;
+    const baselinePerDay = Number(baseline) / WORKING_DAYS_PER_SPRINT;
+    const targetPerDay = Number(target) / WORKING_DAYS_PER_SPRINT;
 
-    let newBaseline: number;
-    let newTarget: number;
+    // If deleting, we add back the days (increment)
+    // If adding, we reduce the days (decrement)
+    const baselineChange = isDelete
+      ? baselinePerDay * reductionFactor
+      : -(baselinePerDay * reductionFactor);
+    const targetChange = isDelete
+      ? targetPerDay * reductionFactor
+      : -(targetPerDay * reductionFactor);
 
-    if (isDelete) {
-      newBaseline =
-        (Number(sprintEngineer.baseline) * WORKING_DAYS_PER_SPRINT) /
-        (WORKING_DAYS_PER_SPRINT - reductionFactor);
-      newTarget =
-        (Number(sprintEngineer.target) * WORKING_DAYS_PER_SPRINT) /
-        (WORKING_DAYS_PER_SPRINT - reductionFactor);
-    } else {
-      newBaseline =
-        (Number(baseline) * (WORKING_DAYS_PER_SPRINT - reductionFactor)) /
-        WORKING_DAYS_PER_SPRINT;
-      newTarget =
-        (Number(target) * (WORKING_DAYS_PER_SPRINT - reductionFactor)) /
-        WORKING_DAYS_PER_SPRINT;
-    }
-
-    // Update sprint engineer
-    await tx.sprintEngineer.update({
+    return tx.sprintEngineer.update({
       where: {
         sprintId_engineerId: {
           sprintId: sprint.id,
@@ -104,11 +161,18 @@ async function adjustBaselineTarget(
         },
       },
       data: {
-        baseline: newBaseline,
-        target: newTarget,
+        baseline: {
+          increment: baselineChange,
+        },
+        target: {
+          increment: targetChange,
+        },
       },
     });
-  }
+  });
+
+  // Execute all updates in parallel
+  await Promise.all(updates);
 }
 
 export async function deleteLeaveOrHolidayAction(formData: FormData) {
@@ -174,58 +238,61 @@ export async function deleteLeaveOrHolidayAction(formData: FormData) {
 }
 
 export async function addLeaveOrHolidayAction(formData: FormData) {
-  const parsedData = leaveOrHolidaySchema.safeParse({
-    description: formData.get("description"),
-    date: formData.get("date"),
+  const rawData = {
     type: formData.get("type"),
-    engineerId: formData.get("engineerId")
-      ? Number(formData.get("engineerId"))
-      : undefined,
-    leaveType: formData.get("leaveType"),
-  });
+    date: formData.get("date"),
+    ...(formData.get("type") === "leave" && {
+      engineerId: formData.get("engineerId"),
+      leaveType: formData.get("leaveType"),
+      requestType: formData.get("requestType"),
+    }),
+    description: formData.get("description"),
+  };
+
+  const parsedData = leaveOrHolidaySchema.safeParse(rawData);
 
   if (!parsedData.success) {
     return { success: false, error: parsedData.error.errors };
   }
 
-  const { description, date, type, engineerId, leaveType } = parsedData.data;
-  const dateObj = new Date(date);
+  const dateObj = new Date(parsedData.data.date);
 
   try {
-    // Start a transaction
-    await prisma.$transaction(async (tx) => {
-      if (type === "leave" && engineerId) {
-        // Create leave record
-        await tx.leave.create({
-          data: {
+    await prisma.$transaction(
+      async (tx) => {
+        if (parsedData.data.type === "leave") {
+          const { engineerId, leaveType, requestType } = parsedData.data;
+          await tx.leave.create({
+            data: {
+              date: dateObj,
+              engineerId,
+              type: requestType,
+              description: LeaveTypeMapping[leaveType as LeaveTypeKey],
+            },
+          });
+
+          await adjustBaselineTarget(
+            dateObj,
             engineerId,
-            description: description || "",
-            date: dateObj.toISOString(),
-            type: leaveType || "full_day",
-          },
-        });
+            requestType,
+            false,
+            tx
+          );
+        } else {
+          await tx.publicHoliday.create({
+            data: {
+              date: dateObj,
+              description: parsedData.data.description || "",
+            },
+          });
 
-        // Adjust baseline and target for the specific engineer
-        await adjustBaselineTarget(
-          dateObj,
-          engineerId,
-          leaveType || "full_day",
-          false,
-          tx
-        );
-      } else {
-        // Create public holiday record
-        await tx.publicHoliday.create({
-          data: {
-            description: description || "",
-            date: dateObj.toISOString(),
-          },
-        });
-
-        // Adjust baseline and target for all engineers in the sprint
-        await adjustBaselineTarget(dateObj, null, "full_day", false, tx);
+          await adjustBaselineTarget(dateObj, null, "full_day", false, tx);
+        }
+      },
+      {
+        timeout: 10000, // Increase timeout to 10 seconds
       }
-    });
+    );
 
     revalidatePath(`/`);
     return { success: true };

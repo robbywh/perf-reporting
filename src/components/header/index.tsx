@@ -1,3 +1,5 @@
+"use client";
+
 import { UserButton } from "@clerk/nextjs";
 
 export default function Header() {
@@ -16,7 +18,7 @@ export default function Header() {
       </div>
 
       <div className="flex flex-1 justify-end">
-        <UserButton />
+        <UserButton afterSignOutUrl="/" />
       </div>
     </header>
   );

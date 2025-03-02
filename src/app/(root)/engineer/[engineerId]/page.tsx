@@ -1,4 +1,6 @@
 import { auth, currentUser } from "@clerk/nextjs/server";
+import { ArrowLeft } from "lucide-react";
+import Link from "next/link";
 import { Suspense } from "react";
 
 import { updateCodingHoursAction } from "@/actions/coding-hours";
@@ -21,6 +23,7 @@ import {
   LeavePublicHolidaySkeleton,
 } from "@/components/leave-public-holiday-form";
 import { StatsCards, StatsCardsSkeleton } from "@/components/stats-cards";
+import { Button } from "@/components/ui/button";
 import { findAllEngineers } from "@/services/engineers";
 import { findAveragesByEngineerAndSprintIds } from "@/services/sprint-engineers";
 import {
@@ -31,7 +34,10 @@ import {
   findAverageSPAndMergedCountBySprintIds,
   findTotalTaskToQACounts,
 } from "@/services/tasks";
-import { findRoleIdAndEngineerIdByUserId } from "@/services/users";
+import {
+  findEngineerById,
+  findRoleIdAndEngineerIdByUserId,
+} from "@/services/users";
 import { ROLE } from "@/types/roles";
 
 interface PageProps {
@@ -130,9 +136,24 @@ export default async function EngineerPage({
   const user = await currentUser();
   const { roleId = "" } = await findRoleIdAndEngineerIdByUserId(user?.id || "");
   const engineerId = parseInt(parameters.engineerId);
+  const engineer = await findEngineerById(engineerId);
 
   return (
     <div>
+      {roleId !== ROLE.SOFTWARE_ENGINEER && (
+        <div className="mb-6">
+          <div className="flex items-center gap-4">
+            <Link href="/">
+              <Button variant="outline" size="icon">
+                <ArrowLeft className="size-4" />
+              </Button>
+            </Link>
+            <h1 className="text-2xl font-bold">
+              {engineer?.firstName}&apos;s Performance Report
+            </h1>
+          </div>
+        </div>
+      )}
       {/* Stats Cards */}
       <div className="mb-6">
         <Suspense fallback={<StatsCardsSkeleton />}>
