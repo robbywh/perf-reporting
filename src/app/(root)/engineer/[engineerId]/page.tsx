@@ -41,9 +41,7 @@ import {
 import { ROLE } from "@/types/roles";
 
 interface PageProps {
-  params: {
-    engineerId: string;
-  };
+  params: Promise<{ engineerId?: string }>;
   searchParams: Promise<{ sprintIds?: string }>;
 }
 
@@ -134,8 +132,8 @@ export default async function EngineerPage({
     ? searchParameters.sprintIds.split(",").filter(Boolean)
     : ["901606315079"];
   const user = await currentUser();
-  const { roleId = "" } = await findRoleIdAndEngineerIdByUserId(user?.id || "");
-  const engineerId = parseInt(parameters.engineerId);
+  const { roleId = "" } = await findRoleIdAndEngineerIdByUserId(user?.id ?? "");
+  const engineerId = parseInt(parameters.engineerId || "0");
   const engineer = await findEngineerById(engineerId);
 
   return (

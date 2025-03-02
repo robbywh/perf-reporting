@@ -130,7 +130,7 @@ function CodingHoursEditor({
       </div>
       <div className="relative w-full">
         {screenshot ? (
-          <div className="relative aspect-video w-full overflow-hidden rounded-lg border">
+          <div className="relative aspect-auto h-60 w-full overflow-hidden rounded-lg border">
             <Image
               src={screenshot}
               alt="Uploaded Screenshot"
@@ -139,7 +139,7 @@ function CodingHoursEditor({
             />
           </div>
         ) : (
-          <div className="flex aspect-video w-full flex-col items-center justify-center gap-2 rounded-lg border bg-muted/10">
+          <div className="flex aspect-auto h-60 w-full flex-col items-center justify-center gap-2 rounded-lg border bg-muted/10">
             <p className="text-muted-foreground">No screenshot uploaded</p>
             <p className="text-sm text-muted-foreground">
               Upload an image to continue
@@ -193,7 +193,7 @@ function CodingHoursViewer({
     <div className="flex flex-col items-center gap-4">
       <div className="relative w-full">
         {screenshot ? (
-          <div className="relative aspect-video w-full overflow-hidden rounded-lg border">
+          <div className="relative aspect-auto h-60 w-full overflow-hidden rounded-lg border">
             <Image
               src={screenshot}
               alt="Coding Hours Screenshot"
@@ -211,7 +211,7 @@ function CodingHoursViewer({
             )}
           </div>
         ) : (
-          <div className="flex aspect-video w-full items-center justify-center rounded-lg border bg-muted/10">
+          <div className="flex aspect-auto h-60 w-full items-center justify-center rounded-lg border bg-muted/10">
             <p className="text-muted-foreground">No screenshot uploaded</p>
             {isSoftwareEngineer && (
               <Button
