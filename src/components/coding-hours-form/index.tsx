@@ -7,6 +7,8 @@ import { Navigation, Pagination } from "swiper/modules";
 import { Swiper, SwiperSlide } from "swiper/react";
 import { z } from "zod";
 import "swiper/css";
+import "swiper/css/navigation";
+import "swiper/css/pagination";
 
 import { uploadFile } from "@/actions/coding-hours";
 import { Button } from "@/components/ui/button";
@@ -34,8 +36,207 @@ interface SprintData {
   }[];
 }
 
+interface CodingHoursEditorProps {
+  sprint: SprintData;
+  engineerId: number;
+  onSave: (data: {
+    sprintId: string;
+    engineerId: number;
+    codingHours: number;
+    codingHoursUrl?: string | null;
+  }) => Promise<void>;
+  onCancel: () => void;
+}
+
+interface CodingHoursViewerProps {
+  sprint: SprintData;
+  screenshot: string | null;
+  codingHours: string;
+  isSoftwareEngineer: boolean;
+  onEdit: () => void;
+}
+
+function CodingHoursEditor({
+  sprint,
+  engineerId,
+  onSave,
+  onCancel,
+}: CodingHoursEditorProps) {
+  const [screenshot, setScreenshot] = useState<string | null>(
+    sprint.sprintEngineers[0].codingHoursUrl
+  );
+  const [codingHours, setCodingHours] = useState<string>(
+    sprint.sprintEngineers[0].codingHours?.toString() || ""
+  );
+  const [isValid, setIsValid] = useState<boolean>(false);
+  const [isPending, startTransition] = useTransition();
+  const [isUploading, setIsUploading] = useState<boolean>(false);
+
+  useEffect(() => {
+    setIsValid(!!screenshot && codingHours.trim() !== "");
+  }, [screenshot, codingHours]);
+
+  const handleFileUpload = async (
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      setIsUploading(true);
+      const uploadedUrl = await uploadFile({
+        file,
+        fileName: `${sprint.name}-${engineerId}`,
+        filePath: "/coding-hours/",
+      });
+      setScreenshot(uploadedUrl);
+      setIsUploading(false);
+    }
+  };
+
+  const handleSave = async () => {
+    const parsedData = codingHoursSchema.safeParse({
+      sprintId: sprint.id,
+      codingHours,
+    });
+    if (!parsedData.success) return;
+
+    if (isValid) {
+      startTransition(async () => {
+        await onSave({
+          sprintId: sprint.id,
+          engineerId,
+          codingHours: parsedData.data.codingHours,
+          codingHoursUrl: screenshot,
+        });
+      });
+    }
+  };
+
+  return (
+    <div className="flex flex-col items-center gap-4">
+      <div className="mt-4 flex w-full flex-col gap-2">
+        <Label htmlFor="screenshot">Upload Coding Hours Screenshot</Label>
+        <Input
+          type="file"
+          accept="image/*"
+          id="screenshot"
+          onChange={handleFileUpload}
+          disabled={isPending || isUploading}
+        />
+        {isUploading && (
+          <div className="mt-2 flex justify-center">
+            <Loader className="animate-spin" />
+          </div>
+        )}
+      </div>
+      <div className="relative w-full">
+        {screenshot ? (
+          <div className="relative aspect-video w-full overflow-hidden rounded-lg border">
+            <Image
+              src={screenshot}
+              alt="Uploaded Screenshot"
+              fill
+              className="object-contain"
+            />
+          </div>
+        ) : (
+          <div className="flex aspect-video w-full flex-col items-center justify-center gap-2 rounded-lg border bg-muted/10">
+            <p className="text-muted-foreground">No screenshot uploaded</p>
+            <p className="text-sm text-muted-foreground">
+              Upload an image to continue
+            </p>
+          </div>
+        )}
+      </div>
+      <div className="w-full">
+        <Label htmlFor="codingHours">Coding Hours</Label>
+        <Input
+          type="number"
+          id="codingHours"
+          value={codingHours}
+          onChange={(e) => setCodingHours(e.target.value)}
+          placeholder="Enter coding hours"
+          disabled={isPending || isUploading}
+        />
+        <p className="mt-1 text-sm text-gray-500">
+          Enter coding hours in decimal format. E.g., 17 hours 30 minutes as
+          17.5
+        </p>
+      </div>
+      <div className="flex w-full gap-2">
+        <Button
+          variant="outline"
+          className="w-full"
+          onClick={onCancel}
+          disabled={isPending || isUploading}
+        >
+          Cancel
+        </Button>
+        <Button
+          className="w-full"
+          onClick={handleSave}
+          disabled={!isValid || isPending || isUploading}
+        >
+          {isPending ? "Saving..." : "Save"}
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+function CodingHoursViewer({
+  screenshot,
+  codingHours,
+  isSoftwareEngineer,
+  onEdit,
+}: CodingHoursViewerProps) {
+  return (
+    <div className="flex flex-col items-center gap-4">
+      <div className="relative w-full">
+        {screenshot ? (
+          <div className="relative aspect-video w-full overflow-hidden rounded-lg border">
+            <Image
+              src={screenshot}
+              alt="Coding Hours Screenshot"
+              fill
+              className="object-contain"
+            />
+            {isSoftwareEngineer && (
+              <Button
+                className="absolute right-2 top-2 z-10 flex items-center gap-1"
+                onClick={onEdit}
+              >
+                <Edit2 className="size-5" />
+                <span>Edit</span>
+              </Button>
+            )}
+          </div>
+        ) : (
+          <div className="flex aspect-video w-full items-center justify-center rounded-lg border bg-muted/10">
+            <p className="text-muted-foreground">No screenshot uploaded</p>
+            {isSoftwareEngineer && (
+              <Button
+                className="absolute right-2 top-2 flex items-center gap-1"
+                onClick={onEdit}
+              >
+                <Edit2 className="size-5" />
+                <span>Edit</span>
+              </Button>
+            )}
+          </div>
+        )}
+      </div>
+      <div className="w-full">
+        <Label>Coding Hours</Label>
+        <div className="rounded-md border p-2">
+          {codingHours || "No coding hours recorded"}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function CodingHoursForm({
-  sprints,
+  sprints: initialSprints,
   engineerId,
   roleId,
   onSave,
@@ -51,58 +252,38 @@ export function CodingHoursForm({
   }) => Promise<void>;
 }) {
   const [mounted, setMounted] = useState(false);
-  const [screenshot, setScreenshot] = useState<string | null>(null);
-  const [codingHours, setCodingHours] = useState<string>("");
-  const [isEditing, setIsEditing] = useState<boolean>(true);
-  const [isValid, setIsValid] = useState<boolean>(false);
-  const [isPending, startTransition] = useTransition();
-  const [isUploading, setIsUploading] = useState<boolean>(false);
+  const [isEditing, setIsEditing] = useState<boolean>(false);
+  const [sprints, setSprints] = useState<SprintData[]>(initialSprints);
   const isSoftwareEngineer = roleId === ROLE.SOFTWARE_ENGINEER;
-
-  useEffect(() => {
-    setIsValid(!!screenshot && codingHours.trim() !== "");
-  }, [screenshot, codingHours]);
-
-  const handleFileUpload = async (
-    event: React.ChangeEvent<HTMLInputElement>,
-    sprintName: string
-  ) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      setIsUploading(true); // Set uploading state
-      const uploadedUrl = await uploadFile({
-        file,
-        fileName: `${sprintName}-${engineerId}`,
-        filePath: "/coding-hours/",
-      });
-      setScreenshot(uploadedUrl);
-      setIsUploading(false); // Reset uploading state
-    }
-  };
-
-  const handleSave = async (sprintId: string) => {
-    const parsedData = codingHoursSchema.safeParse({
-      sprintId,
-      codingHours,
-    });
-    if (!parsedData.success) return;
-
-    if (isValid) {
-      startTransition(async () => {
-        await onSave({
-          sprintId,
-          engineerId,
-          codingHours: parsedData.data.codingHours,
-          codingHoursUrl: screenshot,
-        });
-        setIsEditing(false);
-      });
-    }
-  };
 
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  const handleSave = async (data: {
+    sprintId: string;
+    engineerId: number;
+    codingHours: number;
+    codingHoursUrl?: string | null;
+  }) => {
+    await onSave(data);
+    setSprints((currentSprints) =>
+      currentSprints.map((sprint) =>
+        sprint.id === data.sprintId
+          ? {
+              ...sprint,
+              sprintEngineers: [
+                {
+                  codingHours: data.codingHours,
+                  codingHoursUrl: data.codingHoursUrl || null,
+                },
+              ],
+            }
+          : sprint
+      )
+    );
+    setIsEditing(false);
+  };
 
   if (!mounted) return null;
 
@@ -111,108 +292,47 @@ export function CodingHoursForm({
       <CardHeader>
         <CardTitle>Coding Hours</CardTitle>
       </CardHeader>
-      <Swiper
-        modules={[Navigation, Pagination]}
-        navigation
-        pagination={{ clickable: true }}
-        spaceBetween={30}
-        slidesPerView={1}
-      >
-        {sprints.map((sprint) => (
-          <SwiperSlide key={sprint.id} className="px-20 pb-5">
-            <h2 className="text-center font-semibold">{sprint.name}</h2>
-            <CardContent className="flex flex-col items-center gap-4">
-              {isEditing && isSoftwareEngineer ? (
-                <>
-                  <div className="mt-4 flex w-full flex-col gap-2">
-                    <Label htmlFor="screenshot">
-                      Upload Coding Hours Screenshot
-                    </Label>
-                    <Input
-                      type="file"
-                      accept="image/*"
-                      id="screenshot"
-                      onChange={(event) => handleFileUpload(event, sprint.name)}
-                      disabled={!isSoftwareEngineer || isPending || isUploading}
-                    />
-                    {isUploading && (
-                      <div className="mt-2 flex justify-center">
-                        <Loader className="animate-spin" />
-                      </div>
-                    )}
-                  </div>
-                  {(screenshot || sprint.sprintEngineers[0].codingHoursUrl) && (
-                    <div className="relative w-full">
-                      <Image
-                        src={
-                          screenshot ||
-                          sprint.sprintEngineers[0].codingHoursUrl ||
-                          ""
-                        }
-                        alt="Uploaded Screenshot"
-                        width={500}
-                        height={300}
-                        className="h-auto w-full rounded-lg border shadow"
-                      />
-                    </div>
-                  )}
-                </>
-              ) : (
-                <div className="relative w-full">
-                  {screenshot && (
-                    <Image
-                      src={
-                        screenshot ||
-                        sprint.sprintEngineers[0].codingHoursUrl ||
-                        ""
-                      }
-                      alt="Uploaded Screenshot"
-                      width={500}
-                      height={300}
-                      className="h-auto w-full rounded-lg border shadow"
-                    />
-                  )}
-                  {isSoftwareEngineer && (
-                    <Button
-                      className="absolute right-2 top-2 flex items-center gap-1"
-                      onClick={() => setIsEditing(true)}
-                    >
-                      <Edit2 className="size-5" />
-                      <span>Edit</span>
-                    </Button>
-                  )}
-                </div>
-              )}
-
-              <div className="w-full">
-                <Label htmlFor="codingHours">Coding Hours</Label>
-                <Input
-                  type="number"
-                  id="codingHours"
-                  value={codingHours}
-                  onChange={(e) => setCodingHours(e.target.value)}
-                  placeholder="Enter coding hours"
-                  disabled={!isEditing || isPending || isUploading}
-                />
-                <p className="mt-1 text-sm text-gray-500">
-                  Enter coding hours in decimal format. E.g., 17 hours 30
-                  minutes as 17.5
-                </p>
-              </div>
-
-              {isEditing && isSoftwareEngineer && (
-                <Button
-                  className="mt-2 w-full"
-                  onClick={() => handleSave(sprint.id)}
-                  disabled={!isValid || isPending || isUploading}
-                >
-                  {isPending ? "Saving..." : "Save"}
-                </Button>
-              )}
-            </CardContent>
-          </SwiperSlide>
-        ))}
-      </Swiper>
+      <div className="relative">
+        <Swiper
+          modules={[Navigation, Pagination]}
+          navigation={{
+            enabled: true,
+          }}
+          pagination={{
+            clickable: true,
+            enabled: true,
+          }}
+          spaceBetween={30}
+          slidesPerView={1}
+          className="!px-12"
+        >
+          {sprints.map((sprint) => (
+            <SwiperSlide key={sprint.id} className="pb-12">
+              <h2 className="mb-4 text-center font-semibold">{sprint.name}</h2>
+              <CardContent className="px-10 pb-10">
+                {isEditing && isSoftwareEngineer ? (
+                  <CodingHoursEditor
+                    sprint={sprint}
+                    engineerId={engineerId}
+                    onSave={handleSave}
+                    onCancel={() => setIsEditing(false)}
+                  />
+                ) : (
+                  <CodingHoursViewer
+                    sprint={sprint}
+                    screenshot={sprint.sprintEngineers[0].codingHoursUrl}
+                    codingHours={
+                      sprint.sprintEngineers[0].codingHours?.toString() || ""
+                    }
+                    isSoftwareEngineer={isSoftwareEngineer}
+                    onEdit={() => setIsEditing(true)}
+                  />
+                )}
+              </CardContent>
+            </SwiperSlide>
+          ))}
+        </Swiper>
+      </div>
     </Card>
   );
 }

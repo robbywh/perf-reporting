@@ -21,10 +21,12 @@ interface Performer {
 
 interface TopPerformersProps {
   performers: Performer[];
+  sprintIds?: string;
 }
 
-export function TopPerformers({ performers }: TopPerformersProps) {
+export function TopPerformers({ performers, sprintIds }: TopPerformersProps) {
   const totalSP = performers.reduce((sum, p) => sum + p.storyPoints, 0);
+
   return (
     <Card className="w-full max-w-md">
       <CardHeader>
@@ -38,7 +40,10 @@ export function TopPerformers({ performers }: TopPerformersProps) {
           {performers.map((performer) => (
             <Link
               key={performer.id}
-              href={`/engineer/${performer.id}`}
+              href={{
+                pathname: `/engineer/${performer.id}`,
+                query: sprintIds ? { sprintIds } : undefined,
+              }}
               className="block"
             >
               <div className="flex cursor-pointer items-center justify-between rounded-md p-3 transition hover:bg-gray-100">

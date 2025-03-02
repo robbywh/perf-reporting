@@ -113,12 +113,14 @@ export function BarChartCapacity({ sprints }: BarChartCapacityProps) {
               <XAxis dataKey="name" tickLine tickMargin={10} axisLine />
               <YAxis />
               <Bar
+                key="bar-reality"
                 dataKey="reality"
                 fill="var(--color-reality)"
                 radius={4}
                 label={(props) => renderCustomLabel(props, "Reality")}
               />
               <Bar
+                key="bar-capacity"
                 dataKey="capacity"
                 fill="var(--color-capacity)"
                 radius={4}

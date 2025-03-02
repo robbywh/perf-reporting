@@ -31,32 +31,52 @@ import {
 import { findRoleIdAndEngineerIdByUserId } from "@/services/users";
 import { ROLE } from "@/types/roles";
 
-async function StatsCardsContainer({ sprintIds }: { sprintIds: string[] }) {
-  const data = await findAverageSPAndMergedCountBySprintIds(sprintIds, 5753351);
+interface PageProps {
+  params: {
+    engineerId: string;
+  };
+  searchParams: Promise<{ sprintIds?: string }>;
+}
+
+async function StatsCardsContainer({
+  sprintIds,
+  engineerId,
+}: {
+  sprintIds: string[];
+  engineerId: number;
+}) {
+  const data = await findAverageSPAndMergedCountBySprintIds(
+    sprintIds,
+    engineerId
+  );
   return <StatsCards data={data} />;
 }
 
 async function PieDonutTaskChartContainer({
   sprintIds,
+  engineerId,
 }: {
   sprintIds: string[];
+  engineerId: number;
 }) {
-  const data = await findTotalTaskToQACounts(sprintIds, 5753351);
+  const data = await findTotalTaskToQACounts(sprintIds, engineerId);
   return <PieDonutTaskChart data={data} />;
 }
 
 async function BarChartMultipleContainer({
   sprintIds,
+  engineerId,
 }: {
   sprintIds: string[];
+  engineerId: number;
 }) {
-  const data = await findAveragesByEngineerAndSprintIds(sprintIds, 5753351);
+  const data = await findAveragesByEngineerAndSprintIds(sprintIds, engineerId);
   return <BarChartMultiple data={data} />;
 }
 
 async function CodingHoursFormContainer({
   sprintIds,
-  engineerId = 5753351,
+  engineerId,
   roleId,
 }: {
   sprintIds: string[];
@@ -95,23 +115,24 @@ async function LeavePublicHolidayContainer({
 }
 
 export default async function EngineerPage({
+  params,
   searchParams,
-}: {
-  searchParams: Promise<{ sprintIds?: string }>;
-}) {
-  const parameters = await searchParams;
-  const sprintIds = parameters?.sprintIds
-    ? parameters.sprintIds.split(",").filter(Boolean)
+}: PageProps) {
+  const searchParameters = await searchParams;
+  const parameters = await params;
+  const sprintIds = searchParameters?.sprintIds
+    ? searchParameters.sprintIds.split(",").filter(Boolean)
     : ["901606315079"];
   const user = await currentUser();
   const { roleId = "" } = await findRoleIdAndEngineerIdByUserId(user?.id || "");
+  const engineerId = parseInt(parameters.engineerId);
 
   return (
     <div>
       {/* Stats Cards */}
       <div className="mb-6">
         <Suspense fallback={<StatsCardsSkeleton />}>
-          <StatsCardsContainer sprintIds={sprintIds} />
+          <StatsCardsContainer sprintIds={sprintIds} engineerId={engineerId} />
         </Suspense>
       </div>
 
@@ -119,12 +140,18 @@ export default async function EngineerPage({
       <div className="flex flex-row items-stretch gap-4">
         <div className="flex-[6]">
           <Suspense fallback={<BarChartMultipleSkeleton />}>
-            <BarChartMultipleContainer sprintIds={sprintIds} />
+            <BarChartMultipleContainer
+              sprintIds={sprintIds}
+              engineerId={engineerId}
+            />
           </Suspense>
         </div>
         <div className="flex-[4]">
           <Suspense fallback={<PieDonutChartSkeleton title="Tasks to QA" />}>
-            <PieDonutTaskChartContainer sprintIds={sprintIds} />
+            <PieDonutTaskChartContainer
+              sprintIds={sprintIds}
+              engineerId={engineerId}
+            />
           </Suspense>
         </div>
       </div>
@@ -134,7 +161,7 @@ export default async function EngineerPage({
         <Suspense fallback={<CodingHoursFormSkeleton />}>
           <CodingHoursFormContainer
             sprintIds={sprintIds}
-            engineerId={5753351}
+            engineerId={engineerId}
             roleId={roleId}
           />
         </Suspense>

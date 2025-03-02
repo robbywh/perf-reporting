@@ -16,3 +16,23 @@ export async function findRoleIdAndEngineerIdByUserId(
     engineerId: user?.engineerId ?? null,
   };
 }
+
+export async function findEngineerById(engineerId: number) {
+  const engineer = await prisma.engineer.findUnique({
+    where: { id: engineerId },
+    select: {
+      id: true,
+      name: true,
+    },
+  });
+
+  if (!engineer) return null;
+
+  // Extract first name from the full name
+  const firstName = engineer.name.split(" ")[0];
+
+  return {
+    ...engineer,
+    firstName,
+  };
+}

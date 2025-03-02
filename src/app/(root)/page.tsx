@@ -42,7 +42,12 @@ export const experimental_ppr = true;
 
 async function TopPerformersContainer({ sprintIds }: { sprintIds: string[] }) {
   const topPerformersData = await findTopPerformersBySprintIds(sprintIds);
-  return <TopPerformers performers={topPerformersData} />;
+  return (
+    <TopPerformers
+      performers={topPerformersData}
+      sprintIds={sprintIds.join(",")}
+    />
+  );
 }
 
 async function BarChartCapacityContainer({
