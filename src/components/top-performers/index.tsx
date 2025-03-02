@@ -28,7 +28,7 @@ export function TopPerformers({ performers, sprintIds }: TopPerformersProps) {
   const totalSP = performers.reduce((sum, p) => sum + p.storyPoints, 0);
 
   return (
-    <Card className="w-full max-w-md">
+    <Card className="h-full">
       <CardHeader>
         <CardTitle>Top Performers</CardTitle>
         <CardDescription>
@@ -36,7 +36,7 @@ export function TopPerformers({ performers, sprintIds }: TopPerformersProps) {
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <div className="space-y-4">
+        <div className="space-y-2">
           {performers.map((performer) => (
             <Link
               key={performer.id}
@@ -44,11 +44,11 @@ export function TopPerformers({ performers, sprintIds }: TopPerformersProps) {
                 pathname: `/engineer/${performer.id}`,
                 query: sprintIds ? { sprintIds } : undefined,
               }}
-              className="block"
+              className="block w-full"
             >
               <div className="flex cursor-pointer items-center justify-between rounded-md p-3 transition hover:bg-gray-100">
-                <div className="flex items-center space-x-4">
-                  <Avatar>
+                <div className="flex min-w-0 items-center space-x-3">
+                  <Avatar className="shrink-0">
                     <AvatarFallback>
                       {performer?.name
                         ?.split(" ")
@@ -57,12 +57,16 @@ export function TopPerformers({ performers, sprintIds }: TopPerformersProps) {
                         .toUpperCase()}
                     </AvatarFallback>
                   </Avatar>
-                  <div>
-                    <p className="text-sm font-medium">{performer.name}</p>
-                    <p className="text-xs text-gray-500">{performer.email}</p>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-medium">
+                      {performer.name}
+                    </p>
+                    <p className="truncate text-xs text-gray-500">
+                      {performer.email}
+                    </p>
                   </div>
                 </div>
-                <div className="flex items-center space-x-2">
+                <div className="flex shrink-0 items-center space-x-2">
                   <p className="text-sm font-semibold">
                     {performer.storyPoints.toFixed(2)} SP
                   </p>
@@ -79,31 +83,29 @@ export function TopPerformers({ performers, sprintIds }: TopPerformersProps) {
 
 export function TopPerformersSkeleton() {
   return (
-    <Card className="w-full max-w-md">
+    <Card className="h-full">
       <CardHeader>
         <CardTitle>Top Performers</CardTitle>
         <CardDescription>
-          <Skeleton className="h-5 w-1/2" /> {/* Simulating loading text */}
+          <Skeleton className="h-5 w-1/2" />
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <div className="space-y-4">
+        <div className="space-y-2">
           {Array.from({ length: 5 }).map((_, index) => (
             <div
               key={index}
               className="flex items-center justify-between rounded-md p-3"
             >
-              <div className="flex items-center space-x-4">
-                <Skeleton className="size-10 rounded-full" /> {/* Avatar */}
-                <div>
-                  <Skeleton className="h-4 w-24" /> {/* Name Placeholder */}
-                  <Skeleton className="mt-1 h-3 w-32" />{" "}
-                  {/* Email Placeholder */}
+              <div className="flex min-w-0 items-center space-x-3">
+                <Skeleton className="size-10 shrink-0 rounded-full" />
+                <div className="min-w-0 flex-1">
+                  <Skeleton className="h-4 w-24" />
+                  <Skeleton className="mt-1 h-3 w-32" />
                 </div>
               </div>
-              <div className="flex items-center space-x-2">
-                <Skeleton className="h-4 w-12" />{" "}
-                {/* Story Points Placeholder */}
+              <div className="flex shrink-0 items-center space-x-2">
+                <Skeleton className="h-4 w-12" />
                 <ChevronRight className="size-4 text-gray-400 opacity-50" />
               </div>
             </div>
