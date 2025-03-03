@@ -135,6 +135,7 @@ export default async function EngineerPage({
   // Opt out of static rendering for this dynamic page
   noStore();
 
+  await authenticateAndRedirect();
   const searchParameters = await searchParams;
   const parameters = await params;
   const sprintIds = searchParameters?.sprintIds
