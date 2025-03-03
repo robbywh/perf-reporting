@@ -125,35 +125,54 @@ export default async function Home({
     <main>
       <div className="mb-6 flex flex-row justify-center gap-4">
         <div className="flex-[7]">
-          <Suspense fallback={<BarChartCapacitySkeleton />}>
+          <Suspense
+            fallback={<BarChartCapacitySkeleton />}
+            key="bar-chart-capacity"
+          >
             <BarChartCapacityContainer sprintIds={sprintIds} />
           </Suspense>
         </div>
         <div className="flex-[3]">
-          <Suspense fallback={<TopPerformersSkeleton />}>
+          <Suspense fallback={<TopPerformersSkeleton />} key="top-performers">
             <TopPerformersContainer sprintIds={sprintIds} />
           </Suspense>
         </div>
       </div>
+
+      {/* Defer non-critical content with priority loading */}
       <div className="mb-6">
-        <Suspense fallback={<LineChartSPCodingSkeleton />}>
+        <Suspense
+          fallback={<LineChartSPCodingSkeleton />}
+          key="line-chart-sp-coding"
+        >
           <LineChartSPCodingContainer sprintIds={sprintIds} />
         </Suspense>
       </div>
+
       <div className="mb-6 flex flex-row justify-center gap-4">
         <div className="flex-[2]">
-          <Suspense fallback={<PieChartSkeleton title="Task Category" />}>
+          <Suspense
+            fallback={<PieChartSkeleton title="Task Category" />}
+            key="pie-task-category"
+          >
             <PieTaskCategoryChartContainer sprintIds={sprintIds} />
           </Suspense>
         </div>
         <div className="flex-[1]">
-          <Suspense fallback={<PieDonutChartSkeleton title="Tasks to QA" />}>
+          <Suspense
+            fallback={<PieDonutChartSkeleton title="Tasks to QA" />}
+            key="pie-donut-task"
+          >
             <PieDonutTaskChartContainer sprintIds={sprintIds} />
           </Suspense>
         </div>
       </div>
+
       <div>
-        <Suspense key={Math.random()} fallback={<LeavePublicHolidaySkeleton />}>
+        <Suspense
+          fallback={<LeavePublicHolidaySkeleton />}
+          key="leave-public-holiday"
+        >
           <LeavePublicHolidayContainer sprintIds={sprintIds} />
         </Suspense>
       </div>

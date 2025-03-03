@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { memo, useEffect, useMemo, useState } from "react";
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts";
 
 import {
@@ -71,18 +71,35 @@ const renderCustomLabel = (props: CustomBarLabelProps, key: string) => {
   );
 };
 
-export function BarChartCapacity({ sprints }: BarChartCapacityProps) {
+// Memoize the BarChartCapacity component to prevent unnecessary re-renders
+export const BarChartCapacity = memo(function BarChartCapacity({
+  sprints,
+}: BarChartCapacityProps) {
   const [mounted, setMounted] = useState(false);
 
-  // Format sprint data for the chart
-  const chartData = sprints.map((sprint) => ({
-    name: sprint.sprintName,
-    capacity: (sprint.totalBaseline + sprint.totalTarget) / 2,
-    reality: sprint.totalStoryPoints,
-  }));
+  // Memoize chart data to prevent recalculation on each render
+  const chartData = useMemo(
+    () =>
+      sprints.map((sprint) => ({
+        name: sprint.sprintName,
+        capacity: (sprint.totalBaseline + sprint.totalTarget) / 2,
+        reality: sprint.totalStoryPoints,
+      })),
+    [sprints]
+  );
+
+  // Memoize the average velocity calculation
+  const averageVelocity = useMemo(() => {
+    if (chartData.length === 0) return 0;
+    return (
+      chartData.reduce((acc, sprint) => acc + sprint.reality, 0) /
+      chartData.length
+    ).toFixed(2);
+  }, [chartData]);
 
   useEffect(() => {
     setMounted(true);
+    return () => setMounted(false);
   }, []);
 
   if (!mounted) return null;
@@ -92,13 +109,7 @@ export function BarChartCapacity({ sprints }: BarChartCapacityProps) {
       <CardHeader>
         <CardTitle>Capacity VS Reality</CardTitle>
         <CardDescription>
-          Your team&apos;s sprint velocity is{" "}
-          {chartData.length > 0
-            ? (
-                chartData.reduce((acc, sprint) => acc + sprint.reality, 0) /
-                chartData.length
-              ).toFixed(2)
-            : 0}
+          Your team&apos;s sprint velocity is {averageVelocity}
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -132,7 +143,7 @@ export function BarChartCapacity({ sprints }: BarChartCapacityProps) {
       </CardContent>
     </Card>
   );
-}
+});
 
 export function BarChartCapacitySkeleton() {
   return (

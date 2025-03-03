@@ -1,5 +1,7 @@
+"use client";
 import { ChevronRight } from "lucide-react";
 import Link from "next/link";
+import { memo, useMemo } from "react";
 
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
@@ -24,8 +26,16 @@ interface TopPerformersProps {
   sprintIds?: string;
 }
 
-export function TopPerformers({ performers, sprintIds }: TopPerformersProps) {
-  const totalSP = performers.reduce((sum, p) => sum + p.storyPoints, 0);
+// Memoize the component to prevent unnecessary re-renders
+export const TopPerformers = memo(function TopPerformers({
+  performers,
+  sprintIds,
+}: TopPerformersProps) {
+  // Memoize the total story points calculation
+  const totalSP = useMemo(
+    () => performers.reduce((sum, p) => sum + p.storyPoints, 0),
+    [performers]
+  );
 
   return (
     <Card className="h-full">
@@ -38,48 +48,65 @@ export function TopPerformers({ performers, sprintIds }: TopPerformersProps) {
       <CardContent>
         <div className="space-y-2">
           {performers.map((performer) => (
-            <Link
+            <PerformerItem
               key={performer.id}
-              href={{
-                pathname: `/engineer/${performer.id}`,
-                query: sprintIds ? { sprintIds } : undefined,
-              }}
-              className="block w-full"
-            >
-              <div className="flex cursor-pointer items-center justify-between rounded-md p-3 transition hover:bg-gray-100">
-                <div className="flex min-w-0 items-center space-x-3">
-                  <Avatar className="shrink-0">
-                    <AvatarFallback>
-                      {performer?.name
-                        ?.split(" ")
-                        .map((n) => n[0])
-                        .join("")
-                        .toUpperCase()}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-medium">
-                      {performer.name}
-                    </p>
-                    <p className="truncate text-xs text-gray-500">
-                      {performer.email}
-                    </p>
-                  </div>
-                </div>
-                <div className="flex shrink-0 items-center space-x-2">
-                  <p className="text-sm font-semibold">
-                    {performer.storyPoints.toFixed(2)} SP
-                  </p>
-                  <ChevronRight className="size-4 text-gray-400" />
-                </div>
-              </div>
-            </Link>
+              performer={performer}
+              sprintIds={sprintIds}
+            />
           ))}
         </div>
       </CardContent>
     </Card>
   );
-}
+});
+
+// Extract performer item to its own memoized component
+const PerformerItem = memo(function PerformerItem({
+  performer,
+  sprintIds,
+}: {
+  performer: Performer;
+  sprintIds?: string;
+}) {
+  // Memoize the avatar fallback text
+  const avatarFallback = useMemo(() => {
+    return (
+      performer?.name
+        ?.split(" ")
+        .map((n) => n[0])
+        .join("")
+        .toUpperCase() || ""
+    );
+  }, [performer?.name]);
+
+  return (
+    <Link
+      href={{
+        pathname: `/engineer/${performer.id}`,
+        query: sprintIds ? { sprintIds } : undefined,
+      }}
+      className="block w-full"
+    >
+      <div className="flex cursor-pointer items-center justify-between rounded-md p-3 transition hover:bg-gray-100">
+        <div className="flex min-w-0 items-center space-x-3">
+          <Avatar className="shrink-0">
+            <AvatarFallback>{avatarFallback}</AvatarFallback>
+          </Avatar>
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-sm font-medium">{performer.name}</p>
+            <p className="truncate text-xs text-gray-500">{performer.email}</p>
+          </div>
+        </div>
+        <div className="flex shrink-0 items-center space-x-2">
+          <p className="text-sm font-semibold">
+            {performer.storyPoints.toFixed(2)} SP
+          </p>
+          <ChevronRight className="size-4 text-gray-400" />
+        </div>
+      </div>
+    </Link>
+  );
+});
 
 export function TopPerformersSkeleton() {
   return (
