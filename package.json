@@ -63,7 +63,8 @@
   "overrides": {
     "react": "$react",
     "react-dom": "$react-dom",
-    "eslint": "$eslint"
+    "eslint": "$eslint",
+    "next": "$next"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"
