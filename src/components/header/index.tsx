@@ -1,4 +1,4 @@
-import { UserButton } from "@clerk/nextjs";
+import { SignedIn, SignedOut, SignInButton, UserButton } from "@clerk/nextjs";
 
 export default function Header() {
   return (
@@ -16,7 +16,12 @@ export default function Header() {
       </div>
 
       <div className="flex flex-1 justify-end">
-        <UserButton />
+        <SignedOut>
+          <SignInButton />
+        </SignedOut>
+        <SignedIn>
+          <UserButton />
+        </SignedIn>
       </div>
     </header>
   );
