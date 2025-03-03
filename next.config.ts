@@ -11,9 +11,6 @@ const nextConfig: NextConfig = {
   compress: true,
   poweredByHeader: false,
   reactStrictMode: true,
-  experimental: {
-    ppr: true,
-  },
 };
 
 export default nextConfig;

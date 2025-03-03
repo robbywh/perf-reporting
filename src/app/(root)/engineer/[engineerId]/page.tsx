@@ -41,9 +41,6 @@ import {
 } from "@/services/users";
 import { ROLE } from "@/types/roles";
 
-// eslint-disable-next-line camelcase
-export const experimental_ppr = true;
-
 interface PageProps {
   params: Promise<{ engineerId?: string }>;
   searchParams: Promise<{ sprintIds?: string }>;

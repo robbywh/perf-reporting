@@ -41,9 +41,6 @@ import {
 import { findRoleIdAndEngineerIdByUserId } from "@/services/users";
 import { ROLE } from "@/types/roles";
 
-// eslint-disable-next-line camelcase
-export const experimental_ppr = true;
-
 async function TopPerformersContainer({ sprintIds }: { sprintIds: string[] }) {
   noStore(); // Opt out of static rendering for dynamic data
   const topPerformersData = await findTopPerformersBySprintIds(sprintIds);
