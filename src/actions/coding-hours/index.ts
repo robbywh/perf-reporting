@@ -1,6 +1,7 @@
 "use server";
 
 import { put } from "@vercel/blob";
+import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
 import { prisma } from "@/services/db";
@@ -48,4 +49,6 @@ export async function updateCodingHoursAction(data: {
       codingHoursUrl: parsedData.data.codingHoursUrl,
     },
   });
+
+  revalidatePath(`/engineer/${parsedData.data.engineerId}`);
 }

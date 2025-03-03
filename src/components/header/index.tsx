@@ -18,7 +18,7 @@ export default function Header() {
       </div>
 
       <div className="flex flex-1 justify-end">
-        <UserButton afterSignOutUrl="/" />
+        <UserButton />
       </div>
     </header>
   );
