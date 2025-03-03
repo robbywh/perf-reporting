@@ -6,9 +6,11 @@ const nextConfig: NextConfig = {
     formats: ["image/avif", "image/webp"],
   },
   compress: true,
-  swcMinify: true,
   poweredByHeader: false,
   reactStrictMode: true,
+  experimental: {
+    ppr: true,
+  },
 };
 
 export default nextConfig;

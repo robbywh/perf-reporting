@@ -1,5 +1,6 @@
 import { auth, currentUser } from "@clerk/nextjs/server";
 import { ArrowLeft } from "lucide-react";
+import { unstable_noStore as noStore } from "next/cache";
 import Link from "next/link";
 import { Suspense } from "react";
 
@@ -40,6 +41,9 @@ import {
 } from "@/services/users";
 import { ROLE } from "@/types/roles";
 
+// eslint-disable-next-line camelcase
+export const experimental_ppr = true;
+
 interface PageProps {
   params: Promise<{ engineerId?: string }>;
   searchParams: Promise<{ sprintIds?: string }>;
@@ -52,6 +56,7 @@ async function StatsCardsContainer({
   sprintIds: string[];
   engineerId: number;
 }) {
+  noStore(); // Opt out of static rendering for dynamic data
   const data = await findAverageSPAndMergedCountBySprintIds(
     sprintIds,
     engineerId
@@ -66,6 +71,7 @@ async function PieDonutTaskChartContainer({
   sprintIds: string[];
   engineerId: number;
 }) {
+  noStore(); // Opt out of static rendering for dynamic data
   const data = await findTotalTaskToQACounts(sprintIds, engineerId);
   return <PieDonutTaskChart data={data} />;
 }
@@ -77,6 +83,7 @@ async function BarChartMultipleContainer({
   sprintIds: string[];
   engineerId: number;
 }) {
+  noStore(); // Opt out of static rendering for dynamic data
   const data = await findAveragesByEngineerAndSprintIds(sprintIds, engineerId);
   return <BarChartMultiple data={data} />;
 }
@@ -90,6 +97,7 @@ async function CodingHoursFormContainer({
   engineerId: number;
   roleId: string | null;
 }) {
+  noStore(); // Opt out of static rendering for dynamic data
   const data = await findSprintsBySprintIds(sprintIds, engineerId);
   return (
     <CodingHoursForm
@@ -106,6 +114,7 @@ async function LeavePublicHolidayContainer({
 }: {
   sprintIds: string[];
 }) {
+  noStore(); // Opt out of static rendering for dynamic data
   const data = await findSprintsWithLeavesAndHolidays(sprintIds);
   const engineers = await findAllEngineers();
   const { userId } = await auth();
@@ -126,6 +135,9 @@ export default async function EngineerPage({
   params,
   searchParams,
 }: PageProps) {
+  // Opt out of static rendering for this dynamic page
+  noStore();
+
   const searchParameters = await searchParams;
   const parameters = await params;
   const sprintIds = searchParameters?.sprintIds
@@ -154,7 +166,7 @@ export default async function EngineerPage({
       )}
       {/* Stats Cards */}
       <div className="mb-6">
-        <Suspense fallback={<StatsCardsSkeleton />}>
+        <Suspense key="stats-cards-suspense" fallback={<StatsCardsSkeleton />}>
           <StatsCardsContainer sprintIds={sprintIds} engineerId={engineerId} />
         </Suspense>
       </div>
@@ -162,7 +174,10 @@ export default async function EngineerPage({
       {/* Charts Section */}
       <div className="flex flex-row items-stretch gap-4">
         <div className="flex-[6]">
-          <Suspense fallback={<BarChartMultipleSkeleton />}>
+          <Suspense
+            key="bar-chart-suspense"
+            fallback={<BarChartMultipleSkeleton />}
+          >
             <BarChartMultipleContainer
               sprintIds={sprintIds}
               engineerId={engineerId}
@@ -170,7 +185,10 @@ export default async function EngineerPage({
           </Suspense>
         </div>
         <div className="flex-[4]">
-          <Suspense fallback={<PieDonutChartSkeleton title="Tasks to QA" />}>
+          <Suspense
+            key="pie-donut-chart-suspense"
+            fallback={<PieDonutChartSkeleton title="Tasks to QA" />}
+          >
             <PieDonutTaskChartContainer
               sprintIds={sprintIds}
               engineerId={engineerId}
@@ -181,7 +199,10 @@ export default async function EngineerPage({
 
       {/* Coding Hours Form */}
       <div className="mb-6 flex">
-        <Suspense fallback={<CodingHoursFormSkeleton />}>
+        <Suspense
+          key="coding-hours-suspense"
+          fallback={<CodingHoursFormSkeleton />}
+        >
           <CodingHoursFormContainer
             sprintIds={sprintIds}
             engineerId={engineerId}
@@ -194,7 +215,7 @@ export default async function EngineerPage({
       {roleId === ROLE.SOFTWARE_ENGINEER && (
         <div>
           <Suspense
-            key={Math.random()}
+            key="leave-holiday-suspense"
             fallback={<LeavePublicHolidaySkeleton />}
           >
             <LeavePublicHolidayContainer sprintIds={sprintIds} />

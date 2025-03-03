@@ -1,4 +1,5 @@
 import { auth } from "@clerk/nextjs/server";
+import { unstable_noStore as noStore } from "next/cache";
 import { Suspense } from "react";
 
 import {
@@ -44,6 +45,7 @@ import { ROLE } from "@/types/roles";
 export const experimental_ppr = true;
 
 async function TopPerformersContainer({ sprintIds }: { sprintIds: string[] }) {
+  noStore(); // Opt out of static rendering for dynamic data
   const topPerformersData = await findTopPerformersBySprintIds(sprintIds);
   return (
     <TopPerformers
@@ -58,6 +60,7 @@ async function BarChartCapacityContainer({
 }: {
   sprintIds: string[];
 }) {
+  noStore(); // Opt out of static rendering for dynamic data
   const sprintsCapacity = await findCapacityVsRealityBySprintIds(sprintIds);
   return <BarChartCapacity sprints={sprintsCapacity} />;
 }
@@ -67,6 +70,7 @@ async function LineChartSPCodingContainer({
 }: {
   sprintIds: string[];
 }) {
+  noStore(); // Opt out of static rendering for dynamic data
   const sprintData = await findEngineerTrendBySprintIds(sprintIds);
   return <LineChartSPCoding sprintData={sprintData} />;
 }
@@ -76,6 +80,7 @@ async function PieTaskCategoryChartContainer({
 }: {
   sprintIds: string[];
 }) {
+  noStore(); // Opt out of static rendering for dynamic data
   const taskData = await findCountTasksByCategory(sprintIds);
   return <PieTaskCategoryChart taskData={taskData} />;
 }
@@ -85,6 +90,7 @@ async function PieDonutTaskChartContainer({
 }: {
   sprintIds: string[];
 }) {
+  noStore(); // Opt out of static rendering for dynamic data
   const data = await findTotalTaskToQACounts(sprintIds);
   return <PieDonutTaskChart data={data} />;
 }
@@ -94,6 +100,7 @@ async function LeavePublicHolidayContainer({
 }: {
   sprintIds: string[];
 }) {
+  noStore(); // Opt out of static rendering for dynamic data
   const data = await findSprintsWithLeavesAndHolidays(sprintIds);
   const engineers = await findAllEngineers();
   const { userId } = await auth();
@@ -115,6 +122,7 @@ export default async function Home({
 }: {
   searchParams: Promise<{ sprintIds?: string }>;
 }) {
+  noStore(); // Opt out of static rendering for dynamic data
   await authenticateAndRedirect();
   const parameters = await searchParams;
   const sprintIds = parameters?.sprintIds
