@@ -8,6 +8,7 @@ export const metadata = {
   description:
     "View performance reports, charts, and top performers in the Performance Reporting Dashboard.",
 };
+
 export default function RootLayout({
   children,
 }: {
