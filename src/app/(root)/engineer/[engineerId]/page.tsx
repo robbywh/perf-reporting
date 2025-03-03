@@ -25,6 +25,7 @@ import {
 } from "@/components/leave-public-holiday-form";
 import { StatsCards, StatsCardsSkeleton } from "@/components/stats-cards";
 import { Button } from "@/components/ui/button";
+import { authenticateAndRedirect } from "@/lib/utils/auth";
 import { findAllEngineers } from "@/services/engineers";
 import { findAveragesByEngineerAndSprintIds } from "@/services/sprint-engineers";
 import {
