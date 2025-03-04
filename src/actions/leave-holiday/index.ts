@@ -1,6 +1,5 @@
 "use server";
 
-import { PrismaClient } from "@prisma/client";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
@@ -8,10 +7,8 @@ import { prisma } from "@/services/db";
 
 const WORKING_DAYS_PER_SPRINT = 10;
 
-type PrismaTransactionClient = Omit<
-  PrismaClient,
-  "$connect" | "$disconnect" | "$on" | "$transaction" | "$use" | "$extends"
->;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type PrismaTransactionClient = any;
 
 type LeaveTypeKey =
   | "cuti_tahunan"
@@ -126,6 +123,9 @@ async function adjustBaselineTarget(
     where: engineerId
       ? { sprintId: sprint.id, engineerId }
       : { sprintId: sprint.id },
+    select: {
+      engineerId: true,
+    },
     include: {
       engineer: {
         include: {
@@ -137,39 +137,43 @@ async function adjustBaselineTarget(
 
   // Calculate reduction factor
   const reductionFactor = leaveType === "full_day" ? 1 : 0.5;
-
   // Calculate how much to adjust per day
-  const updates = sprintEngineers.map((sprintEngineer) => {
-    const { baseline, target } = sprintEngineer.engineer.jobLevel;
-    const baselinePerDay = Number(baseline) / WORKING_DAYS_PER_SPRINT;
-    const targetPerDay = Number(target) / WORKING_DAYS_PER_SPRINT;
+  const updates = sprintEngineers.map(
+    (sprintEngineer: {
+      engineer: { jobLevel: { baseline: number; target: number } };
+      engineerId: number;
+    }) => {
+      const { baseline, target } = sprintEngineer.engineer.jobLevel;
+      const baselinePerDay = Number(baseline) / WORKING_DAYS_PER_SPRINT;
+      const targetPerDay = Number(target) / WORKING_DAYS_PER_SPRINT;
 
-    // If deleting, we add back the days (increment)
-    // If adding, we reduce the days (decrement)
-    const baselineChange = isDelete
-      ? baselinePerDay * reductionFactor
-      : -(baselinePerDay * reductionFactor);
-    const targetChange = isDelete
-      ? targetPerDay * reductionFactor
-      : -(targetPerDay * reductionFactor);
+      // If deleting, we add back the days (increment)
+      // If adding, we reduce the days (decrement)
+      const baselineChange = isDelete
+        ? baselinePerDay * reductionFactor
+        : -(baselinePerDay * reductionFactor);
+      const targetChange = isDelete
+        ? targetPerDay * reductionFactor
+        : -(targetPerDay * reductionFactor);
 
-    return tx.sprintEngineer.update({
-      where: {
-        sprintId_engineerId: {
-          sprintId: sprint.id,
-          engineerId: sprintEngineer.engineerId,
+      return tx.sprintEngineer.update({
+        where: {
+          sprintId_engineerId: {
+            sprintId: sprint.id,
+            engineerId: sprintEngineer.engineerId,
+          },
         },
-      },
-      data: {
-        baseline: {
-          increment: baselineChange,
+        data: {
+          baseline: {
+            increment: baselineChange,
+          },
+          target: {
+            increment: targetChange,
+          },
         },
-        target: {
-          increment: targetChange,
-        },
-      },
-    });
-  });
+      });
+    }
+  );
 
   // Execute all updates in parallel
   await Promise.all(updates);
