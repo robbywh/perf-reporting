@@ -388,19 +388,27 @@ export function LeavePublicHoliday({
           const sprintStartDate = new Date(sprint.startDate);
           const sprintEndDate = new Date(sprint.endDate);
 
-          const filteredLeaves = sprint.leaves.filter((leave) => {
-            const leaveDate = new Date(leave.date);
-            const isIncluded =
-              leaveDate >= sprintStartDate && leaveDate <= sprintEndDate;
-            return isIncluded;
-          });
+          const filteredLeaves = sprint.leaves
+            .filter((leave) => {
+              const leaveDate = new Date(leave.date);
+              const isIncluded =
+                leaveDate >= sprintStartDate && leaveDate <= sprintEndDate;
+              return isIncluded;
+            })
+            .sort(
+              (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
+            );
 
-          const filteredHolidays = sprint.holidays.filter((holiday) => {
-            const holidayDate = new Date(holiday.date);
-            const isIncluded =
-              holidayDate >= sprintStartDate && holidayDate <= sprintEndDate;
-            return isIncluded;
-          });
+          const filteredHolidays = sprint.holidays
+            .filter((holiday) => {
+              const holidayDate = new Date(holiday.date);
+              const isIncluded =
+                holidayDate >= sprintStartDate && holidayDate <= sprintEndDate;
+              return isIncluded;
+            })
+            .sort(
+              (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
+            );
 
           return (
             <SwiperSlide key={sprint.sprintName}>
