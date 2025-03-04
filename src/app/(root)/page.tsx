@@ -109,7 +109,7 @@ async function LeavePublicHolidayContainer({
       engineers={engineers}
       addLeaveOrHolidayAction={addLeaveOrHolidayAction}
       deleteLeaveOrHolidayAction={deleteLeaveOrHolidayAction}
-      isHideAddButton={roleId !== ROLE.ENGINEERING_MANAGER}
+      showActionButton={roleId === ROLE.ENGINEERING_MANAGER}
     />
   );
 }

@@ -31,7 +31,6 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { ROLE } from "@/types/roles";
 
 import { Skeleton } from "../ui/skeleton";
 
@@ -93,7 +92,7 @@ interface FormInputs {
 }
 
 interface LeavePublicHolidayProps {
-  isHideAddButton?: boolean;
+  showActionButton?: boolean;
   sprints: SprintData[];
   engineers: Engineer[];
   roleId: string;
@@ -155,8 +154,7 @@ export function LeavePublicHoliday({
   engineers,
   addLeaveOrHolidayAction,
   deleteLeaveOrHolidayAction,
-  isHideAddButton = true,
-  roleId = ROLE.SOFTWARE_ENGINEER,
+  showActionButton = false,
 }: LeavePublicHolidayProps) {
   const [mounted, setMounted] = React.useState(false);
   const [openDialog, setOpenDialog] = React.useState(false);
@@ -172,7 +170,6 @@ export function LeavePublicHoliday({
   } | null>(null);
   const [sprintData, setSprintData] = React.useState<SprintData[]>(sprints);
   const [loading, setLoading] = React.useState(false);
-  const isSoftwareEngineer = roleId === ROLE.SOFTWARE_ENGINEER;
 
   const {
     register,
@@ -367,7 +364,7 @@ export function LeavePublicHoliday({
         <CardHeader>
           <CardTitle>Public Holiday &amp; Leave</CardTitle>
         </CardHeader>
-        {!isHideAddButton && (
+        {showActionButton && (
           <Button onClick={() => setOpenDialog(true)}>
             Add Public Holiday / Leave
           </Button>
@@ -425,8 +422,7 @@ export function LeavePublicHoliday({
                     confirmDelete={confirmDelete}
                     getEngineerName={getEngineerName}
                     type="leave"
-                    isSoftwareEngineer={isSoftwareEngineer}
-                    isHideDeleteButton={isHideAddButton}
+                    showActionButton={showActionButton}
                   />
                   {/* Holidays Table */}
                   <TableSection
@@ -435,8 +431,7 @@ export function LeavePublicHoliday({
                     sprintIndex={sprintIndex}
                     confirmDelete={confirmDelete}
                     type="holiday"
-                    isSoftwareEngineer={isSoftwareEngineer}
-                    isHideDeleteButton={isHideAddButton}
+                    showActionButton={showActionButton}
                   />
                 </div>
               </div>
@@ -646,8 +641,7 @@ function TableSection({
   confirmDelete,
   getEngineerName,
   type,
-  isSoftwareEngineer,
-  isHideDeleteButton = false,
+  showActionButton = false,
 }: {
   title: string;
   data: (LeaveData | HolidayData)[];
@@ -659,8 +653,7 @@ function TableSection({
   ) => void;
   getEngineerName?: (engineerId?: number) => string;
   type: "leave" | "holiday";
-  isSoftwareEngineer: boolean;
-  isHideDeleteButton: boolean;
+  showActionButton: boolean;
 }) {
   return (
     <div className="border-r border-gray-300 pr-6">
@@ -669,7 +662,7 @@ function TableSection({
           <TableRow>
             <TableHead>{title}</TableHead>
             <TableHead>Date</TableHead>
-            {!isSoftwareEngineer && (
+            {showActionButton && (
               <TableHead className="text-right">Actions</TableHead>
             )}
           </TableRow>
@@ -701,7 +694,7 @@ function TableSection({
                     year: "numeric",
                   })}
                 </TableCell>
-                {!isHideDeleteButton && (
+                {showActionButton && (
                   <TableCell className="text-right">
                     <Button
                       aria-label="Delete"
