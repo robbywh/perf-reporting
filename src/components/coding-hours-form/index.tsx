@@ -1,6 +1,6 @@
 "use client";
 
-import { Edit2, Loader } from "lucide-react";
+import { Edit2, Loader, ZoomIn } from "lucide-react";
 import Image from "next/image";
 import { useState, useEffect, useTransition } from "react";
 import { Navigation, Pagination } from "swiper/modules";
@@ -13,6 +13,12 @@ import "swiper/css/pagination";
 import { uploadFile } from "@/actions/coding-hours";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ROLE } from "@/types/roles";
@@ -71,10 +77,31 @@ function CodingHoursEditor({
   const [isValid, setIsValid] = useState<boolean>(false);
   const [isPending, startTransition] = useTransition();
   const [isUploading, setIsUploading] = useState<boolean>(false);
+  const [isZoomOpen, setIsZoomOpen] = useState(false);
+  const [isImageLoading, setIsImageLoading] = useState(true);
 
   useEffect(() => {
     setIsValid(!!screenshot && codingHours.trim() !== "");
   }, [screenshot, codingHours]);
+
+  // Handle keyboard events for the zoom dialog
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && isZoomOpen) {
+        setIsZoomOpen(false);
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isZoomOpen]);
+
+  // Reset loading state when dialog closes
+  useEffect(() => {
+    if (!isZoomOpen) {
+      setIsImageLoading(true);
+    }
+  }, [isZoomOpen]);
 
   const handleFileUpload = async (
     event: React.ChangeEvent<HTMLInputElement>
@@ -130,7 +157,18 @@ function CodingHoursEditor({
       </div>
       <div className="relative w-full">
         {screenshot ? (
-          <div className="relative aspect-auto h-60 w-full overflow-hidden rounded-lg border">
+          <div className="group relative aspect-auto h-60 w-full overflow-hidden rounded-lg border">
+            <div
+              className="absolute inset-0 z-10 flex cursor-pointer items-center justify-center opacity-0 transition-opacity hover:bg-black/20 group-hover:opacity-100"
+              onClick={() => setIsZoomOpen(true)}
+            >
+              <div className="rounded-full bg-black/50 p-3 transition-transform group-hover:scale-110">
+                <ZoomIn className="size-6 text-white" />
+              </div>
+            </div>
+            <div className="absolute bottom-2 right-2 z-10 rounded-full bg-black/50 p-1.5 text-xs text-white opacity-70">
+              Click to zoom
+            </div>
             <Image
               src={screenshot}
               alt="Uploaded Screenshot"
@@ -179,6 +217,36 @@ function CodingHoursEditor({
           {isPending ? "Saving..." : "Save"}
         </Button>
       </div>
+
+      {/* Image Zoom Dialog */}
+      {screenshot && (
+        <Dialog open={isZoomOpen} onOpenChange={setIsZoomOpen}>
+          <DialogContent className="max-h-[95vh] w-[95vw] max-w-5xl overflow-hidden p-0">
+            <DialogTitle className="sr-only">
+              Coding Hours Screenshot Preview
+            </DialogTitle>
+            <DialogDescription className="sr-only">
+              Full-size view of the coding hours screenshot
+            </DialogDescription>
+            <div className="relative h-[85vh] w-full">
+              {isImageLoading && (
+                <div className="absolute inset-0 flex items-center justify-center bg-background/80">
+                  <Loader className="size-8 animate-spin" />
+                </div>
+              )}
+              <Image
+                src={screenshot}
+                alt="Coding Hours Screenshot"
+                fill
+                className="object-contain"
+                sizes="(max-width: 768px) 100vw, (max-width: 1200px) 80vw, 70vw"
+                priority
+                onLoad={() => setIsImageLoading(false)}
+              />
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
     </div>
   );
 }
@@ -189,11 +257,44 @@ function CodingHoursViewer({
   isSoftwareEngineer,
   onEdit,
 }: CodingHoursViewerProps) {
+  const [isZoomOpen, setIsZoomOpen] = useState(false);
+  const [isImageLoading, setIsImageLoading] = useState(true);
+
+  // Handle keyboard events for the zoom dialog
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && isZoomOpen) {
+        setIsZoomOpen(false);
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isZoomOpen]);
+
+  // Reset loading state when dialog closes
+  useEffect(() => {
+    if (!isZoomOpen) {
+      setIsImageLoading(true);
+    }
+  }, [isZoomOpen]);
+
   return (
     <div className="flex flex-col items-center gap-4">
       <div className="relative w-full">
         {screenshot ? (
-          <div className="relative aspect-auto h-60 w-full overflow-hidden rounded-lg border">
+          <div className="group relative aspect-auto h-60 w-full overflow-hidden rounded-lg border">
+            <div
+              className="absolute inset-0 z-10 flex cursor-pointer items-center justify-center opacity-0 transition-opacity hover:bg-black/20 group-hover:opacity-100"
+              onClick={() => setIsZoomOpen(true)}
+            >
+              <div className="rounded-full bg-black/50 p-3 transition-transform group-hover:scale-110">
+                <ZoomIn className="size-6 text-white" />
+              </div>
+            </div>
+            <div className="absolute bottom-2 right-2 z-10 rounded-full bg-black/50 p-1.5 text-xs text-white opacity-70">
+              Click to zoom
+            </div>
             <Image
               src={screenshot}
               alt="Coding Hours Screenshot"
@@ -231,6 +332,36 @@ function CodingHoursViewer({
           {codingHours || "No coding hours recorded"}
         </div>
       </div>
+
+      {/* Image Zoom Dialog */}
+      {screenshot && (
+        <Dialog open={isZoomOpen} onOpenChange={setIsZoomOpen}>
+          <DialogContent className="max-h-[95vh] w-[95vw] max-w-5xl overflow-hidden p-0">
+            <DialogTitle className="sr-only">
+              Coding Hours Screenshot Preview
+            </DialogTitle>
+            <DialogDescription className="sr-only">
+              Full-size view of the coding hours screenshot
+            </DialogDescription>
+            <div className="relative h-[85vh] w-full">
+              {isImageLoading && (
+                <div className="absolute inset-0 flex items-center justify-center bg-background/80">
+                  <Loader className="size-8 animate-spin" />
+                </div>
+              )}
+              <Image
+                src={screenshot}
+                alt="Coding Hours Screenshot"
+                fill
+                className="object-contain"
+                sizes="(max-width: 768px) 100vw, (max-width: 1200px) 80vw, 70vw"
+                priority
+                onLoad={() => setIsImageLoading(false)}
+              />
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
     </div>
   );
 }
@@ -260,6 +391,11 @@ export function CodingHoursForm({
     setMounted(true);
   }, []);
 
+  // Update sprints when initialSprints changes
+  useEffect(() => {
+    setSprints(initialSprints);
+  }, [initialSprints]);
+
   const handleSave = async (data: {
     sprintId: string;
     engineerId: number;
@@ -287,13 +423,71 @@ export function CodingHoursForm({
 
   if (!mounted) return null;
 
+  // Handle case when there are no sprints
+  if (!sprints || sprints.length === 0) {
+    return (
+      <Card className="mx-auto mt-6 w-full p-4">
+        <CardHeader>
+          <CardTitle>Coding Hours</CardTitle>
+        </CardHeader>
+        <CardContent className="px-10 pb-10 text-center">
+          <p>No sprints available.</p>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  // Single sprint case
+  if (sprints.length === 1) {
+    const sprint = sprints[0];
+    // Check if sprint data is valid
+    const hasSprintEngineers =
+      sprint.sprintEngineers && sprint.sprintEngineers.length > 0;
+    const screenshot = hasSprintEngineers
+      ? sprint.sprintEngineers[0].codingHoursUrl
+      : null;
+    const codingHours =
+      hasSprintEngineers && sprint.sprintEngineers[0].codingHours
+        ? sprint.sprintEngineers[0].codingHours.toString()
+        : "";
+
+    return (
+      <Card className="mx-auto mt-6 w-full p-4">
+        <CardHeader>
+          <CardTitle>Coding Hours</CardTitle>
+        </CardHeader>
+        <h2 className="mb-4 text-center font-semibold">{sprint.name}</h2>
+        <CardContent className="px-10 pb-10">
+          {isEditing && isSoftwareEngineer ? (
+            <CodingHoursEditor
+              sprint={sprint}
+              engineerId={engineerId}
+              onSave={handleSave}
+              onCancel={() => setIsEditing(false)}
+            />
+          ) : (
+            <CodingHoursViewer
+              sprint={sprint}
+              screenshot={screenshot}
+              codingHours={codingHours}
+              isSoftwareEngineer={isSoftwareEngineer}
+              onEdit={() => setIsEditing(true)}
+            />
+          )}
+        </CardContent>
+      </Card>
+    );
+  }
+
+  // Multiple sprints case
   return (
     <Card className="mx-auto mt-6 w-full p-4">
       <CardHeader>
         <CardTitle>Coding Hours</CardTitle>
       </CardHeader>
-      <div className="relative">
+      <div className="relative w-full">
         <Swiper
+          key={`coding-hours-swiper-${sprints.length}`}
           modules={[Navigation, Pagination]}
           navigation={{
             enabled: true,
@@ -306,31 +500,44 @@ export function CodingHoursForm({
           slidesPerView={1}
           className="!px-12"
         >
-          {sprints.map((sprint) => (
-            <SwiperSlide key={sprint.id} className="pb-12">
-              <h2 className="mb-4 text-center font-semibold">{sprint.name}</h2>
-              <CardContent className="px-10 pb-10">
-                {isEditing && isSoftwareEngineer ? (
-                  <CodingHoursEditor
-                    sprint={sprint}
-                    engineerId={engineerId}
-                    onSave={handleSave}
-                    onCancel={() => setIsEditing(false)}
-                  />
-                ) : (
-                  <CodingHoursViewer
-                    sprint={sprint}
-                    screenshot={sprint.sprintEngineers[0].codingHoursUrl}
-                    codingHours={
-                      sprint.sprintEngineers[0].codingHours?.toString() || ""
-                    }
-                    isSoftwareEngineer={isSoftwareEngineer}
-                    onEdit={() => setIsEditing(true)}
-                  />
-                )}
-              </CardContent>
-            </SwiperSlide>
-          ))}
+          {sprints.map((sprint) => {
+            // Check if sprint data is valid
+            const hasSprintEngineers =
+              sprint.sprintEngineers && sprint.sprintEngineers.length > 0;
+            const screenshot = hasSprintEngineers
+              ? sprint.sprintEngineers[0].codingHoursUrl
+              : null;
+            const codingHours =
+              hasSprintEngineers && sprint.sprintEngineers[0].codingHours
+                ? sprint.sprintEngineers[0].codingHours.toString()
+                : "";
+
+            return (
+              <SwiperSlide key={sprint.id} className="w-full pb-12">
+                <h2 className="mb-4 text-center font-semibold">
+                  {sprint.name}
+                </h2>
+                <CardContent className="px-10 pb-10">
+                  {isEditing && isSoftwareEngineer ? (
+                    <CodingHoursEditor
+                      sprint={sprint}
+                      engineerId={engineerId}
+                      onSave={handleSave}
+                      onCancel={() => setIsEditing(false)}
+                    />
+                  ) : (
+                    <CodingHoursViewer
+                      sprint={sprint}
+                      screenshot={screenshot}
+                      codingHours={codingHours}
+                      isSoftwareEngineer={isSoftwareEngineer}
+                      onEdit={() => setIsEditing(true)}
+                    />
+                  )}
+                </CardContent>
+              </SwiperSlide>
+            );
+          })}
         </Swiper>
       </div>
     </Card>

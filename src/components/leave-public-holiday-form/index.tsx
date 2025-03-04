@@ -351,6 +351,13 @@ export function LeavePublicHoliday({
     setMounted(true);
   }, []);
 
+  // Update sprintData when sprints prop changes
+  React.useEffect(() => {
+    if (sprints && sprints.length > 0) {
+      setSprintData(sprints);
+    }
+  }, [sprints]);
+
   if (!mounted) return null; // Prevent hydration mismatch
 
   return (
@@ -369,6 +376,7 @@ export function LeavePublicHoliday({
 
       {/* Swiper for Sprint Data */}
       <Swiper
+        key={`leave-holiday-swiper-${sprintData.length}`}
         modules={[Navigation, Pagination]}
         navigation
         pagination={{ clickable: true }}
