@@ -25,7 +25,6 @@ import {
 } from "@/components/leave-public-holiday-form";
 import { StatsCards, StatsCardsSkeleton } from "@/components/stats-cards";
 import { Button } from "@/components/ui/button";
-import { authenticateAndRedirect } from "@/lib/utils/auth";
 import { findAllEngineers } from "@/services/engineers";
 import { findAveragesByEngineerAndSprintIds } from "@/services/sprint-engineers";
 import {
@@ -135,8 +134,6 @@ export default async function EngineerPage({
 }: PageProps) {
   // Opt out of static rendering for this dynamic page
   noStore();
-
-  await authenticateAndRedirect();
   const searchParameters = await searchParams;
   const parameters = await params;
   const sprintIds = searchParameters?.sprintIds
