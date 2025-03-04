@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Bar, BarChart, CartesianGrid, XAxis } from "recharts";
 
 import {
@@ -77,25 +77,27 @@ export function BarChartMultiple({ data }: { data: ChartDataProps }) {
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    setMounted(true); // Ensures it only runs on client
+    setMounted(true);
+    return () => setMounted(false);
   }, []);
 
-  if (!mounted) return null;
-
-  const chartData = [
-    {
-      name: "Story Points",
-      done: data.averageStoryPoint,
-      baseline: data.averageBaseline,
-      target: data.averageTarget,
-    },
-    {
-      name: "Coding Hours",
-      done: data.averageCodingHours,
-      baseline: data.averageBaselineCh,
-      target: data.averageTargetCh,
-    },
-  ];
+  const chartData = useMemo(() => {
+    if (!mounted) return [];
+    return [
+      {
+        name: "Story Points",
+        done: data.averageStoryPoint,
+        baseline: data.averageBaseline,
+        target: data.averageTarget,
+      },
+      {
+        name: "Coding Hours",
+        done: data.averageCodingHours,
+        baseline: data.averageBaselineCh,
+        target: data.averageTargetCh,
+      },
+    ];
+  }, [data, mounted]);
 
   return (
     <Card>
