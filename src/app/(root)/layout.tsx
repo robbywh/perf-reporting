@@ -36,7 +36,8 @@ export default async function RootLayout({
   const defaultSprint =
     formattedSprints.find(
       (sprint) =>
-        currentDate >= sprint.startDate && currentDate <= sprint.endDate
+        new Date(sprint.startDate) <= currentDate &&
+        currentDate <= new Date(sprint.endDate)
     ) || formattedSprints[0];
   return (
     <div>
