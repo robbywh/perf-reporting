@@ -61,12 +61,12 @@ export function PieChart({ title, config, data }: ChartProps) {
 
 export function PieChartSkeleton({ title }: { title: string }) {
   return (
-    <Card className="flex flex-col">
-      <CardHeader className="mb-10 items-center">
-        <CardTitle>{title || "Loading Chart..."}</CardTitle>
+    <Card className="h-[400px]">
+      <CardHeader>
+        <CardTitle>{title}</CardTitle>
       </CardHeader>
-      <CardContent className="mb-10 flex flex-1 items-center justify-center">
-        <Skeleton className="size-[200px] rounded-full" />
+      <CardContent className="flex items-center justify-center">
+        <Skeleton className="size-[300px] rounded-full" />
       </CardContent>
     </Card>
   );

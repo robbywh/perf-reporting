@@ -161,15 +161,15 @@ export default async function EngineerPage({
         </div>
       )}
       {/* Stats Cards */}
-      <div className="mb-6">
+      <div className="mb-6 min-h-[120px]">
         <Suspense key="stats-cards-suspense" fallback={<StatsCardsSkeleton />}>
           <StatsCardsContainer sprintIds={sprintIds} engineerId={engineerId} />
         </Suspense>
       </div>
 
       {/* Charts Section */}
-      <div className="flex flex-row items-stretch gap-4">
-        <div className="flex-[6]">
+      <div className="flex min-h-[400px] flex-row items-stretch gap-4">
+        <div className="min-h-[400px] flex-[6]">
           <Suspense
             key="bar-chart-suspense"
             fallback={<BarChartMultipleSkeleton />}
@@ -180,7 +180,7 @@ export default async function EngineerPage({
             />
           </Suspense>
         </div>
-        <div className="flex-[4]">
+        <div className="min-h-[400px] flex-[4]">
           <Suspense
             key="pie-donut-chart-suspense"
             fallback={<PieDonutChartSkeleton title="Tasks to QA" />}
@@ -194,7 +194,7 @@ export default async function EngineerPage({
       </div>
 
       {/* Coding Hours Form */}
-      <div className="mb-6 flex">
+      <div className="mb-6 flex min-h-[200px]">
         <Suspense
           key="coding-hours-suspense"
           fallback={<CodingHoursFormSkeleton />}
@@ -209,7 +209,7 @@ export default async function EngineerPage({
 
       {/* Leave & Public Holiday Form */}
       {roleId === ROLE.SOFTWARE_ENGINEER && (
-        <div>
+        <div className="min-h-[300px]">
           <Suspense
             key="leave-holiday-suspense"
             fallback={<LeavePublicHolidaySkeleton />}

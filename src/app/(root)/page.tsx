@@ -129,7 +129,7 @@ export default async function Home({
   return (
     <main>
       <div className="mb-6 flex flex-row justify-center gap-4">
-        <div className="flex-[7]">
+        <div className="min-h-[400px] flex-[7]">
           <Suspense
             fallback={<BarChartCapacitySkeleton />}
             key="bar-chart-capacity"
@@ -137,7 +137,7 @@ export default async function Home({
             <BarChartCapacityContainer sprintIds={sprintIds} />
           </Suspense>
         </div>
-        <div className="flex-[3]">
+        <div className="min-h-[400px] flex-[3]">
           <Suspense fallback={<TopPerformersSkeleton />} key="top-performers">
             <TopPerformersContainer sprintIds={sprintIds} />
           </Suspense>
@@ -145,7 +145,7 @@ export default async function Home({
       </div>
 
       {/* Defer non-critical content with priority loading */}
-      <div className="mb-6">
+      <div className="mb-6 min-h-[500px]">
         <Suspense
           fallback={<LineChartSPCodingSkeleton />}
           key="line-chart-sp-coding"
@@ -155,7 +155,7 @@ export default async function Home({
       </div>
 
       <div className="mb-6 flex flex-row justify-center gap-4">
-        <div className="flex-[2]">
+        <div className="min-h-[400px] flex-[2]">
           <Suspense
             fallback={<PieChartSkeleton title="Task Category" />}
             key="pie-task-category"
@@ -163,7 +163,7 @@ export default async function Home({
             <PieTaskCategoryChartContainer sprintIds={sprintIds} />
           </Suspense>
         </div>
-        <div className="flex-[1]">
+        <div className="min-h-[400px] flex-[1]">
           <Suspense
             fallback={<PieDonutChartSkeleton title="Tasks to QA" />}
             key="pie-donut-task"
@@ -173,7 +173,7 @@ export default async function Home({
         </div>
       </div>
 
-      <div>
+      <div className="min-h-[300px]">
         <Suspense
           fallback={<LeavePublicHolidaySkeleton />}
           key="leave-public-holiday"

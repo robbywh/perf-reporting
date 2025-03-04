@@ -117,13 +117,13 @@ export function LineChartSPCoding({ sprintData }: LineChartSPCodingProps) {
 
 export function LineChartSPCodingSkeleton() {
   return (
-    <Card>
+    <Card className="h-[500px]">
       <CardHeader>
         <CardTitle>Engineers&apos; Story Points Trends</CardTitle>
       </CardHeader>
-      <CardContent className="space-y-4">
+      <CardContent className="flex h-full flex-col justify-between">
         {/* Chart Placeholder */}
-        <div className="flex h-[500px] w-full flex-col items-center justify-center rounded-lg bg-gray-100">
+        <div className="flex h-[400px] w-full flex-col items-center justify-center rounded-lg bg-muted/5">
           <Skeleton className="mb-2 h-4 w-3/4" />
           <Skeleton className="mb-2 h-4 w-1/2" />
           <Skeleton className="h-4 w-1/4" />

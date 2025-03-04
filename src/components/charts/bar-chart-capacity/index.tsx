@@ -147,16 +147,15 @@ export const BarChartCapacity = memo(function BarChartCapacity({
 
 export function BarChartCapacitySkeleton() {
   return (
-    <Card>
+    <Card className="h-[400px]">
       <CardHeader>
         <CardTitle>Capacity VS Reality</CardTitle>
         <CardDescription>
-          <Skeleton className="h-5 w-1/3" /> {/* Placeholder for velocity */}
+          <Skeleton className="h-5 w-1/3" />
         </CardDescription>
       </CardHeader>
-      <CardContent>
-        <Skeleton className="h-96 w-full rounded-md" />{" "}
-        {/* Placeholder for chart */}
+      <CardContent className="flex items-center justify-center">
+        <Skeleton className="h-[300px] w-full rounded-md" />
       </CardContent>
     </Card>
   );
