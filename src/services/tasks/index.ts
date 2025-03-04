@@ -73,6 +73,11 @@ export async function findCountTasksByCategory(sprintIds: string[]) {
         id: "desc",
       },
     },
+    cacheStrategy: {
+      swr: 5 * 60,
+      ttl: 8 * 60 * 60,
+      tags: ["groupedTasks"],
+    },
   });
 
   // Fetch category names in the same query
@@ -87,6 +92,11 @@ export async function findCountTasksByCategory(sprintIds: string[]) {
     select: {
       id: true,
       name: true,
+    },
+    cacheStrategy: {
+      swr: 5 * 60,
+      ttl: 8 * 60 * 60,
+      tags: ["categoryNames"],
     },
   });
 
@@ -123,6 +133,11 @@ export async function findTotalTaskToQACounts(
       parentTaskId: true,
       taskTags: { select: { tagId: true } },
       assignees: { select: { engineerId: true } },
+    },
+    cacheStrategy: {
+      swr: 5 * 60,
+      ttl: 8 * 60 * 60,
+      tags: ["findTotalTaskToQACounts"],
     },
   });
 

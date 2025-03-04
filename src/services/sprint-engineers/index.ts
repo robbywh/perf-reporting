@@ -1,3 +1,5 @@
+import { Decimal } from "@prisma/client/runtime/library";
+
 import { getMergedMRsBySprintPeriod } from "@/lib/gitlab/mr"; // Ensure this function is defined
 import { prisma } from "@/services/db";
 
@@ -141,17 +143,29 @@ export async function findCapacityVsRealityBySprintIds(
   // Map and aggregate the results
   return sprints.map((sprint) => {
     const totalStoryPoints = sprint.sprintEngineers.reduce(
-      (sum, se) => sum + (se.storyPoints ? Number(se.storyPoints) : 0),
+      (sum, se) =>
+        sum +
+        (se.storyPoints instanceof Decimal
+          ? se.storyPoints.toNumber()
+          : Number(se.storyPoints || 0)),
       0
     );
 
     const totalBaseline = sprint.sprintEngineers.reduce(
-      (sum, se) => sum + (se.baseline ? Number(se.baseline) : 0),
+      (sum, se) =>
+        sum +
+        (se.baseline instanceof Decimal
+          ? se.baseline.toNumber()
+          : Number(se.baseline || 0)),
       0
     );
 
     const totalTarget = sprint.sprintEngineers.reduce(
-      (sum, se) => sum + (se.target ? Number(se.target) : 0),
+      (sum, se) =>
+        sum +
+        (se.target instanceof Decimal
+          ? se.target.toNumber()
+          : Number(se.target || 0)),
       0
     );
 
@@ -200,9 +214,10 @@ export async function findTopPerformersBySprintIds(sprintIds: string[]) {
       id: performer.engineerId,
       name: engineer?.name,
       email: engineer?.email,
-      storyPoints: performer._avg.storyPoints
-        ? Number(performer._avg.storyPoints)
-        : 0,
+      storyPoints:
+        performer._avg.storyPoints instanceof Decimal
+          ? performer._avg.storyPoints.toNumber()
+          : Number(performer._avg.storyPoints || 0),
     };
   });
 }
@@ -241,7 +256,10 @@ export async function findEngineerTrendBySprintIds(sprintIds: string[]) {
     sprintMap.get(sprintId)!.engineers.push({
       id: engineer.id,
       name: engineer.name,
-      storyPoints: storyPoints ? Number(storyPoints) : 0,
+      storyPoints:
+        storyPoints instanceof Decimal
+          ? storyPoints.toNumber()
+          : Number(storyPoints || 0),
     });
   });
 
@@ -278,26 +296,44 @@ export async function findAveragesByEngineerAndSprintIds(
   return {
     averageStoryPoint: computeAverage(
       sprintEngineerData.map((se) =>
-        se.storyPoints ? Number(se.storyPoints) : 0
+        se.storyPoints instanceof Decimal
+          ? se.storyPoints.toNumber()
+          : Number(se.storyPoints || 0)
       )
     ),
     averageTarget: computeAverage(
-      sprintEngineerData.map((se) => (se.target ? Number(se.target) : 0))
+      sprintEngineerData.map((se) =>
+        se.target instanceof Decimal
+          ? se.target.toNumber()
+          : Number(se.target || 0)
+      )
     ),
     averageBaseline: computeAverage(
-      sprintEngineerData.map((se) => (se.baseline ? Number(se.baseline) : 0))
+      sprintEngineerData.map((se) =>
+        se.baseline instanceof Decimal
+          ? se.baseline.toNumber()
+          : Number(se.baseline || 0)
+      )
     ),
     averageCodingHours: computeAverage(
       sprintEngineerData.map((se) =>
-        se.codingHours ? Number(se.codingHours) : 0
+        se.codingHours instanceof Decimal
+          ? se.codingHours.toNumber()
+          : Number(se.codingHours || 0)
       )
     ),
     averageTargetCh: computeAverage(
-      sprintEngineerData.map((se) => (se.targetCh ? Number(se.targetCh) : 0))
+      sprintEngineerData.map((se) =>
+        se.targetCh instanceof Decimal
+          ? se.targetCh.toNumber()
+          : Number(se.targetCh || 0)
+      )
     ),
     averageBaselineCh: computeAverage(
       sprintEngineerData.map((se) =>
-        se.baselineCh ? Number(se.baselineCh) : 0
+        se.baselineCh instanceof Decimal
+          ? se.baselineCh.toNumber()
+          : Number(se.baselineCh || 0)
       )
     ),
   };

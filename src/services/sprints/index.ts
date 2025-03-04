@@ -25,6 +25,11 @@ export async function findAllSprints() {
     },
     orderBy: { startDate: "desc" },
     take: 12,
+    cacheStrategy: {
+      swr: 5 * 60,
+      ttl: 8 * 60 * 60,
+      tags: ["findAllSprints"],
+    },
   });
 
   return sprints;
@@ -61,6 +66,11 @@ export async function findSprintsWithLeavesAndHolidays(sprintIds: string[]) {
       },
     },
     orderBy: { startDate: "desc" },
+    cacheStrategy: {
+      swr: 5 * 60,
+      ttl: 8 * 60 * 60,
+      tags: ["findSprintsWithLeavesAndHolidays"],
+    },
   });
 
   const publicHolidays = await prisma.publicHoliday.findMany({
@@ -74,6 +84,11 @@ export async function findSprintsWithLeavesAndHolidays(sprintIds: string[]) {
       id: true,
       date: true,
       description: true,
+    },
+    cacheStrategy: {
+      swr: 5 * 60,
+      ttl: 8 * 60 * 60,
+      tags: ["publicHolidays"],
     },
   });
 
@@ -142,21 +157,35 @@ export async function findSprintsBySprintIds(
         select: {
           codingHours: true,
           codingHoursUrl: true,
+          storyPoints: true,
+          baseline: true,
+          target: true,
+          baselineCh: true,
+          targetCh: true,
         },
       },
     },
     orderBy: { startDate: "desc" },
   });
 
+  // Helper function to safely convert Decimal to number
+  const toNumber = (
+    value: Decimal | number | null | undefined
+  ): number | null => {
+    if (value === null || value === undefined) return null;
+    return value instanceof Decimal ? value.toNumber() : Number(value);
+  };
+
   return sprints.map((sprint) => ({
     ...sprint,
     sprintEngineers: sprint.sprintEngineers.map((se) => ({
-      ...se,
-      codingHours:
-        se.codingHours instanceof Decimal
-          ? se.codingHours.toNumber()
-          : se.codingHours,
+      codingHours: toNumber(se.codingHours),
       codingHoursUrl: se.codingHoursUrl ? se.codingHoursUrl.toString() : null,
+      storyPoints: toNumber(se.storyPoints),
+      baseline: toNumber(se.baseline),
+      target: toNumber(se.target),
+      baselineCh: toNumber(se.baselineCh),
+      targetCh: toNumber(se.targetCh),
     })),
   }));
 }

@@ -10,6 +10,11 @@ export async function findAllEngineers() {
       orderBy: {
         name: "asc",
       },
+      cacheStrategy: {
+        swr: 5 * 60,
+        ttl: 8 * 60 * 60,
+        tags: ["findAllEngineers"],
+      },
     });
 
     return engineers;

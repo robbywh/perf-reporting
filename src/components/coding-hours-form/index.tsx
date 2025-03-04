@@ -174,6 +174,7 @@ function CodingHoursEditor({
               alt="Uploaded Screenshot"
               fill
               className="object-contain"
+              priority
             />
           </div>
         ) : (
@@ -300,6 +301,7 @@ function CodingHoursViewer({
               alt="Coding Hours Screenshot"
               fill
               className="object-contain"
+              priority
             />
             {isSoftwareEngineer && (
               <Button

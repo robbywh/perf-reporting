@@ -9,6 +9,11 @@ export async function findRoleIdAndEngineerIdByUserId(
       role: { select: { id: true } }, // Fetch only the role id
       engineerId: true, // Fetch the engineerId if it exists
     },
+    cacheStrategy: {
+      swr: 5 * 60,
+      ttl: 8 * 60 * 60,
+      tags: ["findRoleIdAndEngineerIdByUserId"],
+    },
   });
 
   return {
@@ -23,6 +28,11 @@ export async function findEngineerById(engineerId: number) {
     select: {
       id: true,
       name: true,
+    },
+    cacheStrategy: {
+      swr: 5 * 60,
+      ttl: 8 * 60 * 60,
+      tags: ["findEngineerById"],
     },
   });
 
