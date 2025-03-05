@@ -108,6 +108,11 @@ function CodingHoursEditor({
   ) => {
     const file = event.target.files?.[0];
     if (file) {
+      if (file.size > 1024 * 1024) {
+        // 1 MB in bytes
+        alert("File size exceeds 1 MB. Please upload a smaller image.");
+        return;
+      }
       setIsUploading(true);
       const uploadedUrl = await uploadFile({
         file,
