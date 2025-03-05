@@ -36,8 +36,7 @@ import {
   findEngineerById,
   findRoleIdAndEngineerIdByUserId,
 } from "@/services/users";
-
-import { PageProps, PageData } from "./types";
+import { PageProps, PageData } from "@/types/engineer-page";
 
 // Centralize data fetching to reduce waterfall requests
 async function fetchPageData(

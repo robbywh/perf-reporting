@@ -48,7 +48,7 @@ export function SprintMultiSelect({
 
   useEffect(() => {
     if (!mounted) return;
-    const params = new URLSearchParams();
+    const params = new URLSearchParams(window.location.search);
 
     if (selectedOptions.length > 0) {
       params.set("sprintIds", selectedOptions.map((s) => s.value).join(","));
@@ -56,7 +56,9 @@ export function SprintMultiSelect({
       params.set("sprintIds", defaultSprintId);
     }
 
-    router.replace(`?${params.toString()}`);
+    router.replace(`${window.location.pathname}?${params.toString()}`, {
+      scroll: false,
+    });
   }, [selectedOptions, router, defaultSprintId, mounted]);
 
   // Update the onChange handler to toggle 'Select All'
