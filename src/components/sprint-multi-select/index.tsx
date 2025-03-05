@@ -25,14 +25,24 @@ export function SprintMultiSelect({
     []
   );
 
+  // Add a special option for selecting all sprints
+  const selectAllOption: Option = { value: "all", label: "Select All" };
+
+  // Include the 'Select All' option in the options list
+  const optionsWithSelectAll = [selectAllOption, ...sprints];
+
   useEffect(() => {
     if (!searchParams) return;
     const sprintIdsFromUrl = searchParams.get("sprintIds")?.split(",") || [
       defaultSprintId,
     ];
-    setSelectedOptions(
-      sprints.filter((sprint) => sprintIdsFromUrl.includes(sprint.value))
-    );
+    if (sprintIdsFromUrl.includes("all")) {
+      setSelectedOptions(sprints); // Select all sprints
+    } else {
+      setSelectedOptions(
+        sprints.filter((sprint) => sprintIdsFromUrl.includes(sprint.value))
+      );
+    }
     setMounted(true);
   }, [searchParams, defaultSprintId, sprints]);
 
@@ -49,15 +59,24 @@ export function SprintMultiSelect({
     router.replace(`?${params.toString()}`);
   }, [selectedOptions, router, defaultSprintId, mounted]);
 
+  // Update the onChange handler to toggle 'Select All'
+  const handleChange = (options: MultiValue<Option>) => {
+    if (options.some((option) => option.value === "all")) {
+      setSelectedOptions(sprints); // Select all sprints
+    } else {
+      setSelectedOptions(options);
+    }
+  };
+
   if (!mounted) return null; // Prevents hydration mismatch
 
   return (
     <div className="flex-1">
       <Select<Option, true>
         isMulti
-        options={sprints}
+        options={optionsWithSelectAll}
         value={selectedOptions}
-        onChange={setSelectedOptions}
+        onChange={handleChange}
         placeholder="Select sprints..."
         aria-label="Select sprints"
       />
