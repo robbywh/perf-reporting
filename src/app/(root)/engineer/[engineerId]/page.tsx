@@ -1,7 +1,5 @@
 import { auth, currentUser } from "@clerk/nextjs/server";
-import { ArrowLeft } from "lucide-react";
 import { unstable_noStore as noStore } from "next/cache";
-import Link from "next/link";
 import { Suspense } from "react";
 
 import { updateCodingHoursAction } from "@/actions/coding-hours";
@@ -9,6 +7,7 @@ import {
   addLeaveOrHolidayAction,
   deleteLeaveOrHolidayAction,
 } from "@/actions/leave-holiday";
+import { BackButton } from "@/components/back-button";
 import {
   BarChartMultiple,
   BarChartMultipleSkeleton,
@@ -24,7 +23,6 @@ import {
   LeavePublicHolidaySkeleton,
 } from "@/components/leave-public-holiday-form";
 import { StatsCards, StatsCardsSkeleton } from "@/components/stats-cards";
-import { Button } from "@/components/ui/button";
 import { findAllEngineers } from "@/services/engineers";
 import { findAveragesByEngineerAndSprintIds } from "@/services/sprint-engineers";
 import {
@@ -149,11 +147,7 @@ export default async function EngineerPage({
       {roleId !== ROLE.SOFTWARE_ENGINEER && (
         <div className="mb-6">
           <div className="flex items-center gap-4">
-            <Link href="/">
-              <Button variant="outline" size="icon">
-                <ArrowLeft className="size-4" />
-              </Button>
-            </Link>
+            <BackButton />
             <h1 className="text-2xl font-bold">
               {engineer?.firstName}&apos;s Performance Report
             </h1>
