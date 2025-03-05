@@ -1,7 +1,8 @@
 "use client";
 import { ChevronRight } from "lucide-react";
 import Link from "next/link";
-import { memo, useMemo } from "react";
+import { useRouter } from "next/navigation";
+import { memo, useMemo, useCallback } from "react";
 
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
@@ -68,6 +69,8 @@ const PerformerItem = memo(function PerformerItem({
   performer: Performer;
   sprintIds?: string;
 }) {
+  const router = useRouter();
+
   // Memoize the avatar fallback text
   const avatarFallback = useMemo(() => {
     return (
@@ -79,6 +82,13 @@ const PerformerItem = memo(function PerformerItem({
     );
   }, [performer?.name]);
 
+  // Prefetch the engineer page on hover
+  const handleMouseEnter = useCallback(() => {
+    router.prefetch(
+      `/engineer/${performer.id}${sprintIds ? `?sprintIds=${sprintIds}` : ""}`
+    );
+  }, [router, performer.id, sprintIds]);
+
   return (
     <Link
       href={{
@@ -86,6 +96,8 @@ const PerformerItem = memo(function PerformerItem({
         query: sprintIds ? { sprintIds } : undefined,
       }}
       className="block w-full"
+      onMouseEnter={handleMouseEnter}
+      prefetch={false} // We'll handle prefetching manually on hover
     >
       <div className="flex cursor-pointer items-center justify-between rounded-md p-3 transition hover:bg-gray-100">
         <div className="flex min-w-0 items-center space-x-3">
