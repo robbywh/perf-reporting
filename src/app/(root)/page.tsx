@@ -6,26 +6,20 @@ import {
   addLeaveOrHolidayAction,
   deleteLeaveOrHolidayAction,
 } from "@/actions/leave-holiday";
-import {
-  BarChartCapacity,
-  BarChartCapacitySkeleton,
-} from "@/components/charts/bar-chart-capacity";
-import {
-  LineChartSPCoding,
-  LineChartSPCodingSkeleton,
-} from "@/components/charts/line-chart-sp-coding";
+import { BarChartCapacitySkeleton } from "@/components/charts/bar-chart-capacity";
+import { LineChartSPCodingSkeleton } from "@/components/charts/line-chart-sp-coding";
 import { PieChartSkeleton } from "@/components/charts/pie-chart";
 import { PieDonutChartSkeleton } from "@/components/charts/pie-donut-chart";
-import { PieDonutTaskChart } from "@/components/charts/pie-donut-task";
-import { PieTaskCategoryChart } from "@/components/charts/pie-task-category";
 import {
-  LeavePublicHoliday,
-  LeavePublicHolidaySkeleton,
-} from "@/components/leave-public-holiday-form";
-import {
-  TopPerformers,
-  TopPerformersSkeleton,
-} from "@/components/top-performers";
+  DynamicBarChartCapacity,
+  DynamicLineChartSPCoding,
+  DynamicPieTaskCategoryChart,
+  DynamicPieDonutTaskChart,
+  DynamicTopPerformers,
+  DynamicLeavePublicHoliday,
+} from "@/components/client-wrappers";
+import { LeavePublicHolidaySkeleton } from "@/components/leave-public-holiday-form";
+import { TopPerformersSkeleton } from "@/components/top-performers";
 import { authenticateAndRedirect } from "@/lib/utils/auth";
 import { findAllEngineers } from "@/services/engineers";
 import {
@@ -39,79 +33,49 @@ import {
   findTotalTaskToQACounts,
 } from "@/services/tasks";
 import { findRoleIdAndEngineerIdByUserId } from "@/services/users";
+import { DashboardData } from "@/types/dashboard";
 import { ROLE } from "@/types/roles";
 
-async function TopPerformersContainer({ sprintIds }: { sprintIds: string[] }) {
-  noStore(); // Opt out of static rendering for dynamic data
-  const topPerformersData = await findTopPerformersBySprintIds(sprintIds);
-  return (
-    <TopPerformers
-      performers={topPerformersData}
-      sprintIds={sprintIds.join(",")}
-    />
+// Centralized data fetching function
+async function fetchDashboardData(sprintIds: string[]): Promise<DashboardData> {
+  noStore();
+
+  // Fetch all data in parallel
+  const [
+    topPerformersData,
+    sprintsCapacity,
+    sprintData,
+    taskCategoryData,
+    taskQAData,
+    leavesAndHolidays,
+    engineers,
+    authData,
+  ] = await Promise.all([
+    findTopPerformersBySprintIds(sprintIds),
+    findCapacityVsRealityBySprintIds(sprintIds),
+    findEngineerTrendBySprintIds(sprintIds),
+    findCountTasksByCategory(sprintIds),
+    findTotalTaskToQACounts(sprintIds),
+    findSprintsWithLeavesAndHolidays(sprintIds),
+    findAllEngineers(),
+    auth(),
+  ]);
+
+  // Get role info after auth
+  const { roleId } = await findRoleIdAndEngineerIdByUserId(
+    authData.userId || ""
   );
-}
 
-async function BarChartCapacityContainer({
-  sprintIds,
-}: {
-  sprintIds: string[];
-}) {
-  noStore(); // Opt out of static rendering for dynamic data
-  const sprintsCapacity = await findCapacityVsRealityBySprintIds(sprintIds);
-  return <BarChartCapacity sprints={sprintsCapacity} />;
-}
-
-async function LineChartSPCodingContainer({
-  sprintIds,
-}: {
-  sprintIds: string[];
-}) {
-  noStore(); // Opt out of static rendering for dynamic data
-  const sprintData = await findEngineerTrendBySprintIds(sprintIds);
-  return <LineChartSPCoding sprintData={sprintData} />;
-}
-
-async function PieTaskCategoryChartContainer({
-  sprintIds,
-}: {
-  sprintIds: string[];
-}) {
-  noStore(); // Opt out of static rendering for dynamic data
-  const taskData = await findCountTasksByCategory(sprintIds);
-  return <PieTaskCategoryChart taskData={taskData} />;
-}
-
-async function PieDonutTaskChartContainer({
-  sprintIds,
-}: {
-  sprintIds: string[];
-}) {
-  noStore(); // Opt out of static rendering for dynamic data
-  const data = await findTotalTaskToQACounts(sprintIds);
-  return <PieDonutTaskChart data={data} />;
-}
-
-async function LeavePublicHolidayContainer({
-  sprintIds,
-}: {
-  sprintIds: string[];
-}) {
-  noStore(); // Opt out of static rendering for dynamic data
-  const data = await findSprintsWithLeavesAndHolidays(sprintIds);
-  const engineers = await findAllEngineers();
-  const { userId } = await auth();
-  const { roleId } = await findRoleIdAndEngineerIdByUserId(userId || "");
-  return (
-    <LeavePublicHoliday
-      sprints={data}
-      roleId={roleId || ""}
-      engineers={engineers}
-      addLeaveOrHolidayAction={addLeaveOrHolidayAction}
-      deleteLeaveOrHolidayAction={deleteLeaveOrHolidayAction}
-      showActionButton={roleId === ROLE.ENGINEERING_MANAGER}
-    />
-  );
+  return {
+    topPerformersData,
+    sprintsCapacity,
+    sprintData,
+    taskCategoryData,
+    taskQAData,
+    leavesAndHolidays,
+    engineers,
+    roleId: roleId || "",
+  };
 }
 
 export default async function Home({
@@ -119,66 +83,72 @@ export default async function Home({
 }: {
   searchParams: Promise<{ sprintIds?: string }>;
 }) {
-  noStore(); // Opt out of static rendering for dynamic data
+  noStore();
   await authenticateAndRedirect();
   const parameters = await searchParams;
   const sprintIds = parameters?.sprintIds
     ? parameters.sprintIds.split(",").filter(Boolean)
     : ["901606315079"];
 
+  // Fetch all data at once
+  const {
+    topPerformersData,
+    sprintsCapacity,
+    sprintData,
+    taskCategoryData,
+    taskQAData,
+    leavesAndHolidays,
+    engineers,
+    roleId,
+  } = await fetchDashboardData(sprintIds);
+
   return (
     <main>
-      <div className="mb-6 flex flex-row justify-center gap-4">
-        <div className="min-h-[400px] flex-[7]">
-          <Suspense
-            fallback={<BarChartCapacitySkeleton />}
-            key="bar-chart-capacity"
-          >
-            <BarChartCapacityContainer sprintIds={sprintIds} />
+      <div className="mb-6 grid grid-cols-1 gap-4 lg:grid-cols-3">
+        <div className="min-h-[400px] lg:col-span-2">
+          <Suspense fallback={<BarChartCapacitySkeleton />}>
+            <DynamicBarChartCapacity sprints={sprintsCapacity} />
           </Suspense>
         </div>
-        <div className="min-h-[400px] flex-[3]">
-          <Suspense fallback={<TopPerformersSkeleton />} key="top-performers">
-            <TopPerformersContainer sprintIds={sprintIds} />
+        <div className="min-h-[400px] lg:col-span-1">
+          <Suspense fallback={<TopPerformersSkeleton />}>
+            <DynamicTopPerformers
+              performers={topPerformersData}
+              sprintIds={sprintIds.join(",")}
+            />
           </Suspense>
         </div>
       </div>
 
-      {/* Defer non-critical content with priority loading */}
       <div className="mb-6 min-h-[500px]">
-        <Suspense
-          fallback={<LineChartSPCodingSkeleton />}
-          key="line-chart-sp-coding"
-        >
-          <LineChartSPCodingContainer sprintIds={sprintIds} />
+        <Suspense fallback={<LineChartSPCodingSkeleton />}>
+          <DynamicLineChartSPCoding sprintData={sprintData} />
         </Suspense>
       </div>
 
-      <div className="mb-6 flex flex-row justify-center gap-4">
-        <div className="min-h-[400px] flex-[2]">
-          <Suspense
-            fallback={<PieChartSkeleton title="Task Category" />}
-            key="pie-task-category"
-          >
-            <PieTaskCategoryChartContainer sprintIds={sprintIds} />
+      <div className="mb-6 grid grid-cols-1 gap-4 lg:grid-cols-3">
+        <div className="min-h-[400px] lg:col-span-2">
+          <Suspense fallback={<PieChartSkeleton title="Task Category" />}>
+            <DynamicPieTaskCategoryChart taskData={taskCategoryData} />
           </Suspense>
         </div>
-        <div className="min-h-[400px] flex-[1]">
-          <Suspense
-            fallback={<PieDonutChartSkeleton title="Tasks to QA" />}
-            key="pie-donut-task"
-          >
-            <PieDonutTaskChartContainer sprintIds={sprintIds} />
+        <div className="min-h-[400px]">
+          <Suspense fallback={<PieDonutChartSkeleton title="Tasks to QA" />}>
+            <DynamicPieDonutTaskChart data={taskQAData} />
           </Suspense>
         </div>
       </div>
 
       <div className="min-h-[300px]">
-        <Suspense
-          fallback={<LeavePublicHolidaySkeleton />}
-          key="leave-public-holiday"
-        >
-          <LeavePublicHolidayContainer sprintIds={sprintIds} />
+        <Suspense fallback={<LeavePublicHolidaySkeleton />}>
+          <DynamicLeavePublicHoliday
+            sprints={leavesAndHolidays}
+            roleId={roleId}
+            engineers={engineers}
+            addLeaveOrHolidayAction={addLeaveOrHolidayAction}
+            deleteLeaveOrHolidayAction={deleteLeaveOrHolidayAction}
+            showActionButton={roleId === ROLE.ENGINEERING_MANAGER}
+          />
         </Suspense>
       </div>
     </main>
