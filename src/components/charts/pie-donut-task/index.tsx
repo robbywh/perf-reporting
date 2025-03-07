@@ -15,12 +15,12 @@ export function PieDonutTaskChart({ data }: TaskChartProps) {
     {
       status: "approved",
       value: data.approvedTasks,
-      fill: "hsl(var(--chart-2))",
+      fill: "#4CAF50",
     },
     {
       status: "rejected",
       value: data.rejectedTasks,
-      fill: "hsl(var(--chart-1))",
+      fill: "#E53935",
     },
   ];
 

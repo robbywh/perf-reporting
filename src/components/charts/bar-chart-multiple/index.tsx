@@ -25,15 +25,15 @@ interface ChartDataProps {
 const chartConfig = {
   done: {
     label: "Done",
-    color: "hsl(var(--chart-3))",
+    color: "#3498DB",
   },
   baseline: {
     label: "Baseline",
-    color: "hsl(var(--chart-1))",
+    color: "#FFA726",
   },
   target: {
     label: "Target",
-    color: "hsl(var(--chart-2))",
+    color: "#43A047",
   },
 } satisfies ChartConfig;
 
@@ -148,12 +148,12 @@ export function BarChartMultiple({ data }: { data: ChartDataProps }) {
             {
               condition: (item: ChartItem) => item.done > item.baseline,
               text: "exceeded the baseline but have not yet reached the target. Keep going!",
-              className: "text-chart-1",
+              className: "text-[#A84300]",
             },
             {
               condition: (item: ChartItem) => item.done <= item.baseline,
               text: "not yet reached the baseline, but don’t give up—every effort brings us closer to success!",
-              className: "text-chart-3",
+              className: "text-[#721C24]",
             },
           ]
             .map(({ condition, text, className }) => {

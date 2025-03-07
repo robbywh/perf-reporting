@@ -15,11 +15,11 @@ import { Skeleton } from "@/components/ui/skeleton";
 const chartConfig = {
   capacity: {
     label: "Capacity",
-    color: "hsl(var(--chart-1))",
+    color: "#0073E6",
   },
   reality: {
     label: "Reality",
-    color: "hsl(var(--chart-2))",
+    color: "#F57C00",
   },
 } satisfies ChartConfig;
 

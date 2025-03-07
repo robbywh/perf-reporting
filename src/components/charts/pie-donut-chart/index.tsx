@@ -117,12 +117,12 @@ export function PieDonutChart({
 
 export function PieDonutChartSkeleton({ title }: { title: string }) {
   return (
-    <Card className="h-[400px]">
+    <Card className="h-[350px]">
       <CardHeader>
         <CardTitle>{title}</CardTitle>
       </CardHeader>
       <CardContent className="flex items-center justify-center">
-        <Skeleton className="size-[300px] rounded-full" />
+        <Skeleton className="size-[200px] rounded-full" />
       </CardContent>
       <CardFooter className="flex-col gap-2 text-sm">
         <Skeleton className="h-4 w-40" />
