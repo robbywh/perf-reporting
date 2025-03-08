@@ -2,8 +2,7 @@
   "crons": [
     {
       "path": "/api/sprints/sync",
-      "schedule": "0 17 * * *",
-      "method": "POST"
+      "schedule": "0 17 * * *"
     }
   ],
   "regions": ["sin1"]
