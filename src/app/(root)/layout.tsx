@@ -18,6 +18,12 @@ const WelcomeMessage = async () => {
   return <div className="flex-1 text-lg font-bold">{welcomeMessage}</div>;
 };
 
+const getDateMonthsAgo = (months: number): Date => {
+  const date = new Date();
+  date.setMonth(date.getMonth() - months);
+  return date;
+};
+
 export default async function RootLayout({
   children,
 }: {
@@ -33,12 +39,46 @@ export default async function RootLayout({
   }));
 
   const currentDate = new Date();
+  const oneMonthAgo = getDateMonthsAgo(1);
+  const threeMonthsAgo = getDateMonthsAgo(3);
+  const sixMonthsAgo = getDateMonthsAgo(6);
+
+  const allPastSprints = formattedSprints.filter(
+    (sprint) => new Date(sprint.startDate) <= currentDate
+  );
+
+  const past1MonthSprints = formattedSprints.filter(
+    (sprint) =>
+      new Date(sprint.startDate) <= currentDate &&
+      new Date(sprint.startDate) >= oneMonthAgo
+  );
+
+  const past3MonthsSprints = formattedSprints.filter(
+    (sprint) =>
+      new Date(sprint.startDate) <= currentDate &&
+      new Date(sprint.startDate) >= threeMonthsAgo
+  );
+
+  const past6MonthsSprints = formattedSprints.filter(
+    (sprint) =>
+      new Date(sprint.startDate) <= currentDate &&
+      new Date(sprint.startDate) >= sixMonthsAgo
+  );
+
   const defaultSprint =
     formattedSprints.find(
       (sprint) =>
         new Date(sprint.startDate) <= currentDate &&
         currentDate <= new Date(sprint.endDate)
-    ) || formattedSprints[0];
+    ) || allPastSprints[allPastSprints.length - 1];
+
+  const sprintOptions = [
+    { label: "All Past Sprints", sprints: allPastSprints },
+    { label: "Past 1 Month", sprints: past1MonthSprints },
+    { label: "Past 3 Months", sprints: past3MonthsSprints },
+    { label: "Past 6 Months", sprints: past6MonthsSprints },
+  ];
+
   return (
     <div>
       <Header />
@@ -48,8 +88,9 @@ export default async function RootLayout({
         </Suspense>
         <Suspense fallback={<Skeleton className="h-6 w-60 rounded-md" />}>
           <SprintMultiSelect
-            sprints={formattedSprints}
-            defaultSprintId={defaultSprint.value}
+            sprints={allPastSprints}
+            defaultSprintId={defaultSprint?.value}
+            sprintOptions={sprintOptions}
           />
         </Suspense>
       </div>

@@ -9,14 +9,21 @@ type Option = {
   label: string;
 };
 
+type SprintOption = {
+  label: string;
+  sprints: Option[];
+};
+
 type SprintMultiSelectProps = {
   sprints: Option[];
   defaultSprintId: string; // Latest sprint ID
+  sprintOptions: SprintOption[];
 };
 
 export function SprintMultiSelect({
   sprints,
   defaultSprintId,
+  sprintOptions,
 }: SprintMultiSelectProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -25,25 +32,66 @@ export function SprintMultiSelect({
     []
   );
 
-  // Add a special option for selecting all sprints
-  const selectAllOption: Option = { value: "all", label: "Select All" };
+  // Create filter options
+  const filterOptions: Option[] = [
+    { value: "past-1-month", label: "Past 1 Month" },
+    { value: "past-3-months", label: "Past 3 Months" },
+    { value: "past-6-months", label: "Past 6 Months" },
+  ];
 
-  // Include the 'Select All' option in the options list
-  const optionsWithSelectAll = [selectAllOption, ...sprints];
+  // Get sprints based on filter
+  const getFilteredSprints = (filterValue: string): Option[] => {
+    const option = sprintOptions.find((opt) => {
+      switch (filterValue) {
+        case "past-1-month":
+          return opt.label === "Past 1 Month";
+        case "past-3-months":
+          return opt.label === "Past 3 Months";
+        case "past-6-months":
+          return opt.label === "Past 6 Months";
+        default:
+          return false;
+      }
+    });
+    return option?.sprints || [];
+  };
+
+  // Find current sprint
+  const getCurrentSprint = (): Option | undefined => {
+    return sprints.find((sprint) => sprint.value === defaultSprintId);
+  };
+
+  // Combine filter options with sprint options
+  const getAllOptions = () => {
+    return [
+      { label: "Filters", options: filterOptions },
+      { label: "Sprints", options: sprints },
+    ];
+  };
 
   useEffect(() => {
-    if (!searchParams) return;
-    const sprintIdsFromUrl = searchParams.get("sprintIds")?.split(",") || [
-      defaultSprintId,
-    ];
-    if (sprintIdsFromUrl.includes("all")) {
-      setSelectedOptions(sprints); // Select all sprints
+    if (!mounted) {
+      // Set current sprint as default
+      const currentSprint = getCurrentSprint();
+      if (currentSprint) {
+        setSelectedOptions([currentSprint]);
+      }
+      setMounted(true);
+      return;
+    }
+
+    const sprintIdsFromUrl = searchParams.get("sprintIds")?.split(",");
+    if (!sprintIdsFromUrl) return;
+
+    if (filterOptions.some((opt) => sprintIdsFromUrl.includes(opt.value))) {
+      const filterValue = sprintIdsFromUrl[0];
+      const filteredSprints = getFilteredSprints(filterValue);
+      setSelectedOptions(filteredSprints);
     } else {
       setSelectedOptions(
         sprints.filter((sprint) => sprintIdsFromUrl.includes(sprint.value))
       );
     }
-    setMounted(true);
   }, [searchParams, defaultSprintId, sprints]);
 
   useEffect(() => {
@@ -53,7 +101,12 @@ export function SprintMultiSelect({
     if (selectedOptions.length > 0) {
       params.set("sprintIds", selectedOptions.map((s) => s.value).join(","));
     } else {
-      params.set("sprintIds", defaultSprintId);
+      // If no selection, default to current sprint
+      const currentSprint = getCurrentSprint();
+      if (currentSprint) {
+        params.set("sprintIds", currentSprint.value);
+        setSelectedOptions([currentSprint]);
+      }
     }
 
     router.replace(`${window.location.pathname}?${params.toString()}`, {
@@ -61,22 +114,29 @@ export function SprintMultiSelect({
     });
   }, [selectedOptions, router, defaultSprintId, mounted]);
 
-  // Update the onChange handler to toggle 'Select All'
   const handleChange = (options: MultiValue<Option>) => {
-    if (options.some((option) => option.value === "all")) {
-      setSelectedOptions(sprints); // Select all sprints
-    } else {
-      setSelectedOptions(options);
+    const lastSelected = options[options.length - 1];
+
+    // Handle filter options
+    if (
+      lastSelected &&
+      filterOptions.some((opt) => opt.value === lastSelected.value)
+    ) {
+      const filteredSprints = getFilteredSprints(lastSelected.value);
+      setSelectedOptions(filteredSprints);
+      return;
     }
+
+    setSelectedOptions(options);
   };
 
-  if (!mounted) return null; // Prevents hydration mismatch
+  if (!mounted) return null;
 
   return (
     <div className="flex-1">
       <Select<Option, true>
         isMulti
-        options={optionsWithSelectAll}
+        options={getAllOptions()}
         value={selectedOptions}
         onChange={handleChange}
         placeholder="Select sprints..."
