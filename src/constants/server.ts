@@ -7,5 +7,5 @@ export const GITLAB_BASE_URL = process.env.GITLAB_BASE_URL;
 export const GITLAB_GROUP_ID = process.env.GITLAB_GROUP_ID;
 export const GITLAB_PERSONAL_ACCESS_TOKEN =
   process.env.GITLAB_PERSONAL_ACCESS_TOKEN;
-export const API_KEY = process.env.API_KEY;
+export const CRON_SECRET = process.env.CRON_SECRET;
 export const NODE_ENV = process.env.NODE_ENV;

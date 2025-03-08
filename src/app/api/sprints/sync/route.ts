@@ -1,7 +1,7 @@
 import { Prisma } from "@prisma/client";
 import { NextResponse } from "next/server";
 
-import { API_KEY } from "@/constants/server";
+import { CRON_SECRET } from "@/constants/server";
 import { getFolderList } from "@/lib/clickup/lists";
 import { ClickUpTask, getListTasks } from "@/lib/clickup/tasks";
 import { prisma } from "@/services/db";
@@ -212,10 +212,12 @@ async function syncTodayTasksFromClickUp() {
 // GET /api/sprints/sync - Synchronize all sprints from ClickUp
 export async function GET(request: Request) {
   try {
-    if (API_KEY !== request.headers.get("x-api-key")) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const authHeader = request.headers.get("authorization");
+    if (authHeader !== `Bearer ${CRON_SECRET}`) {
+      return new Response("Unauthorized", {
+        status: 401,
+      });
     }
-
     await syncSprintsFromClickUp();
     await syncTodayTasksFromClickUp();
 
