@@ -209,8 +209,8 @@ async function syncTodayTasksFromClickUp() {
   }
 }
 
-// POST /api/sprints/sync - Synchronize all sprints from ClickUp
-export async function POST(request: Request) {
+// GET /api/sprints/sync - Synchronize all sprints from ClickUp
+export async function GET(request: Request) {
   try {
     if (API_KEY !== request.headers.get("x-api-key")) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
