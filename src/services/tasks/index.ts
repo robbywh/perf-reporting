@@ -274,3 +274,46 @@ export async function findAverageSPAndMergedCountBySprintIds(
     averageMergedCount,
   };
 }
+
+export async function deleteTaskFromSprint(taskId: string, sprintId: string) {
+  try {
+    // Delete task and its related records in a transaction
+    await prisma.$transaction(async (tx) => {
+      // Delete task tags first
+      await tx.taskTag.deleteMany({
+        where: {
+          taskId,
+          sprintId,
+        },
+      });
+
+      // Delete task assignees
+      await tx.taskAssignee.deleteMany({
+        where: {
+          taskId,
+          sprintId,
+        },
+      });
+
+      // Finally delete the task
+      await tx.task.delete({
+        where: {
+          id_sprintId: {
+            id: taskId,
+            sprintId,
+          },
+        },
+      });
+    });
+
+    console.log(
+      `✅ Task ${taskId} successfully deleted from Sprint ${sprintId}`
+    );
+  } catch (error) {
+    console.error(
+      `❌ Error deleting Task ${taskId} from Sprint ${sprintId}:`,
+      error
+    );
+    throw new Error("Failed to delete task from sprint");
+  }
+}

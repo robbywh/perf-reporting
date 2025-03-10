@@ -168,6 +168,57 @@ async function syncTodayTasksFromClickUp() {
         page++;
       }
 
+      // Get all existing tasks in this sprint
+      const existingTasks = await prisma.task.findMany({
+        where: {
+          sprintId: sprint.id,
+        },
+        select: {
+          id: true,
+        },
+      });
+
+      // Create a set of task IDs from all ClickUp tasks
+      const clickUpTaskIds = new Set(allTasks.map((task) => task.id));
+
+      // Find tasks that exist in DB but not in ClickUp (moved to another sprint)
+      const tasksToDelete = existingTasks.filter(
+        (task) => !clickUpTaskIds.has(task.id)
+      );
+
+      // Delete tasks that were moved to another sprint
+      if (tasksToDelete.length > 0) {
+        await prisma.$transaction(async (tx) => {
+          // Delete task tags first
+          await tx.taskTag.deleteMany({
+            where: {
+              taskId: { in: tasksToDelete.map((t) => t.id) },
+              sprintId: sprint.id,
+            },
+          });
+
+          // Delete task assignees
+          await tx.taskAssignee.deleteMany({
+            where: {
+              taskId: { in: tasksToDelete.map((t) => t.id) },
+              sprintId: sprint.id,
+            },
+          });
+
+          // Finally delete the tasks
+          await tx.task.deleteMany({
+            where: {
+              id: { in: tasksToDelete.map((t) => t.id) },
+              sprintId: sprint.id,
+            },
+          });
+        });
+
+        console.log(
+          `✅ Deleted ${tasksToDelete.length} tasks that were moved from Sprint ${sprint.id}`
+        );
+      }
+
       // Process tasks in smaller batches
       const batchSize = 25; // Reduced batch size
       for (let i = 0; i < allTasks.length; i += batchSize) {
