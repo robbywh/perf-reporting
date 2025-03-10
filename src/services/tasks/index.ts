@@ -128,8 +128,8 @@ export async function findTotalTaskToQACounts(
     where: {
       sprintId: { in: sprintIds },
       OR: [
-        { name: { contains: "[QA]", mode: "insensitive" } },
-        { name: { contains: "QA:", mode: "insensitive" } },
+        { name: { startsWith: "[QA]", mode: "insensitive" } },
+        { name: { startsWith: "QA:", mode: "insensitive" } },
       ],
     },
     select: {
