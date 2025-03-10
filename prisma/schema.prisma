@@ -54,7 +54,7 @@ model Sprint {
 }
 
 model Task {
-  id           String         @id @db.VarChar(25)
+  id           String         @db.VarChar(25)
   name         String         @db.VarChar(255)
   sprintId     String         @map("sprint_id") @db.VarChar(25)
   statusId     String?        @map("status_id") @db.VarChar(25)
@@ -67,26 +67,29 @@ model Task {
   assignees    TaskAssignee[]
   taskTags     TaskTag[]
 
+  @@id([id, sprintId])
   @@map("task")
 }
 
 model TaskTag {
-  taskId String @map("task_id") @db.VarChar(25)
-  tagId  String @map("tag_id") @db.VarChar(25)
-  tag    Tag    @relation(fields: [tagId], references: [id])
-  task   Task   @relation(fields: [taskId], references: [id])
+  taskId    String @map("task_id") @db.VarChar(25)
+  tagId     String @map("tag_id") @db.VarChar(25)
+  sprintId  String @map("sprint_id") @db.VarChar(25)
+  tag       Tag    @relation(fields: [tagId], references: [id])
+  task      Task   @relation(fields: [taskId, sprintId], references: [id, sprintId])
 
-  @@id([taskId, tagId])
+  @@id([taskId, tagId, sprintId])
   @@map("task_tag")
 }
 
 model TaskAssignee {
   taskId     String   @map("task_id") @db.VarChar(25)
   engineerId Int      @map("engineer_id")
+  sprintId   String   @map("sprint_id") @db.VarChar(25)
   engineer   Engineer @relation(fields: [engineerId], references: [id])
-  task       Task     @relation(fields: [taskId], references: [id])
+  task       Task     @relation(fields: [taskId, sprintId], references: [id, sprintId])
 
-  @@id([taskId, engineerId])
+  @@id([taskId, engineerId, sprintId])
   @@map("task_assignee")
 }
 

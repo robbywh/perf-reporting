@@ -44,13 +44,18 @@ export async function upsertTask(task: Task) {
 
     // ✅ Upsert task (insert if missing, update otherwise)
     await prisma.task.upsert({
-      where: { id: task.id },
+      where: {
+        id_sprintId: {
+          id: task.id,
+          sprintId: task.sprintId,
+        },
+      },
       update: taskData,
       create: { id: task.id, ...taskData },
     });
 
     console.log(
-      `✅ Task '${task.name}' (ID: ${task.id}) upserted successfully.`
+      `✅ Task '${task.name}' (ID: ${task.id}, Sprint: ${task.sprintId}) upserted successfully.`
     );
   } catch (error) {
     console.error(`❌ Error processing Task ID ${task.id}:`, error);
@@ -66,7 +71,7 @@ export async function findCountTasksByCategory(sprintIds: string[]) {
       sprintId: { in: sprintIds },
     },
     _count: {
-      id: true, // Counting tasks per category
+      id: true,
     },
     orderBy: {
       _count: {
@@ -148,7 +153,9 @@ export async function findTotalTaskToQACounts(
 
   const parentTasks = parentTaskIds.length
     ? await prisma.task.findMany({
-        where: { id: { in: parentTaskIds } },
+        where: {
+          id: { in: parentTaskIds },
+        },
         select: {
           id: true,
           assignees: { select: { engineerId: true } },
@@ -176,7 +183,7 @@ export async function findTotalTaskToQACounts(
           (task.parentTaskId &&
             parentTaskMap.get(task.parentTaskId)?.includes(engineerId))
       )
-    : tasks; // If no engineerId, include all tasks
+    : tasks;
 
   const approvedTasks = filteredTasks.filter(
     (task) =>

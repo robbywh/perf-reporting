@@ -2,6 +2,7 @@ import { prisma } from "@/services/db";
 
 interface TaskTag {
   id: string;
+  sprintId: string;
   tags?: { name: string }[];
 }
 
@@ -19,8 +20,13 @@ export async function linkTagsToTask(task: TaskTag) {
   // ✅ Fetch task and existing tags in one query batch
   const [existingTask, existingTags] = await Promise.all([
     prisma.task.findUnique({
-      where: { id: task.id },
-      select: { id: true },
+      where: {
+        id_sprintId: {
+          id: task.id,
+          sprintId: task.sprintId,
+        },
+      },
+      select: { id: true, sprintId: true },
     }),
     prisma.tag.findMany({
       where: { name: { in: task.tags.map((tag) => tag.name) } },
@@ -30,7 +36,7 @@ export async function linkTagsToTask(task: TaskTag) {
 
   if (!existingTask) {
     console.error(
-      `❌ Task ID ${task.id} does not exist in the database, skipping.`
+      `❌ Task ID ${task.id} in Sprint ${task.sprintId} does not exist in the database, skipping.`
     );
     return;
   }
@@ -45,7 +51,11 @@ export async function linkTagsToTask(task: TaskTag) {
       continue;
     }
 
-    taskTagRelations.push({ taskId: task.id, tagId });
+    taskTagRelations.push({
+      taskId: task.id,
+      tagId,
+      sprintId: task.sprintId,
+    });
   }
 
   if (taskTagRelations.length > 0) {
@@ -56,7 +66,7 @@ export async function linkTagsToTask(task: TaskTag) {
     });
 
     console.log(
-      `✅ ${taskTagRelations.length} tags linked to Task ID ${task.id}.`
+      `✅ ${taskTagRelations.length} tags linked to Task ID ${task.id} in Sprint ${task.sprintId}.`
     );
   }
 }

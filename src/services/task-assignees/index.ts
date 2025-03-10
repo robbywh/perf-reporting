@@ -24,13 +24,18 @@ export async function linkAssigneesToTask(task: TaskAssignee) {
 
   // ✅ Ensure the task exists to prevent foreign key errors
   const existingTask = await prisma.task.findUnique({
-    where: { id: task.id },
-    select: { id: true },
+    where: {
+      id_sprintId: {
+        id: task.id,
+        sprintId: task.sprintId,
+      },
+    },
+    select: { id: true, sprintId: true },
   });
 
   if (!existingTask) {
     console.error(
-      `❌ Task ID ${task.id} does not exist in the database, skipping.`
+      `❌ Task ID ${task.id} in Sprint ${task.sprintId} does not exist in the database, skipping.`
     );
     return;
   }
@@ -51,7 +56,11 @@ export async function linkAssigneesToTask(task: TaskAssignee) {
       continue;
     }
 
-    taskAssigneeData.push({ taskId: task.id, engineerId: assignee.id });
+    taskAssigneeData.push({
+      taskId: task.id,
+      engineerId: assignee.id,
+      sprintId: task.sprintId,
+    });
 
     // Calculate story point for each sprint per engineer
     if (APPROVED_STATUS_NAMES.includes(task.statusName)) {
@@ -82,7 +91,7 @@ export async function linkAssigneesToTask(task: TaskAssignee) {
     });
 
     console.log(
-      `✅ ${taskAssigneeData.length} assignees linked to Task ID ${task.id}.`
+      `✅ ${taskAssigneeData.length} assignees linked to Task ID ${task.id} in Sprint ${task.sprintId}.`
     );
   }
 }

@@ -87,7 +87,12 @@ async function processBatch(
       await Promise.all(
         validTasks.map((taskData) =>
           tx.task.upsert({
-            where: { id: taskData.id },
+            where: {
+              id_sprintId: {
+                id: taskData.id,
+                sprintId: taskData.sprintId,
+              },
+            },
             create: {
               id: taskData.id,
               name: taskData.name,
@@ -113,6 +118,7 @@ async function processBatch(
         validTasks.map((taskData) =>
           linkTagsToTask({
             id: taskData.id,
+            sprintId: taskData.sprintId,
             tags: taskData.tags,
           })
         )
