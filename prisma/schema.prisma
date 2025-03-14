@@ -7,6 +7,12 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum LeaveType {
+  half_day_before_break
+  half_day_after_break
+  full_day
+}
+
 model Role {
   id    String @id @db.VarChar(25)
   name  String @db.VarChar(50)
@@ -48,6 +54,7 @@ model Sprint {
   startDate       DateTime         @map("start_date")
   endDate         DateTime         @map("end_date")
   sprintEngineers SprintEngineer[]
+  sprintReviewers SprintReviewer[]
   tasks           Task[]
 
   @@map("sprint")
@@ -66,7 +73,7 @@ model Task {
   status       Status?        @relation(fields: [statusId], references: [id])
   assignees    TaskAssignee[]
   taskTags     TaskTag[]
-
+  reviewers    TaskReviewer[]
   @@id([id, sprintId])
   @@map("task")
 }
@@ -166,8 +173,37 @@ model PublicHoliday {
   @@map("public_holiday")
 }
 
-enum LeaveType {
-  half_day_before_break
-  half_day_after_break
-  full_day
+model Reviewer {
+  id            Int              @id
+  name          String           @db.VarChar(50)
+  email           String?          @db.VarChar(50)
+
+  taskReviewers TaskReviewer[]
+  sprintReviewers SprintReviewer[]
+
+  @@map("reviewer")
+}
+
+model TaskReviewer{
+  taskId     String   @map("task_id") @db.VarChar(25)
+  reviewerId Int      @map("reviewer_id")
+  sprintId   String   @map("sprint_id") @db.VarChar(25)
+  reviewer   Reviewer @relation(fields: [reviewerId], references: [id])
+  task       Task     @relation(fields: [taskId, sprintId], references: [id, sprintId])
+
+  @@id([taskId, reviewerId, sprintId])
+  @@map("task_reviewer")
+}
+
+model SprintReviewer {
+  sprintId       String   @map("sprint_id") @db.VarChar(25)
+  reviewerId     Int      @map("reviewer_id")
+  taskCount      Int?     @map("task_count")
+  scenarioCount  Int?     @map("scenario_count")
+  rejectedCount  Int?     @map("rejected_count")
+  reviewer       Reviewer @relation(fields: [reviewerId], references: [id])
+  sprint         Sprint   @relation(fields: [sprintId], references: [id])
+
+  @@id([sprintId, reviewerId])
+  @@map("sprint_reviewer")
 }

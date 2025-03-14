@@ -3,6 +3,7 @@ import { PrismaClient } from "@prisma/client";
 import { seedCategories } from "./seeds/category";
 import { seedEngineers } from "./seeds/engineer";
 import { seedJobLevels } from "./seeds/jobLevel";
+import { seedReviewers } from "./seeds/reviewer";
 import { seedRoles } from "./seeds/role";
 import { seedStatuses } from "./seeds/status";
 import { seedTags } from "./seeds/tag";
@@ -15,6 +16,7 @@ async function main() {
   await seedRoles();
   await seedJobLevels();
   await seedEngineers();
+  await seedReviewers();
   await seedUsers();
   await seedCategories();
   await seedStatuses();
