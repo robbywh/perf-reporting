@@ -31,7 +31,7 @@ export default async function RootLayout({
 }) {
   const sprints = await findAllSprints();
 
-  const formattedSprints = sprints.map((sprint) => ({
+  const allSprints = sprints.map((sprint) => ({
     value: sprint.id,
     label: sprint.name,
     startDate: new Date(sprint.startDate),
@@ -43,37 +43,32 @@ export default async function RootLayout({
   const threeMonthsAgo = getDateMonthsAgo(3);
   const sixMonthsAgo = getDateMonthsAgo(6);
 
-  const allPastSprints = formattedSprints.filter(
-    (sprint) => new Date(sprint.startDate) <= currentDate
-  );
-
-  const past1MonthSprints = formattedSprints.filter(
+  const past1MonthSprints = allSprints.filter(
     (sprint) =>
       new Date(sprint.startDate) <= currentDate &&
       new Date(sprint.startDate) >= oneMonthAgo
   );
 
-  const past3MonthsSprints = formattedSprints.filter(
+  const past3MonthsSprints = allSprints.filter(
     (sprint) =>
       new Date(sprint.startDate) <= currentDate &&
       new Date(sprint.startDate) >= threeMonthsAgo
   );
 
-  const past6MonthsSprints = formattedSprints.filter(
+  const past6MonthsSprints = allSprints.filter(
     (sprint) =>
       new Date(sprint.startDate) <= currentDate &&
       new Date(sprint.startDate) >= sixMonthsAgo
   );
 
   const defaultSprint =
-    formattedSprints.find(
+    allSprints.find(
       (sprint) =>
         new Date(sprint.startDate) <= currentDate &&
         currentDate <= new Date(sprint.endDate)
-    ) || allPastSprints[allPastSprints.length - 1];
+    ) || allSprints[allSprints.length - 1];
 
   const sprintOptions = [
-    { label: "All Past Sprints", sprints: allPastSprints },
     { label: "Past 1 Month", sprints: past1MonthSprints },
     { label: "Past 3 Months", sprints: past3MonthsSprints },
     { label: "Past 6 Months", sprints: past6MonthsSprints },
@@ -88,7 +83,7 @@ export default async function RootLayout({
         </Suspense>
         <Suspense fallback={<Skeleton className="h-6 w-60 rounded-md" />}>
           <SprintMultiSelect
-            sprints={allPastSprints}
+            sprints={allSprints}
             defaultSprintId={defaultSprint?.value}
             sprintOptions={sprintOptions}
           />
