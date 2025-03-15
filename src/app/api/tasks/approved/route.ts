@@ -1,8 +1,15 @@
+import { CRON_SECRET } from "@/constants/server";
 import { prisma } from "@/services/db";
 import { findTodaySprints } from "@/services/sprints";
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
+    const authHeader = request.headers.get("authorization");
+    if (authHeader !== `Bearer ${CRON_SECRET}`) {
+      return new Response("Unauthorized", {
+        status: 401,
+      });
+    }
     // Get today's sprints
     const todaySprints = await findTodaySprints();
     const sprintIds = todaySprints.map((sprint) => sprint.id);
