@@ -6,9 +6,11 @@ import { getFolderList } from "@/lib/clickup/lists";
 import { ClickUpTask, getListTasks } from "@/lib/clickup/tasks";
 import { prisma } from "@/services/db";
 import { linkSprintsToEngineers } from "@/services/sprint-engineers";
+import { linkSprintsToReviewers } from "@/services/sprint-reviewers";
 import { findTodaySprints } from "@/services/sprints";
 import { linkTagsToTask } from "@/services/tags";
 import { linkAssigneesToTask } from "@/services/task-assignees";
+import { linkReviewersToTask } from "@/services/task-reviewers";
 
 async function syncSprintsFromClickUp() {
   // Call the external API library to fetch sprint lists from ClickUp.
@@ -124,7 +126,6 @@ async function processBatch(
         )
       );
 
-      // Finally, link assignees for all tasks
       await Promise.all(
         validTasks.map((taskData) =>
           linkAssigneesToTask({
@@ -135,6 +136,22 @@ async function processBatch(
             statusName: taskData.statusId
               ? statuses.find((s) => s.id === taskData.statusId)?.name || ""
               : "",
+          })
+        )
+      );
+
+      await Promise.all(
+        validTasks.map((taskData) =>
+          linkReviewersToTask({
+            id: taskData.id,
+            assignees: taskData.assignees,
+            sprintId: taskData.sprintId,
+            storyPoint: taskData.storyPoint,
+            statusName: taskData.statusId
+              ? statuses.find((s) => s.id === taskData.statusId)?.name || ""
+              : "",
+            name: taskData.name,
+            taskTags: taskData.tags?.map((tag) => ({ tagId: tag.name })),
           })
         )
       );
@@ -156,6 +173,7 @@ async function syncTodayTasksFromClickUp() {
 
     for (const sprint of todaySprints) {
       await linkSprintsToEngineers(sprint.id);
+      await linkSprintsToReviewers(sprint.id);
       let page = 0;
       let lastPage = false;
       const allTasks: ClickUpTask[] = [];

@@ -131,6 +131,9 @@ export async function findTotalTaskToQACounts(
         { name: { startsWith: "[QA]", mode: "insensitive" } },
         { name: { startsWith: "QA:", mode: "insensitive" } },
       ],
+      NOT: {
+        name: { contains: "[Scenario]", mode: "insensitive" },
+      },
     },
     select: {
       id: true,
