@@ -1,5 +1,6 @@
 import { Decimal } from "@prisma/client/runtime/library";
 
+import { adjustBaselineTarget } from "@/actions/leave-holiday";
 import { getMergedMRsBySprintPeriod } from "@/lib/gitlab/mr"; // Ensure this function is defined
 import { prisma } from "@/services/db";
 
@@ -77,7 +78,7 @@ export async function linkSprintsToEngineers(sprintId: string) {
         // ✅ Get merged count for this engineer
         const mergedCount = mrCountByAssignee.get(gitlabUserId) || 0;
 
-        // ✅ Upsert into `sprint_engineer` table
+        // ✅ First create/update the sprint engineer record with original values
         await prisma.sprintEngineer.upsert({
           where: { sprintId_engineerId: { sprintId, engineerId } },
           update: {
@@ -99,6 +100,16 @@ export async function linkSprintsToEngineers(sprintId: string) {
             storyPoints: 0,
           },
         });
+
+        // ✅ Then adjust baseline and target based on leaves and holidays
+        await adjustBaselineTarget(
+          sprintStartDate,
+          engineerId,
+          null,
+          false,
+          prisma
+        );
+
         console.log(
           `✅ Sprint Engineer Updated: Sprint ${sprintId}, Engineer ${engineerId}, Job Level: ${jobLevelId}, Merged Count: ${mergedCount}`
         );

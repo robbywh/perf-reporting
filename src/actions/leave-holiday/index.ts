@@ -62,46 +62,68 @@ const leaveOrHolidaySchema = z.discriminatedUnion("type", [
   }),
 ]);
 
+type SprintEngineer = {
+  engineer: {
+    id: number;
+    jobLevel: {
+      baseline: number;
+      target: number;
+    };
+    leaves: Array<{
+      date: Date;
+      type: "full_day" | "half_day_before_break" | "half_day_after_break";
+    }>;
+  };
+};
+
 async function findSprintByDate(
   date: Date,
   tx: PrismaTransactionClient = prisma
 ) {
-  // Convert date to YYYY-MM-DD format
-  const dateStr = date.toISOString().split("T")[0];
-  console.log("Finding sprint for date:", dateStr);
-
-  const startOfDay = new Date(dateStr + "T00:00:00.000Z");
-  const endOfDay = new Date(dateStr + "T23:59:59.999Z");
-
-  console.log(
-    "Looking for sprint containing time range:",
-    startOfDay.toISOString(),
-    "to",
-    endOfDay.toISOString()
+  // Convert all dates to UTC midnight for comparison
+  const dateToFind = new Date(
+    date.toISOString().split("T")[0] + "T00:00:00.000Z"
   );
+  console.log("Finding sprint for date:", dateToFind.toISOString());
 
   const sprint = await tx.sprint.findFirst({
     where: {
       AND: [
         {
           startDate: {
-            lte: endOfDay,
+            lte: new Date(dateToFind.getTime() + 24 * 60 * 60 * 1000), // Include entire day
           },
         },
         {
           endDate: {
-            gte: startOfDay,
+            gte: dateToFind,
           },
         },
       ],
     },
+    // Also fetch start and end dates for logging
+    select: {
+      id: true,
+      startDate: true,
+      endDate: true,
+    },
   });
 
-  console.log("Found sprint:", sprint?.id);
+  if (sprint) {
+    console.log("Found sprint:", {
+      id: sprint.id,
+      startDate: sprint.startDate.toISOString(),
+      endDate: sprint.endDate.toISOString(),
+      queryDate: dateToFind.toISOString(),
+    });
+  } else {
+    console.log("No sprint found for date:", dateToFind.toISOString());
+  }
+
   return sprint;
 }
 
-async function adjustBaselineTarget(
+export async function adjustBaselineTarget(
   date: Date,
   engineerId: number | null,
   leaveType:
@@ -112,13 +134,18 @@ async function adjustBaselineTarget(
   isDelete: boolean = false,
   tx: PrismaTransactionClient = prisma
 ) {
+  // Convert input date to UTC midnight for consistent comparison
+  const dateToProcess = new Date(
+    date.toISOString().split("T")[0] + "T00:00:00.000Z"
+  );
+
   // Find sprint based on date
-  const sprint = await findSprintByDate(date, tx);
+  const sprint = await findSprintByDate(dateToProcess, tx);
   if (!sprint) {
     throw new Error("No sprint found for the given date");
   }
 
-  // Get affected sprint engineers
+  // Get affected sprint engineers with their leaves
   const sprintEngineers = await tx.sprintEngineer.findMany({
     where: engineerId
       ? { sprintId: sprint.id, engineerId }
@@ -127,52 +154,111 @@ async function adjustBaselineTarget(
       engineer: {
         include: {
           jobLevel: true,
+          leaves: {
+            where: {
+              date: {
+                gte: sprint.startDate,
+                lte: sprint.endDate,
+              },
+            },
+          },
         },
       },
     },
   });
 
-  // Calculate reduction factor
-  const reductionFactor = leaveType === "full_day" ? 1 : 0.5;
-  // Calculate how much to adjust per day
-  const updates = sprintEngineers.map(
-    (sprintEngineer: {
-      engineer: { jobLevel: { baseline: number; target: number } };
-      engineerId: number;
-    }) => {
-      const { baseline, target } = sprintEngineer.engineer.jobLevel;
-      const baselinePerDay = Number(baseline) / WORKING_DAYS_PER_SPRINT;
-      const targetPerDay = Number(target) / WORKING_DAYS_PER_SPRINT;
+  // Get all public holidays in the sprint period
+  const publicHolidays = await tx.publicHoliday.findMany({
+    where: {
+      date: {
+        gte: sprint.startDate,
+        lte: sprint.endDate,
+      },
+    },
+  });
 
-      // If deleting, we add back the days (increment)
-      // If adding, we reduce the days (decrement)
-      const baselineChange = isDelete
-        ? baselinePerDay * reductionFactor
-        : -(baselinePerDay * reductionFactor);
-      const targetChange = isDelete
-        ? targetPerDay * reductionFactor
-        : -(targetPerDay * reductionFactor);
+  // Helper function to compare dates without time
+  const isSameDay = (date1: Date, date2: Date) => {
+    const d1 = new Date(date1.toISOString().split("T")[0] + "T00:00:00.000Z");
+    const d2 = new Date(date2.toISOString().split("T")[0] + "T00:00:00.000Z");
+    return d1.getTime() === d2.getTime();
+  };
 
-      return tx.sprintEngineer.update({
-        where: {
-          sprintId_engineerId: {
-            sprintId: sprint.id,
-            engineerId: sprintEngineer.engineerId,
-          },
-        },
-        data: {
-          baseline: {
-            increment: baselineChange,
-          },
-          target: {
-            increment: targetChange,
-          },
-        },
-      });
+  // Calculate how much to adjust per day for each engineer
+  const updates = sprintEngineers.map((sprintEngineer: SprintEngineer) => {
+    const { baseline, target } = sprintEngineer.engineer.jobLevel;
+    const baselinePerDay = Number(baseline) / WORKING_DAYS_PER_SPRINT;
+    const targetPerDay = Number(target) / WORKING_DAYS_PER_SPRINT;
+
+    // Calculate total reduction from leaves
+    let totalLeaveReduction = 0;
+
+    // Count all existing leaves except the one being modified
+    sprintEngineer.engineer.leaves.forEach((leave) => {
+      const leaveDate = new Date(
+        leave.date.toISOString().split("T")[0] + "T00:00:00.000Z"
+      );
+      console.log(`- Checking leave on ${leaveDate.toISOString()}`);
+
+      // Skip the leave being modified (whether adding or deleting)
+      if (engineerId && isSameDay(leaveDate, dateToProcess)) {
+        console.log(`  - Skipping this leave (being modified)`);
+        return;
+      }
+      const reduction = leave.type === "full_day" ? 1 : 0.5;
+      totalLeaveReduction += reduction;
+      console.log(`  - Counting this leave: ${reduction} days`);
+    });
+
+    // Add the leave being modified if we're adding (not deleting)
+    if (!isDelete && engineerId && leaveType) {
+      const reduction = leaveType === "full_day" ? 1 : 0.5;
+      totalLeaveReduction += reduction;
+      console.log(`- Adding new leave: ${reduction} days`);
     }
-  );
 
-  // Execute all updates in parallel
+    // Calculate holiday reduction
+    let holidayReduction = publicHolidays.length;
+    console.log(`- Public holidays in sprint: ${holidayReduction}`);
+
+    // Adjust holiday count if we're modifying a holiday
+    if (!engineerId) {
+      if (isDelete) {
+        holidayReduction -= 1;
+        console.log(`- Removing 1 holiday (deletion)`);
+      } else {
+        holidayReduction += 1;
+        console.log(`- Adding 1 holiday`);
+      }
+    }
+
+    // Calculate total reduction including holidays
+    const totalReduction = totalLeaveReduction + holidayReduction;
+    console.log(
+      `- Total reduction: ${totalReduction} (leaves: ${totalLeaveReduction}, holidays: ${holidayReduction})`
+    );
+
+    // Calculate final baseline and target values
+    const adjustedBaseline = Number(baseline) - baselinePerDay * totalReduction;
+    const adjustedTarget = Number(target) - targetPerDay * totalReduction;
+    console.log(
+      `- Final values: baseline=${adjustedBaseline}, target=${adjustedTarget}`
+    );
+
+    return tx.sprintEngineer.update({
+      where: {
+        sprintId_engineerId: {
+          sprintId: sprint.id,
+          engineerId: sprintEngineer.engineer.id,
+        },
+      },
+      data: {
+        baseline: adjustedBaseline,
+        target: adjustedTarget,
+      },
+    });
+  });
+
   await Promise.all(updates);
 }
 

@@ -1,11 +1,12 @@
 import { NextResponse } from "next/server";
+import type { NextRequest } from "next/server";
 
 import { CRON_SECRET } from "@/constants/server";
 import { prisma } from "@/services/db";
 
 export async function GET(
-  request: Request,
-  context: { params: { sprintId: string } }
+  request: NextRequest,
+  { params }: { params: { sprintId: string } }
 ) {
   try {
     const authHeader = request.headers.get("authorization");
@@ -15,7 +16,6 @@ export async function GET(
       });
     }
 
-    const params = await Promise.resolve(context.params);
     const { sprintId } = params;
     const { searchParams } = new URL(request.url);
     const reviewerId = searchParams.get("reviewerId");
