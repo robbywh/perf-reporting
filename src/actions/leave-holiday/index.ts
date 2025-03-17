@@ -123,9 +123,6 @@ async function adjustBaselineTarget(
     where: engineerId
       ? { sprintId: sprint.id, engineerId }
       : { sprintId: sprint.id },
-    select: {
-      engineerId: true,
-    },
     include: {
       engineer: {
         include: {
