@@ -6,7 +6,7 @@ import { prisma } from "@/services/db";
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { sprintId: string } }
+  { params }: { params: Promise<{ sprintId: string }> }
 ) {
   try {
     const authHeader = request.headers.get("authorization");
@@ -16,7 +16,7 @@ export async function GET(
       });
     }
 
-    const { sprintId } = params;
+    const { sprintId } = await params;
     const { searchParams } = new URL(request.url);
     const reviewerId = searchParams.get("reviewerId");
 
