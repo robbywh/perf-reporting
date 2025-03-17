@@ -84,7 +84,6 @@ async function findSprintByDate(
   const dateToFind = new Date(
     date.toISOString().split("T")[0] + "T00:00:00.000Z"
   );
-  console.log("Finding sprint for date:", dateToFind.toISOString());
 
   const sprint = await tx.sprint.findFirst({
     where: {
@@ -108,17 +107,6 @@ async function findSprintByDate(
       endDate: true,
     },
   });
-
-  if (sprint) {
-    console.log("Found sprint:", {
-      id: sprint.id,
-      startDate: sprint.startDate.toISOString(),
-      endDate: sprint.endDate.toISOString(),
-      queryDate: dateToFind.toISOString(),
-    });
-  } else {
-    console.log("No sprint found for date:", dateToFind.toISOString());
-  }
 
   return sprint;
 }
@@ -198,52 +186,39 @@ export async function adjustBaselineTarget(
       const leaveDate = new Date(
         leave.date.toISOString().split("T")[0] + "T00:00:00.000Z"
       );
-      console.log(`- Checking leave on ${leaveDate.toISOString()}`);
 
       // Skip the leave being modified (whether adding or deleting)
       if (engineerId && isSameDay(leaveDate, dateToProcess)) {
-        console.log(`  - Skipping this leave (being modified)`);
         return;
       }
       const reduction = leave.type === "full_day" ? 1 : 0.5;
       totalLeaveReduction += reduction;
-      console.log(`  - Counting this leave: ${reduction} days`);
     });
 
     // Add the leave being modified if we're adding (not deleting)
     if (!isDelete && engineerId && leaveType) {
       const reduction = leaveType === "full_day" ? 1 : 0.5;
       totalLeaveReduction += reduction;
-      console.log(`- Adding new leave: ${reduction} days`);
     }
 
     // Calculate holiday reduction
     let holidayReduction = publicHolidays.length;
-    console.log(`- Public holidays in sprint: ${holidayReduction}`);
 
     // Adjust holiday count if we're modifying a holiday
     if (!engineerId) {
       if (isDelete) {
         holidayReduction -= 1;
-        console.log(`- Removing 1 holiday (deletion)`);
       } else {
         holidayReduction += 1;
-        console.log(`- Adding 1 holiday`);
       }
     }
 
     // Calculate total reduction including holidays
     const totalReduction = totalLeaveReduction + holidayReduction;
-    console.log(
-      `- Total reduction: ${totalReduction} (leaves: ${totalLeaveReduction}, holidays: ${holidayReduction})`
-    );
 
     // Calculate final baseline and target values
     const adjustedBaseline = Number(baseline) - baselinePerDay * totalReduction;
     const adjustedTarget = Number(target) - targetPerDay * totalReduction;
-    console.log(
-      `- Final values: baseline=${adjustedBaseline}, target=${adjustedTarget}`
-    );
 
     return tx.sprintEngineer.update({
       where: {
@@ -272,6 +247,12 @@ export async function deleteLeaveOrHolidayAction(formData: FormData) {
   }
 
   try {
+    // Parse the date string to a Date object
+    const dateObj = new Date(date);
+    if (isNaN(dateObj.getTime())) {
+      return { success: false, error: "Invalid date format" };
+    }
+
     await prisma.$transaction(async (tx) => {
       if (type === "leave") {
         // Get leave details before deletion
@@ -280,7 +261,9 @@ export async function deleteLeaveOrHolidayAction(formData: FormData) {
           select: { engineerId: true, type: true, date: true },
         });
 
-        if (!leave) throw new Error("Leave not found");
+        if (!leave) {
+          throw new Error("Leave not found");
+        }
 
         // Delete the leave
         await tx.leave.delete({ where: { id } });
@@ -300,7 +283,9 @@ export async function deleteLeaveOrHolidayAction(formData: FormData) {
           select: { date: true },
         });
 
-        if (!holiday) throw new Error("Holiday not found");
+        if (!holiday) {
+          throw new Error("Holiday not found");
+        }
 
         // Delete the holiday
         await tx.publicHoliday.delete({ where: { id } });
@@ -320,7 +305,9 @@ export async function deleteLeaveOrHolidayAction(formData: FormData) {
     return { success: true };
   } catch (error) {
     console.error("Error deleting leave/holiday:", error);
-    return { success: false, error: "Failed to delete leave/holiday" };
+    const errorMessage =
+      error instanceof Error ? error.message : "Failed to delete leave/holiday";
+    return { success: false, error: errorMessage };
   }
 }
 

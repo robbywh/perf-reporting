@@ -78,11 +78,6 @@ export async function findSprintsWithLeavesAndHolidays(sprintIds: string[]) {
       },
     },
     orderBy: { startDate: "desc" },
-    cacheStrategy: {
-      swr: 5 * 60,
-      ttl: 8 * 60 * 60,
-      tags: ["findSprintsWithLeavesAndHolidays"],
-    },
   });
 
   const publicHolidays = await prisma.publicHoliday.findMany({
@@ -96,11 +91,6 @@ export async function findSprintsWithLeavesAndHolidays(sprintIds: string[]) {
       id: true,
       date: true,
       description: true,
-    },
-    cacheStrategy: {
-      swr: 5 * 60,
-      ttl: 8 * 60 * 60,
-      tags: ["publicHolidays"],
     },
   });
 

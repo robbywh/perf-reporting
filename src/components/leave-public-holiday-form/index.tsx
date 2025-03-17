@@ -166,7 +166,7 @@ export function LeavePublicHoliday({
   const [deleteTarget, setDeleteTarget] = React.useState<{
     type: "leave" | "holiday";
     sprintIndex: number;
-    index: number;
+    itemId: number;
   } | null>(null);
   const [sprintData, setSprintData] = React.useState<SprintData[]>(sprints);
   const [loading, setLoading] = React.useState(false);
@@ -195,9 +195,9 @@ export function LeavePublicHoliday({
   const confirmDelete = (
     type: "leave" | "holiday",
     sprintIndex: number,
-    index: number
+    itemId: number
   ) => {
-    setDeleteTarget({ type, sprintIndex, index });
+    setDeleteTarget({ type, sprintIndex, itemId });
     setDeleteDialog(true);
   };
 
@@ -207,36 +207,54 @@ export function LeavePublicHoliday({
     setDeleteLoading(true);
 
     try {
-      const { type, sprintIndex, index } = deleteTarget;
+      const { type, sprintIndex, itemId } = deleteTarget;
+
+      // Find the item by ID
       const item =
         type === "leave"
-          ? sprintData[sprintIndex].leaves[index]
-          : sprintData[sprintIndex].holidays[index];
+          ? sprintData[sprintIndex].leaves.find((leave) => leave.id === itemId)
+          : sprintData[sprintIndex].holidays.find(
+              (holiday) => holiday.id === itemId
+            );
 
-      if (!item.id) {
-        console.error("Cannot delete item without id");
+      if (!item) {
+        console.error("Item not found with ID:", itemId);
+        setDeleteLoading(false);
+        setErrorMessage("Item not found");
+        setErrorDialog(true);
         return;
       }
 
       const formData = new FormData();
       formData.append("type", type);
-      formData.append("id", item.id.toString());
-      formData.append("date", item.date);
+      formData.append("id", itemId.toString());
 
-      // Only append leaveType for leave records
-      if (type === "leave" && "type" in item && item.type) {
-        formData.append("leaveType", item.type.toString());
+      // Ensure date is properly formatted as ISO string
+      const dateObj = new Date(item.date);
+      formData.append("date", dateObj.toISOString());
+
+      // For leave records, we need to include the leave type
+      if (type === "leave" && "type" in item) {
+        const leaveType = (item as LeaveData).type;
+        formData.append("leaveType", leaveType.toString());
       }
 
       // Call the delete action
       const result = await deleteLeaveOrHolidayAction(formData);
+
       if (result.success) {
         setSprintData((prevSprints) => {
           const newSprints = [...prevSprints];
           if (type === "leave") {
-            newSprints[sprintIndex].leaves.splice(index, 1);
+            // Remove the item with the matching ID
+            newSprints[sprintIndex].leaves = newSprints[
+              sprintIndex
+            ].leaves.filter((leave) => leave.id !== itemId);
           } else {
-            newSprints[sprintIndex].holidays.splice(index, 1);
+            // Remove the item with the matching ID
+            newSprints[sprintIndex].holidays = newSprints[
+              sprintIndex
+            ].holidays.filter((holiday) => holiday.id !== itemId);
           }
           return newSprints;
         });
@@ -244,7 +262,9 @@ export function LeavePublicHoliday({
         setDeleteTarget(null);
       } else {
         console.error("Delete error:", result.error);
-        setErrorMessage("An unexpected error occurred while deleting");
+        setErrorMessage(
+          result.error || "An unexpected error occurred while deleting"
+        );
         setErrorDialog(true);
       }
     } catch (error) {
@@ -649,7 +669,7 @@ function TableSection({
   confirmDelete: (
     type: "leave" | "holiday",
     sprintIndex: number,
-    index: number
+    itemId: number
   ) => void;
   getEngineerName?: (engineerId?: number) => string;
   type: "leave" | "holiday";
@@ -700,7 +720,13 @@ function TableSection({
                       aria-label="Delete"
                       variant="ghost"
                       size="icon"
-                      onClick={() => confirmDelete(type, sprintIndex, index)}
+                      onClick={() => {
+                        if (item.id) {
+                          confirmDelete(type, sprintIndex, item.id);
+                        } else {
+                          console.error("Cannot delete item without id");
+                        }
+                      }}
                     >
                       <Trash2 className="size-4 text-red-500" />
                     </Button>
