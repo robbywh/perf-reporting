@@ -15,6 +15,18 @@ export async function findTodaySprints() {
   return sprints;
 }
 
+export async function findCurrentAndFutureSprints() {
+  const today = new Date();
+
+  const sprints = await prisma.sprint.findMany({
+    where: {
+      endDate: { gte: today }, // endDate should be greater than or equal to today
+    },
+  });
+
+  return sprints;
+}
+
 export async function findAllSprints() {
   const sprints = await prisma.sprint.findMany({
     select: {

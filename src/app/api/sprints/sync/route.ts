@@ -7,7 +7,10 @@ import { ClickUpTask, getListTasks } from "@/lib/clickup/tasks";
 import { prisma } from "@/services/db";
 import { linkSprintsToEngineers } from "@/services/sprint-engineers";
 import { linkSprintsToReviewers } from "@/services/sprint-reviewers";
-import { findTodaySprints } from "@/services/sprints";
+import {
+  findCurrentAndFutureSprints,
+  findTodaySprints,
+} from "@/services/sprints";
 import { linkTagsToTask } from "@/services/tags";
 import { linkAssigneesToTask } from "@/services/task-assignees";
 import { linkReviewersToTask } from "@/services/task-reviewers";
@@ -165,15 +168,24 @@ async function processBatch(
 
 async function syncTodayTasksFromClickUp() {
   try {
+    // Get current and future sprints for engineer/reviewer linking
+    const currentAndFutureSprints = await findCurrentAndFutureSprints();
+
+    // Link engineers and reviewers for current and future sprints
+    for (const sprint of currentAndFutureSprints) {
+      await linkSprintsToEngineers(sprint.id);
+      await linkSprintsToReviewers(sprint.id);
+    }
+
+    // Get today's sprints for task syncing
     const todaySprints = await findTodaySprints();
 
     // First, fetch all statuses to create a name-to-id mapping
     const statuses = await prisma.status.findMany();
     const statusMap = new Map(statuses.map((s) => [s.name, s.id]));
 
+    // Only sync tasks for today's sprints
     for (const sprint of todaySprints) {
-      await linkSprintsToEngineers(sprint.id);
-      await linkSprintsToReviewers(sprint.id);
       let page = 0;
       let lastPage = false;
       const allTasks: ClickUpTask[] = [];
