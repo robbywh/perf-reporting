@@ -28,9 +28,14 @@ async function syncSprintsFromClickUp() {
   // Process all sprints in a single transaction
   const sprintData = lists.map((list) => {
     const { id, name, start_date: startDate, due_date: dueDate } = list;
-    const startDateUTC = new Date(Number(startDate));
+
+    // Create dates with +1 day adjustment in a single step
+    const startTimestamp = Number(startDate) + 24 * 60 * 60 * 1000; // Add 1 day in milliseconds
+    const startDateUTC = new Date(startTimestamp);
     startDateUTC.setUTCHours(0, 0, 0, 0);
-    const endDateUTC = new Date(Number(dueDate));
+
+    const endTimestamp = Number(dueDate) + 24 * 60 * 60 * 1000; // Add 1 day in milliseconds
+    const endDateUTC = new Date(endTimestamp);
     endDateUTC.setUTCHours(23, 59, 59, 999);
 
     return {
@@ -166,7 +171,7 @@ async function processBatch(
   );
 }
 
-async function syncTodayTasksFromClickUp() {
+export async function syncTodayTasksFromClickUp() {
   try {
     // Get current and future sprints for engineer/reviewer linking
     const currentAndFutureSprints = await findCurrentAndFutureSprints();
@@ -255,7 +260,7 @@ async function syncTodayTasksFromClickUp() {
         const taskBatch = allTasks.slice(i, i + batchSize);
         try {
           await processBatch(taskBatch, sprint, statusMap, statuses);
-        } catch (error) {
+        } catch (error: unknown) {
           if (
             error instanceof Prisma.PrismaClientKnownRequestError &&
             error.code === "P2028"
