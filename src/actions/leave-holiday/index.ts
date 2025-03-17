@@ -165,13 +165,6 @@ export async function adjustBaselineTarget(
     },
   });
 
-  // Helper function to compare dates without time
-  const isSameDay = (date1: Date, date2: Date) => {
-    const d1 = new Date(date1.toISOString().split("T")[0] + "T00:00:00.000Z");
-    const d2 = new Date(date2.toISOString().split("T")[0] + "T00:00:00.000Z");
-    return d1.getTime() === d2.getTime();
-  };
-
   // Calculate how much to adjust per day for each engineer
   const updates = sprintEngineers.map((sprintEngineer: SprintEngineer) => {
     const { baseline, target } = sprintEngineer.engineer.jobLevel;
@@ -183,14 +176,6 @@ export async function adjustBaselineTarget(
 
     // Count all existing leaves except the one being modified
     sprintEngineer.engineer.leaves.forEach((leave) => {
-      const leaveDate = new Date(
-        leave.date.toISOString().split("T")[0] + "T00:00:00.000Z"
-      );
-
-      // Skip the leave being modified (whether adding or deleting)
-      if (engineerId && isSameDay(leaveDate, dateToProcess)) {
-        return;
-      }
       const reduction = leave.type === "full_day" ? 1 : 0.5;
       totalLeaveReduction += reduction;
     });
