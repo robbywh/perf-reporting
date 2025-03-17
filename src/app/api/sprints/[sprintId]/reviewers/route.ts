@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
+import { APPROVED_STATUS_IDS } from "@/constants/client";
 import { CRON_SECRET } from "@/constants/server";
 import { prisma } from "@/services/db";
 
@@ -18,16 +19,26 @@ export async function GET(
 
     const { sprintId } = await params;
     const { searchParams } = new URL(request.url);
-    const reviewerId = searchParams.get("reviewerId");
 
-    // Get all tasks for the sprint
+    // Get reviewerIds from comma-separated string
+    const reviewerIdsParam = searchParams.get("reviewerIds");
+    const reviewerIds = reviewerIdsParam
+      ? reviewerIdsParam.split(",").filter((id) => id.trim() !== "")
+      : [];
+
+    // Get all tasks for the sprint with status product_approval or product_review
     const tasks = await prisma.task.findMany({
       where: {
         sprintId,
-        ...(reviewerId && {
+        statusId: {
+          in: APPROVED_STATUS_IDS,
+        },
+        ...(reviewerIds.length > 0 && {
           reviewers: {
             some: {
-              reviewerId: parseInt(reviewerId),
+              reviewerId: {
+                in: reviewerIds.map((id) => parseInt(id)),
+              },
             },
           },
         }),
@@ -49,47 +60,55 @@ export async function GET(
       },
     });
 
-    // Initialize response structure
-    const response = {
-      rejectedTasks: {
-        count: 0,
-        data: [] as string[],
-      },
-      scenarioTasks: {
-        count: 0,
-        data: [] as string[],
-      },
-      qaTasks: {
-        count: 0,
-        data: [] as string[],
-      },
-    };
+    // Initialize response structure with reviewers
+    const reviewerMap: Record<
+      string,
+      {
+        rejectedTasks: { count: number; data: string[] };
+        scenarioTasks: { count: number; data: string[] };
+        qaTasks: { count: number; data: string[] };
+      }
+    > = {};
 
-    // Process tasks
+    // Process tasks and organize by reviewer
     tasks.forEach((task) => {
       const taskName = task.name.toLowerCase();
 
-      // Check for rejected tasks
-      if (taskName.includes("[rejected]")) {
-        response.rejectedTasks.count++;
-        response.rejectedTasks.data.push(task.name);
-      }
-      // Check for scenario tasks
-      else if (taskName.includes("[scenario]")) {
-        response.scenarioTasks.count++;
-        response.scenarioTasks.data.push(task.name);
-      }
-      // Check for QA tasks (excluding scenario tasks)
-      else if (
-        (taskName.includes("[qa]") || taskName.includes("qa:")) &&
-        !taskName.includes("[scenario]")
-      ) {
-        response.qaTasks.count++;
-        response.qaTasks.data.push(task.name);
-      }
+      // Process each reviewer for this task
+      task.reviewers.forEach((taskReviewer) => {
+        const reviewerName = taskReviewer.reviewer.name;
+
+        // Initialize reviewer data if not exists
+        if (!reviewerMap[reviewerName]) {
+          reviewerMap[reviewerName] = {
+            rejectedTasks: { count: 0, data: [] },
+            scenarioTasks: { count: 0, data: [] },
+            qaTasks: { count: 0, data: [] },
+          };
+        }
+
+        // Check for rejected tasks
+        if (taskName.includes("[rejected]")) {
+          reviewerMap[reviewerName].rejectedTasks.count++;
+          reviewerMap[reviewerName].rejectedTasks.data.push(task.name);
+        }
+        // Check for scenario tasks
+        else if (taskName.includes("[scenario]")) {
+          reviewerMap[reviewerName].scenarioTasks.count++;
+          reviewerMap[reviewerName].scenarioTasks.data.push(task.name);
+        }
+        // Check for QA tasks (excluding scenario tasks)
+        else if (
+          (taskName.includes("[qa]") || taskName.includes("qa:")) &&
+          !taskName.includes("[scenario]")
+        ) {
+          reviewerMap[reviewerName].qaTasks.count++;
+          reviewerMap[reviewerName].qaTasks.data.push(task.name);
+        }
+      });
     });
 
-    return NextResponse.json(response);
+    return NextResponse.json({ reviewers: reviewerMap });
   } catch (error) {
     console.error("Error fetching sprint reviewer statistics:", error);
     return NextResponse.json(

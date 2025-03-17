@@ -171,7 +171,7 @@ async function processBatch(
   );
 }
 
-export async function syncTodayTasksFromClickUp() {
+async function syncTodayTasksFromClickUp() {
   try {
     // Get current and future sprints for engineer/reviewer linking
     const currentAndFutureSprints = await findCurrentAndFutureSprints();

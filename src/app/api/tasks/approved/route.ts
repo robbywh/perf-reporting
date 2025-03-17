@@ -1,3 +1,4 @@
+import { APPROVED_STATUS_IDS } from "@/constants/client";
 import { CRON_SECRET } from "@/constants/server";
 import { prisma } from "@/services/db";
 import { findTodaySprints } from "@/services/sprints";
@@ -18,7 +19,7 @@ export async function GET(request: Request) {
     const tasks = await prisma.task.findMany({
       where: {
         statusId: {
-          in: ["product_approval", "product_review"],
+          in: APPROVED_STATUS_IDS,
         },
         sprintId: {
           in: sprintIds,
