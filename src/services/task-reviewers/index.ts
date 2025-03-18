@@ -58,6 +58,10 @@ export async function linkReviewersToTask(task: TaskReviewer) {
       task.name.toLowerCase().includes("qa:")) &&
     !task.name.toLowerCase().includes("[scenario]");
   const isScenarioTask = task.name.toLowerCase().includes("[scenario]");
+  const scenarioCount =
+    task.name.toLowerCase().includes("[scenario]") && task?.storyPoint
+      ? task.storyPoint
+      : 1;
   const isRejectedTask = task.name.toLowerCase().includes("[rejected]");
   const isSupportedTask = task.name.toLowerCase().includes("[support]");
 
@@ -89,13 +93,15 @@ export async function linkReviewersToTask(task: TaskReviewer) {
           reviewerId: assignee.id,
           taskCount: isQATask ? 1 : 0,
           rejectedCount: isRejectedTask ? 1 : 0,
-          scenarioCount: isScenarioTask ? 1 : 0,
+          scenarioCount: isScenarioTask ? scenarioCount : 0,
           supportedCount: isSupportedTask ? 1 : 0,
         },
         update: {
           taskCount: isQATask ? { increment: 1 } : undefined,
           rejectedCount: isRejectedTask ? { increment: 1 } : undefined,
-          scenarioCount: isScenarioTask ? { increment: 1 } : undefined,
+          scenarioCount: isScenarioTask
+            ? { increment: scenarioCount }
+            : undefined,
           supportedCount: isSupportedTask ? { increment: 1 } : undefined,
         },
       });
