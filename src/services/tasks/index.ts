@@ -1,4 +1,4 @@
-import { APPROVED_STATUS_IDS, REJECTED_STATUS_IDS } from "@/constants/client";
+import { APPROVED_STATUS_IDS } from "@/constants/client";
 
 import { prisma } from "../db";
 
@@ -138,6 +138,7 @@ export async function findTotalTaskToQACounts(
     select: {
       id: true,
       sprintId: true,
+      name: true,
       parentTaskId: true,
       taskTags: { select: { tagId: true } },
       assignees: { select: { engineerId: true } },
@@ -189,14 +190,17 @@ export async function findTotalTaskToQACounts(
     : tasks;
 
   const approvedTasks = filteredTasks.filter(
-    (task) =>
-      !task.taskTags.some((tag) => REJECTED_STATUS_IDS.includes(tag.tagId))
+    (task) => !task.name.toLowerCase().includes("[rejected]")
   ).length;
 
   const rejectedTasks = filteredTasks.filter((task) =>
-    task.taskTags.some((tag) => REJECTED_STATUS_IDS.includes(tag.tagId))
+    task.name.toLowerCase().includes("[rejected]")
   ).length;
-
+  console.log(
+    `Filtered tasks count for engineer`,
+    approvedTasks,
+    rejectedTasks
+  );
   return {
     approvedTasks,
     rejectedTasks,

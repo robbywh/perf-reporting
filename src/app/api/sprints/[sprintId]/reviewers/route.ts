@@ -67,6 +67,7 @@ export async function GET(
         rejectedTasks: { count: number; data: string[] };
         scenarioTasks: { count: number; data: string[] };
         qaTasks: { count: number; data: string[] };
+        supportedTasks: { count: number; data: string[] };
       }
     > = {};
 
@@ -84,6 +85,7 @@ export async function GET(
             rejectedTasks: { count: 0, data: [] },
             scenarioTasks: { count: 0, data: [] },
             qaTasks: { count: 0, data: [] },
+            supportedTasks: { count: 0, data: [] },
           };
         }
 
@@ -104,6 +106,11 @@ export async function GET(
         ) {
           reviewerMap[reviewerName].qaTasks.count++;
           reviewerMap[reviewerName].qaTasks.data.push(task.name);
+        }
+        // Check for Support tasks
+        else if (taskName.includes("[support]")) {
+          reviewerMap[reviewerName].supportedTasks.count++;
+          reviewerMap[reviewerName].supportedTasks.data.push(task.name);
         }
       });
     });

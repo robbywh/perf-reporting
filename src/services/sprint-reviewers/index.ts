@@ -23,6 +23,7 @@ export async function linkSprintsToReviewers(sprintId: string) {
             taskCount: 0,
             rejectedCount: 0,
             scenarioCount: 0,
+            supportedCount: 0,
           },
           create: {
             sprintId,
@@ -30,6 +31,7 @@ export async function linkSprintsToReviewers(sprintId: string) {
             taskCount: 0,
             rejectedCount: 0,
             scenarioCount: 0,
+            supportedCount: 0,
           },
         });
         console.log(

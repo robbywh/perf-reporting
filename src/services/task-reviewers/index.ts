@@ -59,6 +59,7 @@ export async function linkReviewersToTask(task: TaskReviewer) {
     !task.name.toLowerCase().includes("[scenario]");
   const isScenarioTask = task.name.toLowerCase().includes("[scenario]");
   const isRejectedTask = task.name.toLowerCase().includes("[rejected]");
+  const isSupportedTask = task.name.toLowerCase().includes("[support]");
 
   for (const assignee of task.assignees) {
     // Only process if the assignee is also a reviewer
@@ -89,11 +90,13 @@ export async function linkReviewersToTask(task: TaskReviewer) {
           taskCount: isQATask ? 1 : 0,
           rejectedCount: isRejectedTask ? 1 : 0,
           scenarioCount: isScenarioTask ? 1 : 0,
+          supportedCount: isSupportedTask ? 1 : 0,
         },
         update: {
           taskCount: isQATask ? { increment: 1 } : undefined,
           rejectedCount: isRejectedTask ? { increment: 1 } : undefined,
           scenarioCount: isScenarioTask ? { increment: 1 } : undefined,
+          supportedCount: isSupportedTask ? { increment: 1 } : undefined,
         },
       });
     }
