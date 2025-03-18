@@ -33,6 +33,10 @@ export async function GET(
         statusId: {
           in: APPROVED_STATUS_IDS,
         },
+        OR: [
+          { name: { startsWith: "[QA]", mode: "insensitive" } },
+          { name: { startsWith: "QA:", mode: "insensitive" } },
+        ],
         ...(reviewerIds.length > 0 && {
           reviewers: {
             some: {

@@ -196,11 +196,7 @@ export async function findTotalTaskToQACounts(
   const rejectedTasks = filteredTasks.filter((task) =>
     task.name.toLowerCase().includes("[rejected]")
   ).length;
-  console.log(
-    `Filtered tasks count for engineer`,
-    approvedTasks,
-    rejectedTasks
-  );
+
   return {
     approvedTasks,
     rejectedTasks,
