@@ -130,18 +130,18 @@ export async function findTotalTaskToQACounts(
       statusId: { in: APPROVED_STATUS_IDS },
       OR: [
         { name: { startsWith: "[QA]", mode: "insensitive" } },
-        { name: { startsWith: "QA:", mode: "insensitive" } },
+        { name: { startsWith: "QA", mode: "insensitive" } },
       ],
-      NOT: {
-        name: { contains: "[Scenario]", mode: "insensitive" },
-      },
+      NOT: [
+        { name: { contains: "[Scenario]", mode: "insensitive" } },
+        { name: { contains: "[support]", mode: "insensitive" } },
+      ],
     },
     select: {
       id: true,
       sprintId: true,
       name: true,
       parentTaskId: true,
-      taskTags: { select: { tagId: true } },
       assignees: { select: { engineerId: true } },
     },
     cacheStrategy: {

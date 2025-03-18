@@ -35,7 +35,7 @@ export async function GET(
         },
         OR: [
           { name: { startsWith: "[QA]", mode: "insensitive" } },
-          { name: { startsWith: "QA:", mode: "insensitive" } },
+          { name: { startsWith: "QA", mode: "insensitive" } },
         ],
         ...(reviewerIds.length > 0 && {
           reviewers: {
@@ -103,18 +103,18 @@ export async function GET(
           reviewerMap[reviewerName].scenarioTasks.count++;
           reviewerMap[reviewerName].scenarioTasks.data.push(task.name);
         }
-        // Check for QA tasks (excluding scenario tasks)
-        else if (
-          (taskName.includes("[qa]") || taskName.includes("qa:")) &&
-          !taskName.includes("[scenario]")
-        ) {
-          reviewerMap[reviewerName].qaTasks.count++;
-          reviewerMap[reviewerName].qaTasks.data.push(task.name);
-        }
         // Check for Support tasks
         else if (taskName.includes("[support]")) {
           reviewerMap[reviewerName].supportedTasks.count++;
           reviewerMap[reviewerName].supportedTasks.data.push(task.name);
+        }
+        // Check for QA tasks (excluding scenario tasks)
+        else if (
+          (taskName.includes("[qa]") || taskName.includes("qa")) &&
+          (!taskName.includes("[scenario]") || !taskName.includes("[support]"))
+        ) {
+          reviewerMap[reviewerName].qaTasks.count++;
+          reviewerMap[reviewerName].qaTasks.data.push(task.name);
         }
       });
     });
