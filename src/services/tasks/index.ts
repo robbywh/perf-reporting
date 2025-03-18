@@ -127,6 +127,7 @@ export async function findTotalTaskToQACounts(
   const tasks = await prisma.task.findMany({
     where: {
       sprintId: { in: sprintIds },
+      statusId: { in: APPROVED_STATUS_IDS },
       OR: [
         { name: { startsWith: "[QA]", mode: "insensitive" } },
         { name: { startsWith: "QA:", mode: "insensitive" } },
@@ -142,11 +143,6 @@ export async function findTotalTaskToQACounts(
       parentTaskId: true,
       taskTags: { select: { tagId: true } },
       assignees: { select: { engineerId: true } },
-    },
-    cacheStrategy: {
-      swr: 5 * 60,
-      ttl: 8 * 60 * 60,
-      tags: ["findTotalTaskToQACounts"],
     },
   });
 
