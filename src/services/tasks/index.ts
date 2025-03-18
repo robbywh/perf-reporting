@@ -144,6 +144,11 @@ export async function findTotalTaskToQACounts(
       taskTags: { select: { tagId: true } },
       assignees: { select: { engineerId: true } },
     },
+    cacheStrategy: {
+      swr: 5 * 60,
+      ttl: 8 * 60 * 60,
+      tags: ["findTotalTaskToQACounts"],
+    },
   });
 
   // Fetch parent tasks separately
