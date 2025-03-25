@@ -56,81 +56,64 @@ export async function linkSprintsToEngineers(sprintId: string) {
 
     // ✅ Process each engineer in parallel using `Promise.all()`
     await Promise.all(
-      engineers.map(
-        async (engineer: {
-          id: string;
-          gitlabUserId: number | null;
-          jobLevelId: string | null;
-          jobLevel: {
-            baseline: number;
-            target: number;
-            baselineCh: number;
-            targetCh: number;
-          };
-        }) => {
-          const {
-            id: engineerId,
-            gitlabUserId,
-            jobLevelId,
-            jobLevel,
-          } = engineer;
+      engineers.map(async (engineer) => {
+        const { id: engineerId, gitlabUserId, jobLevelId, jobLevel } = engineer;
 
-          if (!gitlabUserId) {
-            console.log(
-              `⏩ Skipping Engineer ID ${engineerId} - No GitLab user ID.`
-            );
-            return;
-          }
-
-          if (!jobLevelId) {
-            console.log(
-              `⏩ Skipping Engineer ID ${engineerId} - No job level found.`
-            );
-            return;
-          }
-
-          const { baseline, target, baselineCh, targetCh } = jobLevel;
-
-          // ✅ Get merged count for this engineer
-          const mergedCount = mrCountByAssignee.get(gitlabUserId) || 0;
-
-          // ✅ First create/update the sprint engineer record with original values
-          await prisma.sprintEngineer.upsert({
-            where: { sprintId_engineerId: { sprintId, engineerId } },
-            update: {
-              jobLevelId,
-              baseline,
-              target,
-              storyPoints: 0,
-              mergedCount,
-            },
-            create: {
-              sprintId,
-              engineerId,
-              jobLevelId,
-              baseline,
-              target,
-              baselineCh,
-              targetCh,
-              mergedCount,
-              storyPoints: 0,
-            },
-          });
-
-          // ✅ Then adjust baseline and target based on leaves and holidays
-          await adjustBaselineTarget(
-            sprintStartDate,
-            Number(engineerId), // Convert string to number
-            null,
-            false,
-            prisma
-          );
-
+        if (!gitlabUserId) {
           console.log(
-            `✅ Sprint Engineer Updated: Sprint ${sprintId}, Engineer ${engineerId}, Job Level: ${jobLevelId}, Merged Count: ${mergedCount}`
+            `⏩ Skipping Engineer ID ${engineerId} - No GitLab user ID.`
           );
+          return;
         }
-      )
+
+        if (!jobLevelId) {
+          console.log(
+            `⏩ Skipping Engineer ID ${engineerId} - No job level found.`
+          );
+          return;
+        }
+
+        const { baseline, target, baselineCh, targetCh } = jobLevel;
+
+        // ✅ Get merged count for this engineer
+        const mergedCount = mrCountByAssignee.get(gitlabUserId) || 0;
+
+        // ✅ First create/update the sprint engineer record with original values
+        await prisma.sprintEngineer.upsert({
+          where: { sprintId_engineerId: { sprintId, engineerId } },
+          update: {
+            jobLevelId,
+            baseline,
+            target,
+            storyPoints: 0,
+            mergedCount,
+          },
+          create: {
+            sprintId,
+            engineerId,
+            jobLevelId,
+            baseline,
+            target,
+            baselineCh,
+            targetCh,
+            mergedCount,
+            storyPoints: 0,
+          },
+        });
+
+        // ✅ Then adjust baseline and target based on leaves and holidays
+        await adjustBaselineTarget(
+          sprintStartDate,
+          engineerId, // No need for conversion, using the actual type
+          null,
+          false,
+          prisma
+        );
+
+        console.log(
+          `✅ Sprint Engineer Updated: Sprint ${sprintId}, Engineer ${engineerId}, Job Level: ${jobLevelId}, Merged Count: ${mergedCount}`
+        );
+      })
     );
   } catch (error) {
     console.error(
@@ -223,9 +206,7 @@ export async function findTopPerformersBySprintIds(sprintIds: string[]) {
   });
 
   // Fetch engineer details in one query
-  const engineerIds = avgStoryPoints.map(
-    (perf: { engineerId: string }) => perf.engineerId
-  );
+  const engineerIds = avgStoryPoints.map((perf) => perf.engineerId);
 
   const engineers = await prisma.engineer.findMany({
     where: { id: { in: engineerIds } },
@@ -237,25 +218,18 @@ export async function findTopPerformersBySprintIds(sprintIds: string[]) {
   });
 
   // Merge results
-  return avgStoryPoints.map(
-    (performer: {
-      engineerId: string;
-      _avg: { storyPoints: Decimal | number | null };
-    }) => {
-      const engineer = engineers.find(
-        (eng: { id: string }) => eng.id === performer.engineerId
-      );
-      return {
-        id: performer.engineerId,
-        name: engineer?.name,
-        email: engineer?.email,
-        storyPoints:
-          performer._avg.storyPoints instanceof Decimal
-            ? performer._avg.storyPoints.toNumber()
-            : Number(performer._avg.storyPoints || 0),
-      };
-    }
-  );
+  return avgStoryPoints.map((performer) => {
+    const engineer = engineers.find((eng) => eng.id === performer.engineerId);
+    return {
+      id: performer.engineerId,
+      name: engineer?.name,
+      email: engineer?.email,
+      storyPoints:
+        performer._avg.storyPoints instanceof Decimal
+          ? performer._avg.storyPoints.toNumber()
+          : Number(performer._avg.storyPoints || 0),
+    };
+  });
 }
 
 export async function findEngineerTrendBySprintIds(sprintIds: string[]) {

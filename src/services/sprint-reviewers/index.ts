@@ -13,7 +13,7 @@ export async function linkSprintsToReviewers(sprintId: string) {
       },
     });
     await Promise.all(
-      reviewers.map(async (reviewer: { id: string }) => {
+      reviewers.map(async (reviewer: { id: number }) => {
         const { id: reviewerId } = reviewer;
 
         await prisma.sprintReviewer.upsert({
