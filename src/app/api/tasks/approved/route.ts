@@ -61,13 +61,22 @@ export async function GET(request: Request) {
 
     // Format tasks into table rows
     const taskRows = tasks
-      .map((task: any) => {
-        const assigneeNames = task.assignees
-          .map((a: { engineer: { name: string } }) => a.engineer.name)
-          .join(", ");
-        const statusName = task.status?.name || "No status";
-        return `| ${task.sprint.name} | ${task.id} | ${task.name} | ${statusName} | ${assigneeNames || "No assignee"} |`;
-      })
+      .map(
+        (task: {
+          id: string;
+          name: string;
+          sprintId: string;
+          status: { name: string } | null;
+          assignees: { engineer: { name: string } }[];
+          sprint: { name: string };
+        }) => {
+          const assigneeNames = task.assignees
+            .map((a: { engineer: { name: string } }) => a.engineer.name)
+            .join(", ");
+          const statusName = task.status?.name || "No status";
+          return `| ${task.sprint.name} | ${task.id} | ${task.name} | ${statusName} | ${assigneeNames || "No assignee"} |`;
+        }
+      )
       .join("\n");
 
     // Combine all parts

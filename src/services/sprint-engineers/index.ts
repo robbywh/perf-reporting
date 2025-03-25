@@ -156,42 +156,52 @@ export async function findCapacityVsRealityBySprintIds(
     orderBy: { id: "asc" },
   });
   // Map and aggregate the results
-  return sprints.map((sprint: any) => {
-    const totalStoryPoints = sprint.sprintEngineers.reduce(
-      (sum: number, se: any) =>
-        sum +
-        (se.storyPoints instanceof Decimal
-          ? se.storyPoints.toNumber()
-          : Number(se.storyPoints || 0)),
-      0
-    );
+  return sprints.map(
+    (sprint: {
+      id: string;
+      name: string;
+      sprintEngineers: {
+        storyPoints: Decimal | number | null;
+        baseline: Decimal | number | null;
+        target: Decimal | number | null;
+      }[];
+    }) => {
+      const totalStoryPoints = sprint.sprintEngineers.reduce(
+        (sum: number, se: { storyPoints: Decimal | number | null }) =>
+          sum +
+          (se.storyPoints instanceof Decimal
+            ? se.storyPoints.toNumber()
+            : Number(se.storyPoints || 0)),
+        0
+      );
 
-    const totalBaseline = sprint.sprintEngineers.reduce(
-      (sum: number, se: { baseline: Decimal | number | null }) =>
-        sum +
-        (se.baseline instanceof Decimal
-          ? se.baseline.toNumber()
-          : Number(se.baseline || 0)),
-      0
-    );
+      const totalBaseline = sprint.sprintEngineers.reduce(
+        (sum: number, se: { baseline: Decimal | number | null }) =>
+          sum +
+          (se.baseline instanceof Decimal
+            ? se.baseline.toNumber()
+            : Number(se.baseline || 0)),
+        0
+      );
 
-    const totalTarget = sprint.sprintEngineers.reduce(
-      (sum: number, se: { target: Decimal | number | null }) =>
-        sum +
-        (se.target instanceof Decimal
-          ? se.target.toNumber()
-          : Number(se.target || 0)),
-      0
-    );
+      const totalTarget = sprint.sprintEngineers.reduce(
+        (sum: number, se: { target: Decimal | number | null }) =>
+          sum +
+          (se.target instanceof Decimal
+            ? se.target.toNumber()
+            : Number(se.target || 0)),
+        0
+      );
 
-    return {
-      sprintId: sprint.id,
-      sprintName: sprint.name,
-      totalStoryPoints,
-      totalBaseline,
-      totalTarget,
-    };
-  });
+      return {
+        sprintId: sprint.id,
+        sprintName: sprint.name,
+        totalStoryPoints,
+        totalBaseline,
+        totalTarget,
+      };
+    }
+  );
 }
 
 export async function findTopPerformersBySprintIds(sprintIds: string[]) {

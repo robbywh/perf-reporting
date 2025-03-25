@@ -1,5 +1,6 @@
-import { APPROVED_STATUS_IDS } from "@/constants/client";
 import type { Decimal } from "@prisma/client/runtime/library";
+
+import { APPROVED_STATUS_IDS } from "@/constants/client";
 
 import { prisma } from "../db";
 
@@ -320,7 +321,7 @@ export async function findAverageSPAndMergedCountBySprintIds(
 export async function deleteTaskFromSprint(taskId: string, sprintId: string) {
   try {
     // Delete task and its related records in a transaction
-    await prisma.$transaction(async (tx: any) => {
+    await prisma.$transaction(async (tx) => {
       // Delete task tags first
       await tx.taskTag.deleteMany({
         where: {
