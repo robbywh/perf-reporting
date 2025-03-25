@@ -24,7 +24,7 @@ export async function GET(request: Request) {
           in: APPROVED_STATUS_IDS,
         },
         sprintId: {
-          in: sprintIds,
+          in: sprintIds.map(String),
         },
         parentTaskId: null, // Only get parent tasks
       },

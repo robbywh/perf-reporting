@@ -246,7 +246,7 @@ export async function findAverageSPAndMergedCountBySprintIds(
 ) {
   // Fetch tasks and sprint engineer data in parallel
   const [tasks, sprintEngineerData] = await Promise.all([
-    prisma.task.findMany({
+    (await prisma.task.findMany({
       where: {
         sprintId: { in: sprintIds },
         assignees: { some: { engineerId } },
@@ -257,11 +257,11 @@ export async function findAverageSPAndMergedCountBySprintIds(
         sprintId: true,
         taskTags: { select: { tag: { select: { id: true } } } },
       },
-    }) as TaskWithTags[],
-    prisma.sprintEngineer.findMany({
+    })) as TaskWithTags[],
+    (await prisma.sprintEngineer.findMany({
       where: { sprintId: { in: sprintIds }, engineerId },
       select: { mergedCount: true },
-    }) as SprintEngineerData[],
+    })) as SprintEngineerData[],
   ]);
 
   // Define category mappings for story point sum per sprint

@@ -94,65 +94,35 @@ export async function findSprintsWithLeavesAndHolidays(sprintIds: string[]) {
     },
   });
 
-  type Sprint = {
-    id: string;
-    name: string;
-    startDate: Date;
-    endDate: Date;
-    sprintEngineers: {
-      engineer: {
-        id: number;
-        name: string;
-        leaves: {
-          id: string;
-          engineerId: number;
-          date: Date;
-          description: string;
-          type: string;
-        }[];
-      };
-    }[];
-  };
-
-  type PublicHoliday = {
-    id: string;
-    date: Date;
-    description: string;
-  };
-
-  return sprints.map((sprint: Sprint) => ({
+  return sprints.map((sprint) => ({
     sprintName: sprint.name,
     startDate: sprint.startDate.toISOString(),
     endDate: sprint.endDate.toISOString(),
-    leaves: sprint.sprintEngineers.flatMap((se: Sprint["sprintEngineers"][0]) =>
+    leaves: sprint.sprintEngineers.flatMap((se) =>
       se.engineer.leaves
-        .filter(
-          (leave: Sprint["sprintEngineers"][0]["engineer"]["leaves"][0]) => {
-            const leaveDate = new Date(leave.date);
-            const sprintStart = new Date(sprint.startDate);
-            const sprintEnd = new Date(sprint.endDate);
-            return leaveDate >= sprintStart && leaveDate <= sprintEnd;
-          }
-        )
-        .map(
-          (leave: Sprint["sprintEngineers"][0]["engineer"]["leaves"][0]) => ({
-            id: leave.id,
-            engineerId: se.engineer.id,
-            name: se.engineer.name,
-            description: leave.description,
-            date: leave.date.toISOString(),
-            type: leave.type,
-          })
-        )
+        .filter((leave) => {
+          const leaveDate = new Date(leave.date);
+          const sprintStart = new Date(sprint.startDate);
+          const sprintEnd = new Date(sprint.endDate);
+          return leaveDate >= sprintStart && leaveDate <= sprintEnd;
+        })
+        .map((leave) => ({
+          id: leave.id,
+          engineerId: se.engineer.id,
+          name: se.engineer.name,
+          description: leave.description,
+          date: leave.date.toISOString(),
+          type: leave.type,
+        }))
     ),
     holidays: publicHolidays
-      .filter((holiday: PublicHoliday) => {
+      .filter((holiday) => {
         const holidayDate = new Date(holiday.date);
         const sprintStart = new Date(sprint.startDate);
         const sprintEnd = new Date(sprint.endDate);
         return holidayDate >= sprintStart && holidayDate <= sprintEnd;
       })
-      .map((holiday: PublicHoliday) => ({
+      .map((holiday) => ({
         id: holiday.id,
         description: holiday.description,
         date: holiday.date.toISOString(),

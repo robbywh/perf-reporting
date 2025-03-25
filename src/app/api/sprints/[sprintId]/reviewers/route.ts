@@ -78,9 +78,9 @@ export async function GET(
     // Process tasks and organize by reviewer
     tasks.forEach(
       (task: {
-        id: number;
+        id: string;
         name: string;
-        statusId: string;
+        statusId: string | null;
         reviewers: {
           reviewer: {
             id: number;

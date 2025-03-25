@@ -52,6 +52,11 @@ export async function linkSprintsToEngineers(sprintId: string) {
           },
         },
       },
+      cacheStrategy: {
+        swr: 5 * 60,
+        ttl: 8 * 60 * 60,
+        tags: ["allEngineers"],
+      },
     });
 
     // ✅ Process each engineer in parallel using `Promise.all()`
@@ -203,6 +208,11 @@ export async function findTopPerformersBySprintIds(sprintIds: string[]) {
         storyPoints: "desc",
       },
     },
+    cacheStrategy: {
+      swr: 5 * 60,
+      ttl: 8 * 60 * 60,
+      tags: ["topPerformers"],
+    },
   });
 
   // Fetch engineer details in one query
@@ -214,6 +224,11 @@ export async function findTopPerformersBySprintIds(sprintIds: string[]) {
       id: true,
       name: true,
       email: true,
+    },
+    cacheStrategy: {
+      swr: 5 * 60,
+      ttl: 8 * 60 * 60,
+      tags: ["allPerformers"],
     },
   });
 
@@ -243,6 +258,11 @@ export async function findEngineerTrendBySprintIds(sprintIds: string[]) {
       storyPoints: true,
     },
     orderBy: [{ sprintId: "asc" }, { storyPoints: "desc" }],
+    cacheStrategy: {
+      swr: 5 * 60,
+      ttl: 8 * 60 * 60,
+      tags: ["sprintStoryPoints"],
+    },
   });
 
   const sprintMap = new Map<
@@ -302,6 +322,11 @@ export async function findAveragesByEngineerAndSprintIds(
       codingHours: true,
       targetCh: true,
       baselineCh: true,
+    },
+    cacheStrategy: {
+      swr: 5 * 60,
+      ttl: 8 * 60 * 60,
+      tags: ["findAveragesByEngineerAndSprintIds"],
     },
   });
 
