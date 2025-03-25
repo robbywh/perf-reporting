@@ -13,7 +13,9 @@ export async function GET(request: Request) {
     }
     // Get today's sprints
     const todaySprints = await findTodaySprints();
-    const sprintIds = todaySprints.map((sprint) => sprint.id);
+    const sprintIds = todaySprints.map(
+      (sprint: { id: string | number }) => sprint.id
+    );
 
     // Get tasks with the specified statuses from today's sprints
     const tasks = await prisma.task.findMany({
@@ -59,9 +61,9 @@ export async function GET(request: Request) {
 
     // Format tasks into table rows
     const taskRows = tasks
-      .map((task) => {
+      .map((task: any) => {
         const assigneeNames = task.assignees
-          .map((a) => a.engineer.name)
+          .map((a: { engineer: { name: string } }) => a.engineer.name)
           .join(", ");
         const statusName = task.status?.name || "No status";
         return `| ${task.sprint.name} | ${task.id} | ${task.name} | ${statusName} | ${assigneeNames || "No assignee"} |`;

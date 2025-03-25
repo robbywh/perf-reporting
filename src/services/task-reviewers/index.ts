@@ -49,7 +49,9 @@ export async function linkReviewersToTask(task: TaskReviewer) {
     select: { id: true },
   });
 
-  const existingReviewerSet = new Set(existingReviewers.map((e) => e.id));
+  const existingReviewerSet = new Set(
+    existingReviewers.map((reviewer: { id: number }) => reviewer.id)
+  );
   const taskReviewerData = [];
 
   // Check task name patterns

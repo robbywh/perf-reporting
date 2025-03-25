@@ -1,4 +1,5 @@
 import { APPROVED_STATUS_IDS } from "@/constants/client";
+import type { Decimal } from "@prisma/client/runtime/library";
 
 import { prisma } from "../db";
 
@@ -11,6 +12,40 @@ interface Task {
   parentTaskId?: string | null;
   storyPoint?: number | null;
 }
+
+// Define types for task group result
+type GroupedTask = {
+  categoryId: string | null;
+  _count: { id: number };
+};
+
+// Define types for task with assignees
+type TaskWithAssignees = {
+  id: string;
+  sprintId: string;
+  name: string;
+  parentTaskId: string | null;
+  assignees: { engineerId: number }[];
+};
+
+// Type for parent task
+type ParentTask = {
+  id: string;
+  assignees: { engineerId: number }[];
+};
+
+// Type for tasks with tags
+type TaskWithTags = {
+  storyPoint: Decimal | null;
+  statusId: string | null;
+  taskTags: { tag: { id: string } }[];
+  sprintId: string;
+};
+
+// Type for sprint engineer data
+type SprintEngineerData = {
+  mergedCount: number | null;
+};
 
 export async function upsertTask(task: Task) {
   try {
@@ -64,7 +99,7 @@ export async function upsertTask(task: Task) {
 }
 
 export async function findCountTasksByCategory(sprintIds: string[]) {
-  const groupedTasks = await prisma.task.groupBy({
+  const groupedTasks = (await prisma.task.groupBy({
     by: ["categoryId"],
     where: {
       parentTaskId: null,
@@ -83,15 +118,15 @@ export async function findCountTasksByCategory(sprintIds: string[]) {
       ttl: 8 * 60 * 60,
       tags: ["groupedTasks"],
     },
-  });
+  })) as GroupedTask[];
 
   // Fetch category names in the same query
   const result = await prisma.category.findMany({
     where: {
       id: {
         in: groupedTasks
-          .map((task) => task.categoryId)
-          .filter((id): id is string => id !== null),
+          .map((task: GroupedTask) => task.categoryId)
+          .filter((id: string | null): id is string => id !== null),
       },
     },
     select: {
@@ -107,10 +142,10 @@ export async function findCountTasksByCategory(sprintIds: string[]) {
 
   // Map category names to grouped counts
   const categoryMap = Object.fromEntries(
-    result.map((cat) => [cat.id, cat.name])
+    result.map((cat: { id: string; name: string }) => [cat.id, cat.name])
   );
 
-  const finalResult = groupedTasks.map((task) => ({
+  const finalResult = groupedTasks.map((task: GroupedTask) => ({
     category: task.categoryId
       ? categoryMap[task.categoryId] || "OTHER"
       : "OTHER",
@@ -124,7 +159,7 @@ export async function findTotalTaskToQACounts(
   sprintIds: string[],
   engineerId?: number
 ) {
-  const tasks = await prisma.task.findMany({
+  const tasks = (await prisma.task.findMany({
     where: {
       sprintId: { in: sprintIds },
       statusId: { in: APPROVED_STATUS_IDS },
@@ -149,15 +184,15 @@ export async function findTotalTaskToQACounts(
       ttl: 8 * 60 * 60,
       tags: ["findTotalTaskToQACounts"],
     },
-  });
+  })) as TaskWithAssignees[];
 
   // Fetch parent tasks separately
   const parentTaskIds = tasks
-    .map((task) => task.parentTaskId)
-    .filter((id): id is string => id !== null);
+    .map((task: TaskWithAssignees) => task.parentTaskId)
+    .filter((id: string | null): id is string => id !== null);
 
   const parentTasks = parentTaskIds.length
-    ? await prisma.task.findMany({
+    ? ((await prisma.task.findMany({
         where: {
           id: { in: parentTaskIds },
         },
@@ -165,24 +200,25 @@ export async function findTotalTaskToQACounts(
           id: true,
           assignees: { select: { engineerId: true } },
         },
-      })
+      })) as ParentTask[])
     : [];
 
   // Convert parentTasks to a map for quick lookup
-  const parentTaskMap = new Map(
-    parentTasks.map((task) => [
+  const parentTaskMap = new Map<string, number[]>(
+    parentTasks.map((task: ParentTask) => [
       task.id,
-      task.assignees.map((a) => a.engineerId),
+      task.assignees.map((a: { engineerId: number }) => a.engineerId),
     ])
   );
 
   // Filtering tasks: Check if engineerId is assigned directly or through parentTaskId
   const filteredTasks = engineerId
     ? tasks.filter(
-        (task) =>
+        (task: TaskWithAssignees) =>
           // Task has direct engineer assignment
           task.assignees.some(
-            (assignee) => assignee.engineerId === engineerId
+            (assignee: { engineerId: number }) =>
+              assignee.engineerId === engineerId
           ) ||
           // Parent task has engineer assigned
           (task.parentTaskId &&
@@ -191,10 +227,10 @@ export async function findTotalTaskToQACounts(
     : tasks;
 
   const approvedTasks = filteredTasks.filter(
-    (task) => !task.name.toLowerCase().includes("[rejected]")
+    (task: TaskWithAssignees) => !task.name.toLowerCase().includes("[rejected]")
   ).length;
 
-  const rejectedTasks = filteredTasks.filter((task) =>
+  const rejectedTasks = filteredTasks.filter((task: TaskWithAssignees) =>
     task.name.toLowerCase().includes("[rejected]")
   ).length;
 
@@ -221,11 +257,11 @@ export async function findAverageSPAndMergedCountBySprintIds(
         sprintId: true,
         taskTags: { select: { tag: { select: { id: true } } } },
       },
-    }),
+    }) as TaskWithTags[],
     prisma.sprintEngineer.findMany({
       where: { sprintId: { in: sprintIds }, engineerId },
       select: { mergedCount: true },
-    }),
+    }) as SprintEngineerData[],
   ]);
 
   // Define category mappings for story point sum per sprint
@@ -237,9 +273,9 @@ export async function findAverageSPAndMergedCountBySprintIds(
     devApproved: 0,
   };
 
-  tasks.forEach(({ storyPoint, statusId, taskTags }) => {
+  tasks.forEach(({ storyPoint, statusId, taskTags }: TaskWithTags) => {
     const sp = Number(storyPoint) || 0;
-    const tags = taskTags.map(({ tag }) => tag.id);
+    const tags = taskTags.map(({ tag }: { tag: { id: string } }) => tag.id);
     const isSupport = tags.includes("support");
     const isNonDev = tags.includes("nodev");
     const isApproved = APPROVED_STATUS_IDS.includes(statusId || "");
@@ -264,9 +300,11 @@ export async function findAverageSPAndMergedCountBySprintIds(
     sprintIds.length > 0 ? Number((total / sprintIds.length).toFixed(2)) : 0;
 
   // Compute merged count average
-  const mergedCounts = sprintEngineerData.map((se) => se.mergedCount || 0);
+  const mergedCounts = sprintEngineerData.map(
+    (se: SprintEngineerData) => se.mergedCount || 0
+  );
   const averageMergedCount = computeAverage(
-    mergedCounts.reduce((sum, v) => sum + v, 0)
+    mergedCounts.reduce((sum: number, v: number) => sum + v, 0)
   );
 
   return {
@@ -282,7 +320,7 @@ export async function findAverageSPAndMergedCountBySprintIds(
 export async function deleteTaskFromSprint(taskId: string, sprintId: string) {
   try {
     // Delete task and its related records in a transaction
-    await prisma.$transaction(async (tx) => {
+    await prisma.$transaction(async (tx: any) => {
       // Delete task tags first
       await tx.taskTag.deleteMany({
         where: {

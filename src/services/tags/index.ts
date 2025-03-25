@@ -41,7 +41,9 @@ export async function linkTagsToTask(task: TaskTag) {
     return;
   }
 
-  const tagMap = new Map(existingTags.map((tag) => [tag.name, tag.id]));
+  const tagMap = new Map(
+    existingTags.map((tag: { name: string; id: string }) => [tag.name, tag.id])
+  );
   const taskTagRelations = [];
 
   for (const tag of task.tags) {

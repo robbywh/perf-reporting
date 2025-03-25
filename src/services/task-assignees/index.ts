@@ -47,7 +47,9 @@ export async function linkAssigneesToTask(task: TaskAssignee) {
     select: { id: true },
   });
 
-  const existingEngineerSet = new Set(existingEngineers.map((e) => e.id));
+  const existingEngineerSet = new Set(
+    existingEngineers.map((engineer: { id: number }) => engineer.id)
+  );
   const taskAssigneeData = [];
 
   for (const assignee of task.assignees) {

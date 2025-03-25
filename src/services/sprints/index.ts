@@ -94,35 +94,65 @@ export async function findSprintsWithLeavesAndHolidays(sprintIds: string[]) {
     },
   });
 
-  return sprints.map((sprint) => ({
+  type Sprint = {
+    id: string;
+    name: string;
+    startDate: Date;
+    endDate: Date;
+    sprintEngineers: {
+      engineer: {
+        id: number;
+        name: string;
+        leaves: {
+          id: string;
+          engineerId: number;
+          date: Date;
+          description: string;
+          type: string;
+        }[];
+      };
+    }[];
+  };
+
+  type PublicHoliday = {
+    id: string;
+    date: Date;
+    description: string;
+  };
+
+  return sprints.map((sprint: Sprint) => ({
     sprintName: sprint.name,
     startDate: sprint.startDate.toISOString(),
     endDate: sprint.endDate.toISOString(),
-    leaves: sprint.sprintEngineers.flatMap((se) =>
+    leaves: sprint.sprintEngineers.flatMap((se: Sprint["sprintEngineers"][0]) =>
       se.engineer.leaves
-        .filter((leave) => {
-          const leaveDate = new Date(leave.date);
-          const sprintStart = new Date(sprint.startDate);
-          const sprintEnd = new Date(sprint.endDate);
-          return leaveDate >= sprintStart && leaveDate <= sprintEnd;
-        })
-        .map((leave) => ({
-          id: leave.id,
-          engineerId: se.engineer.id,
-          name: se.engineer.name,
-          description: leave.description,
-          date: leave.date.toISOString(),
-          type: leave.type,
-        }))
+        .filter(
+          (leave: Sprint["sprintEngineers"][0]["engineer"]["leaves"][0]) => {
+            const leaveDate = new Date(leave.date);
+            const sprintStart = new Date(sprint.startDate);
+            const sprintEnd = new Date(sprint.endDate);
+            return leaveDate >= sprintStart && leaveDate <= sprintEnd;
+          }
+        )
+        .map(
+          (leave: Sprint["sprintEngineers"][0]["engineer"]["leaves"][0]) => ({
+            id: leave.id,
+            engineerId: se.engineer.id,
+            name: se.engineer.name,
+            description: leave.description,
+            date: leave.date.toISOString(),
+            type: leave.type,
+          })
+        )
     ),
     holidays: publicHolidays
-      .filter((holiday) => {
+      .filter((holiday: PublicHoliday) => {
         const holidayDate = new Date(holiday.date);
         const sprintStart = new Date(sprint.startDate);
         const sprintEnd = new Date(sprint.endDate);
         return holidayDate >= sprintStart && holidayDate <= sprintEnd;
       })
-      .map((holiday) => ({
+      .map((holiday: PublicHoliday) => ({
         id: holiday.id,
         description: holiday.description,
         date: holiday.date.toISOString(),
@@ -178,16 +208,34 @@ export async function findSprintsBySprintIds(
     return value instanceof Decimal ? value.toNumber() : Number(value);
   };
 
-  return sprints.map((sprint) => ({
+  type SprintWithEngineers = {
+    id: string;
+    name: string;
+    startDate: Date;
+    endDate: Date;
+    sprintEngineers: {
+      codingHours: Decimal | number | null;
+      codingHoursUrl: string | null;
+      storyPoints: Decimal | number | null;
+      baseline: Decimal | number | null;
+      target: Decimal | number | null;
+      baselineCh: Decimal | number | null;
+      targetCh: Decimal | number | null;
+    }[];
+  };
+
+  return sprints.map((sprint: SprintWithEngineers) => ({
     ...sprint,
-    sprintEngineers: sprint.sprintEngineers.map((se) => ({
-      codingHours: toNumber(se.codingHours),
-      codingHoursUrl: se.codingHoursUrl ? se.codingHoursUrl.toString() : null,
-      storyPoints: toNumber(se.storyPoints),
-      baseline: toNumber(se.baseline),
-      target: toNumber(se.target),
-      baselineCh: toNumber(se.baselineCh),
-      targetCh: toNumber(se.targetCh),
-    })),
+    sprintEngineers: sprint.sprintEngineers.map(
+      (se: SprintWithEngineers["sprintEngineers"][0]) => ({
+        codingHours: toNumber(se.codingHours),
+        codingHoursUrl: se.codingHoursUrl ? se.codingHoursUrl.toString() : null,
+        storyPoints: toNumber(se.storyPoints),
+        baseline: toNumber(se.baseline),
+        target: toNumber(se.target),
+        baselineCh: toNumber(se.baselineCh),
+        targetCh: toNumber(se.targetCh),
+      })
+    ),
   }));
 }

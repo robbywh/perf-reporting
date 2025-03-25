@@ -9,6 +9,21 @@ import { findRoleIdAndEngineerIdByUserId } from "@/services/users";
 
 import Header from "../../components/header";
 
+// Define types
+type Sprint = {
+  id: string;
+  name: string;
+  startDate: string | Date;
+  endDate: string | Date;
+};
+
+type SprintOption = {
+  value: string;
+  label: string;
+  startDate: Date;
+  endDate: Date;
+};
+
 const WelcomeMessage = async () => {
   const user = await currentUser(); // Fetch the logged-in user
   const firstName = user?.firstName || "Guest";
@@ -31,7 +46,7 @@ export default async function RootLayout({
 }) {
   const sprints = await findAllSprints();
 
-  const allSprints = sprints.map((sprint) => ({
+  const allSprints = sprints.map((sprint: Sprint) => ({
     value: sprint.id,
     label: sprint.name,
     startDate: new Date(sprint.startDate),
@@ -44,26 +59,26 @@ export default async function RootLayout({
   const sixMonthsAgo = getDateMonthsAgo(6);
 
   const past1MonthSprints = allSprints.filter(
-    (sprint) =>
+    (sprint: SprintOption) =>
       new Date(sprint.startDate) <= currentDate &&
       new Date(sprint.startDate) >= oneMonthAgo
   );
 
   const past3MonthsSprints = allSprints.filter(
-    (sprint) =>
+    (sprint: SprintOption) =>
       new Date(sprint.startDate) <= currentDate &&
       new Date(sprint.startDate) >= threeMonthsAgo
   );
 
   const past6MonthsSprints = allSprints.filter(
-    (sprint) =>
+    (sprint: SprintOption) =>
       new Date(sprint.startDate) <= currentDate &&
       new Date(sprint.startDate) >= sixMonthsAgo
   );
 
   const defaultSprint =
     allSprints.find(
-      (sprint) =>
+      (sprint: SprintOption) =>
         new Date(sprint.startDate) <= currentDate &&
         currentDate <= new Date(sprint.endDate)
     ) || allSprints[allSprints.length - 1];

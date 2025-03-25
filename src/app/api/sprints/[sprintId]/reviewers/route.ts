@@ -76,48 +76,68 @@ export async function GET(
     > = {};
 
     // Process tasks and organize by reviewer
-    tasks.forEach((task) => {
-      const taskName = task.name.toLowerCase();
-
-      // Process each reviewer for this task
-      task.reviewers.forEach((taskReviewer) => {
-        const reviewerName = taskReviewer.reviewer.name;
-
-        // Initialize reviewer data if not exists
-        if (!reviewerMap[reviewerName]) {
-          reviewerMap[reviewerName] = {
-            rejectedTasks: { count: 0, data: [] },
-            scenarioTasks: { count: 0, data: [] },
-            qaTasks: { count: 0, data: [] },
-            supportedTasks: { count: 0, data: [] },
+    tasks.forEach(
+      (task: {
+        id: number;
+        name: string;
+        statusId: string;
+        reviewers: {
+          reviewer: {
+            id: number;
+            name: string;
           };
-        }
+        }[];
+      }) => {
+        const taskName = task.name.toLowerCase();
 
-        // Check for rejected tasks
-        if (taskName.includes("[rejected]")) {
-          reviewerMap[reviewerName].rejectedTasks.count++;
-          reviewerMap[reviewerName].rejectedTasks.data.push(task.name);
-        }
-        // Check for scenario tasks
-        else if (taskName.includes("[scenario]")) {
-          reviewerMap[reviewerName].scenarioTasks.count++;
-          reviewerMap[reviewerName].scenarioTasks.data.push(task.name);
-        }
-        // Check for Support tasks
-        else if (taskName.includes("[support]")) {
-          reviewerMap[reviewerName].supportedTasks.count++;
-          reviewerMap[reviewerName].supportedTasks.data.push(task.name);
-        }
-        // Check for QA tasks (excluding scenario tasks)
-        else if (
-          (taskName.includes("[qa]") || taskName.includes("qa")) &&
-          (!taskName.includes("[scenario]") || !taskName.includes("[support]"))
-        ) {
-          reviewerMap[reviewerName].qaTasks.count++;
-          reviewerMap[reviewerName].qaTasks.data.push(task.name);
-        }
-      });
-    });
+        // Process each reviewer for this task
+        task.reviewers.forEach(
+          (taskReviewer: {
+            reviewer: {
+              id: number;
+              name: string;
+            };
+          }) => {
+            const reviewerName = taskReviewer.reviewer.name;
+
+            // Initialize reviewer data if not exists
+            if (!reviewerMap[reviewerName]) {
+              reviewerMap[reviewerName] = {
+                rejectedTasks: { count: 0, data: [] },
+                scenarioTasks: { count: 0, data: [] },
+                qaTasks: { count: 0, data: [] },
+                supportedTasks: { count: 0, data: [] },
+              };
+            }
+
+            // Check for rejected tasks
+            if (taskName.includes("[rejected]")) {
+              reviewerMap[reviewerName].rejectedTasks.count++;
+              reviewerMap[reviewerName].rejectedTasks.data.push(task.name);
+            }
+            // Check for scenario tasks
+            else if (taskName.includes("[scenario]")) {
+              reviewerMap[reviewerName].scenarioTasks.count++;
+              reviewerMap[reviewerName].scenarioTasks.data.push(task.name);
+            }
+            // Check for Support tasks
+            else if (taskName.includes("[support]")) {
+              reviewerMap[reviewerName].supportedTasks.count++;
+              reviewerMap[reviewerName].supportedTasks.data.push(task.name);
+            }
+            // Check for QA tasks (excluding scenario tasks)
+            else if (
+              (taskName.includes("[qa]") || taskName.includes("qa")) &&
+              (!taskName.includes("[scenario]") ||
+                !taskName.includes("[support]"))
+            ) {
+              reviewerMap[reviewerName].qaTasks.count++;
+              reviewerMap[reviewerName].qaTasks.data.push(task.name);
+            }
+          }
+        );
+      }
+    );
 
     return NextResponse.json({ reviewers: reviewerMap });
   } catch (error) {

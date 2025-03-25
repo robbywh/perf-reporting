@@ -1,4 +1,3 @@
-import { Prisma } from "@prisma/client";
 import { NextResponse } from "next/server";
 
 import { CRON_SECRET } from "@/constants/server";
@@ -14,6 +13,17 @@ import {
 import { linkTagsToTask } from "@/services/tags";
 import { linkAssigneesToTask } from "@/services/task-assignees";
 import { linkReviewersToTask } from "@/services/task-reviewers";
+
+// Define a type for the transaction object
+type PrismaTransaction = {
+  sprint: typeof prisma.sprint;
+  task: typeof prisma.task;
+  taskTag: typeof prisma.taskTag;
+  taskAssignee: typeof prisma.taskAssignee;
+  taskReviewer: typeof prisma.taskReviewer;
+  // Use unknown instead of any for better type safety
+  [key: string]: unknown;
+};
 
 async function syncSprintsFromClickUp() {
   // Call the external API library to fetch sprint lists from ClickUp.
@@ -46,7 +56,7 @@ async function syncSprintsFromClickUp() {
     };
   });
 
-  await prisma.$transaction(async (tx) => {
+  await prisma.$transaction(async (tx: PrismaTransaction) => {
     // Bulk upsert all sprints
     await Promise.all(
       sprintData.map((sprint) =>
@@ -92,7 +102,7 @@ async function processBatch(
 
   // Use a transaction with a longer timeout for this batch
   await prisma.$transaction(
-    async (tx) => {
+    async (tx: PrismaTransaction) => {
       // First, bulk upsert all tasks
       await Promise.all(
         validTasks.map((taskData) =>
@@ -187,7 +197,9 @@ async function syncTodayTasksFromClickUp() {
 
     // First, fetch all statuses to create a name-to-id mapping
     const statuses = await prisma.status.findMany();
-    const statusMap = new Map(statuses.map((s) => [s.name, s.id]));
+    const statusMap = new Map<string, string>(
+      statuses.map((s: { name: string; id: string }) => [s.name, s.id])
+    );
 
     // Only sync tasks for today's sprints
     for (const sprint of todaySprints) {
@@ -218,16 +230,16 @@ async function syncTodayTasksFromClickUp() {
 
       // Find tasks that exist in DB but not in ClickUp (moved to another sprint)
       const tasksToDelete = existingTasks.filter(
-        (task) => !clickUpTaskIds.has(task.id)
+        (task: { id: string }) => !clickUpTaskIds.has(task.id)
       );
 
       // Delete tasks that were moved to another sprint
       if (tasksToDelete.length > 0) {
-        await prisma.$transaction(async (tx) => {
+        await prisma.$transaction(async (tx: PrismaTransaction) => {
           // Delete task tags first
           await tx.taskTag.deleteMany({
             where: {
-              taskId: { in: tasksToDelete.map((t) => t.id) },
+              taskId: { in: tasksToDelete.map((t: { id: string }) => t.id) },
               sprintId: sprint.id,
             },
           });
@@ -235,7 +247,7 @@ async function syncTodayTasksFromClickUp() {
           // Delete task assignees
           await tx.taskAssignee.deleteMany({
             where: {
-              taskId: { in: tasksToDelete.map((t) => t.id) },
+              taskId: { in: tasksToDelete.map((t: { id: string }) => t.id) },
               sprintId: sprint.id,
             },
           });
@@ -243,7 +255,7 @@ async function syncTodayTasksFromClickUp() {
           // Delete task reviewers
           await tx.taskReviewer.deleteMany({
             where: {
-              taskId: { in: tasksToDelete.map((t) => t.id) },
+              taskId: { in: tasksToDelete.map((t: { id: string }) => t.id) },
               sprintId: sprint.id,
             },
           });
@@ -251,7 +263,7 @@ async function syncTodayTasksFromClickUp() {
           // Finally delete the tasks
           await tx.task.deleteMany({
             where: {
-              id: { in: tasksToDelete.map((t) => t.id) },
+              id: { in: tasksToDelete.map((t: { id: string }) => t.id) },
               sprintId: sprint.id,
             },
           });
@@ -267,11 +279,17 @@ async function syncTodayTasksFromClickUp() {
       for (let i = 0; i < allTasks.length; i += batchSize) {
         const taskBatch = allTasks.slice(i, i + batchSize);
         try {
-          await processBatch(taskBatch, sprint, statusMap, statuses);
+          await processBatch(
+            taskBatch,
+            sprint,
+            statusMap as Map<string, string>,
+            statuses
+          );
         } catch (error: unknown) {
           if (
-            error instanceof Prisma.PrismaClientKnownRequestError &&
-            error.code === "P2028"
+            error instanceof Error &&
+            "code" in error &&
+            (error as { code: string }).code === "P2028"
           ) {
             console.warn(
               `Transaction timeout for batch ${i}-${
@@ -282,7 +300,12 @@ async function syncTodayTasksFromClickUp() {
             const smallerBatchSize = 10;
             for (let j = 0; j < taskBatch.length; j += smallerBatchSize) {
               const smallerBatch = taskBatch.slice(j, j + smallerBatchSize);
-              await processBatch(smallerBatch, sprint, statusMap, statuses);
+              await processBatch(
+                smallerBatch,
+                sprint,
+                statusMap as Map<string, string>,
+                statuses
+              );
             }
           } else {
             throw error;
