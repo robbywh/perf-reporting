@@ -240,6 +240,14 @@ async function syncTodayTasksFromClickUp() {
             },
           });
 
+          // Delete task reviewers
+          await tx.taskReviewer.deleteMany({
+            where: {
+              taskId: { in: tasksToDelete.map((t) => t.id) },
+              sprintId: sprint.id,
+            },
+          });
+
           // Finally delete the tasks
           await tx.task.deleteMany({
             where: {
