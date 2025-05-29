@@ -28,6 +28,7 @@ import {
   findTopPerformersBySprintIds,
 } from "@/services/sprint-engineers";
 import { findSprintsWithLeavesAndHolidays } from "@/services/sprints";
+import { getCurrentSprintId } from "@/services/sprints/getCurrentSprintId";
 import {
   findCountTasksByCategory,
   findTotalTaskToQACounts,
@@ -86,9 +87,14 @@ export default async function Home({
   noStore();
   await authenticateAndRedirect();
   const parameters = await searchParams;
-  const sprintIds = parameters?.sprintIds
-    ? parameters.sprintIds.split(",").filter(Boolean)
-    : ["901606315079"];
+
+  let sprintIds: string[];
+  if (parameters?.sprintIds) {
+    sprintIds = parameters.sprintIds.split(",").filter(Boolean);
+  } else {
+    const currentSprintId = await getCurrentSprintId();
+    sprintIds = currentSprintId ? [currentSprintId] : [];
+  }
 
   // Fetch all data at once
   const {

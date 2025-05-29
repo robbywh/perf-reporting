@@ -28,6 +28,7 @@ import {
   findSprintsBySprintIds,
   findSprintsWithLeavesAndHolidays,
 } from "@/services/sprints";
+import { getCurrentSprintId } from "@/services/sprints/getCurrentSprintId";
 import {
   findAverageSPAndMergedCountBySprintIds,
   findTotalTaskToQACounts,
@@ -96,9 +97,13 @@ export default async function EngineerPage({
 }: PageProps) {
   const searchParameters = await searchParams;
   const parameters = await params;
-  const sprintIds = searchParameters?.sprintIds
-    ? searchParameters.sprintIds.split(",").filter(Boolean)
-    : [""];
+  let sprintIds: string[];
+  if (searchParameters?.sprintIds) {
+    sprintIds = searchParameters.sprintIds.split(",").filter(Boolean);
+  } else {
+    const currentSprintId = await getCurrentSprintId();
+    sprintIds = currentSprintId ? [currentSprintId] : [];
+  }
 
   const engineerId = parseInt(parameters.engineerId || "0");
 
