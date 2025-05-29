@@ -145,7 +145,7 @@ function CodingHoursEditor({
 
   return (
     <div className="flex flex-col items-center gap-4">
-      <div className="mt-4 flex w-full flex-col gap-2">
+      <div className="relative mt-4 flex w-full flex-col gap-2">
         <Label htmlFor="screenshot">Upload Coding Hours Screenshot</Label>
         <Input
           type="file"
@@ -153,6 +153,7 @@ function CodingHoursEditor({
           id="screenshot"
           onChange={handleFileUpload}
           disabled={isPending || isUploading}
+          className="relative z-10 bg-white"
         />
         {isUploading && (
           <div className="mt-2 flex justify-center">
