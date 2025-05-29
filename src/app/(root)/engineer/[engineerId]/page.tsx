@@ -98,7 +98,7 @@ export default async function EngineerPage({
   const parameters = await params;
   const sprintIds = searchParameters?.sprintIds
     ? searchParameters.sprintIds.split(",").filter(Boolean)
-    : ["901606315079"];
+    : [""];
 
   const engineerId = parseInt(parameters.engineerId || "0");
 
