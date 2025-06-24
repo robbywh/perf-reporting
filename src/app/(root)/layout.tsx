@@ -3,6 +3,7 @@ import { Suspense } from "react";
 import { Toaster } from "sonner";
 
 import { SprintActions } from "@/components/sprint-actions";
+import { SprintDateRange } from "@/components/sprint-date-range";
 import { SprintMultiSelect } from "@/components/sprint-multi-select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getWelcomeMessage } from "@/lib/utils/global";
@@ -95,26 +96,53 @@ export default async function RootLayout({
     <div>
       <Toaster position="top-right" closeButton richColors />
       <Header />
-      <div className="flex flex-row items-center gap-4 px-10 pt-10">
-        <Suspense fallback={<Skeleton className="h-6 w-60 rounded-md" />}>
-          <WelcomeMessage />
-        </Suspense>
-        <div className="flex flex-1 items-center gap-4">
+      <div className="flex flex-col gap-2 px-10 pt-10">
+        <div className="flex items-center justify-between">
           <Suspense fallback={<Skeleton className="h-6 w-60 rounded-md" />}>
-            <SprintMultiSelect
-              sprints={allSprints}
-              defaultSprintId={defaultSprint?.value}
-              sprintOptions={sprintOptions}
-            />
+            <WelcomeMessage />
+          </Suspense>
+          <Suspense fallback={<Skeleton className="h-6 w-40 rounded-md" />}>
+            <SprintDateRange allSprints={allSprints} />
+          </Suspense>
+        </div>
+        <div className="flex items-center gap-4">
+          <Suspense fallback={<Skeleton className="h-6 w-60 rounded-md" />}>
+            <div className="flex-1">
+              <SprintMultiSelect
+                sprints={allSprints}
+                defaultSprintId={defaultSprint?.value}
+                sprintOptions={sprintOptions}
+              />
+            </div>
           </Suspense>
           <Suspense fallback={<Skeleton className="h-10 w-28 rounded-md" />}>
-            <div className="flex items-center">
-              <SprintActions />
-            </div>
+            <SprintActions />
           </Suspense>
         </div>
       </div>
-      <div className="p-10">{children}</div>
+      <div className="p-10">
+        {children}
+        <div className="mt-4">
+          {defaultSprint && (
+            <div className="text-sm text-muted-foreground">
+              Showing data for sprint:{" "}
+              <span className="font-medium">{defaultSprint.label}</span> (
+              {new Intl.DateTimeFormat("default", {
+                year: "numeric",
+                month: "short",
+                day: "numeric",
+              }).format(new Date(defaultSprint.startDate))}{" "}
+              -{" "}
+              {new Intl.DateTimeFormat("default", {
+                year: "numeric",
+                month: "short",
+                day: "numeric",
+              }).format(new Date(defaultSprint.endDate))}
+              )
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   );
 }
