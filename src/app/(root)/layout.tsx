@@ -1,6 +1,8 @@
 import { currentUser } from "@clerk/nextjs/server";
 import { Suspense } from "react";
+import { Toaster } from "sonner";
 
+import { SprintActions } from "@/components/sprint-actions";
 import { SprintMultiSelect } from "@/components/sprint-multi-select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getWelcomeMessage } from "@/lib/utils/global";
@@ -91,18 +93,26 @@ export default async function RootLayout({
 
   return (
     <div>
+      <Toaster position="top-right" closeButton richColors />
       <Header />
       <div className="flex flex-row items-center gap-4 px-10 pt-10">
         <Suspense fallback={<Skeleton className="h-6 w-60 rounded-md" />}>
           <WelcomeMessage />
         </Suspense>
-        <Suspense fallback={<Skeleton className="h-6 w-60 rounded-md" />}>
-          <SprintMultiSelect
-            sprints={allSprints}
-            defaultSprintId={defaultSprint?.value}
-            sprintOptions={sprintOptions}
-          />
-        </Suspense>
+        <div className="flex flex-1 items-center gap-4">
+          <Suspense fallback={<Skeleton className="h-6 w-60 rounded-md" />}>
+            <SprintMultiSelect
+              sprints={allSprints}
+              defaultSprintId={defaultSprint?.value}
+              sprintOptions={sprintOptions}
+            />
+          </Suspense>
+          <Suspense fallback={<Skeleton className="h-10 w-28 rounded-md" />}>
+            <div className="flex items-center">
+              <SprintActions />
+            </div>
+          </Suspense>
+        </div>
       </div>
       <div className="p-10">{children}</div>
     </div>
