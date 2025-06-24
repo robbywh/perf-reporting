@@ -83,7 +83,11 @@ async function processBatch(
     const categoryId = categoryField?.value?.[0] ?? null;
     const storyPoint = task.time_estimate ? task.time_estimate / 3600000 : 0;
     const statusId = statusMap.get(task.status.status);
-
+    if (!statusId) {
+      console.warn(
+        `🟡 Task ${task.id} (${task.name}) has an invalid status: ${task.status.status}`
+      );
+    }
     return {
       id: task.id,
       name: task.name,
