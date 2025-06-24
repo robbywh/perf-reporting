@@ -78,11 +78,7 @@ export async function getSprintDetailsForDownload(
       where: {
         sprintId: sprint.id,
       },
-      select: {
-        id: true,
-        name: true,
-        statusId: true,
-        storyPoint: true,
+      include: {
         category: true,
         status: true,
         assignees: {
@@ -104,7 +100,7 @@ export async function getSprintDetailsForDownload(
       );
 
       // Calculate task statistics using the exact same logic as findAverageSPAndMergedCountBySprintIds
-      // Define category mappings for story point sum per category
+      // Define category mappings for task counts per sprint
       const categoryCounts: Record<string, number> = {
         ongoingDev: 0,
         ongoingSupport: 0,
@@ -114,31 +110,30 @@ export async function getSprintDetailsForDownload(
         ongoingNonDev: 0,
       };
 
-      // Fetch task tags
+      // Fetch task tags in the exact same way as findAverageSPAndMergedCountBySprintIds
       const taskTags = await prisma.taskTag.findMany({
         where: {
-          taskId: { in: engineerTasks.map((task) => task.id) },
+          taskId: { in: engineerTasks.map(task => task.id) },
           sprintId: sprint.id,
         },
         include: {
           tag: {
-            select: { id: true },
-          },
+            select: { id: true }
+          }
         },
       });
 
       // Create a map of task IDs to their tags for efficient lookup
       const taskTagsMap: Record<string, string[]> = {};
-      taskTags.forEach((tt) => {
+      taskTags.forEach(tt => {
         if (!taskTagsMap[tt.taskId]) {
           taskTagsMap[tt.taskId] = [];
         }
         taskTagsMap[tt.taskId].push(tt.tag.id);
       });
-
+      
       // Process each task exactly like in findAverageSPAndMergedCountBySprintIds
       engineerTasks.forEach((task) => {
-        const sp = Number(task.storyPoint) || 0;
         const tags = taskTagsMap[task.id] || [];
         const isSupport = tags.includes("support");
         const isNonDev = tags.includes("nodev");
@@ -156,16 +151,21 @@ export async function getSprintDetailsForDownload(
               ? "ongoingNonDev"
               : "ongoingDev";
 
-        categoryCounts[category] += sp; // Sum story points instead of counting tasks
+        categoryCounts[category]++;
       });
-
-      // Map the category counts to individual variables
+      
+      // Map category counts to individual variables
       const devApproved = categoryCounts.devApproved;
       const supportApproved = categoryCounts.supportApproved;
       const ongoingDev = categoryCounts.ongoingDev;
       const ongoingSupport = categoryCounts.ongoingSupport;
-      const nonDevelopment =
-        categoryCounts.nonDevelopment + categoryCounts.ongoingNonDev;
+      const nonDevelopment = categoryCounts.nonDevelopment + categoryCounts.ongoingNonDev;
+            nonDevelopment++;
+          } else {
+            ongoingDev++;
+          }
+        }
+      });
 
       // Calculate SP Completion
       const target = Number(sprintEngineer.target || 0);

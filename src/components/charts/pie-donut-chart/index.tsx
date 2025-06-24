@@ -37,9 +37,14 @@ export function PieDonutChart({
   config,
   data,
 }: PieDonutChartProps) {
-  const total = data.reduce((acc, curr) => acc + curr.value, 0);
+  // Calculate using the formula: Tasks to QA = approvedTasks + rejectedTasks
   const rejected = data.find((item) => item.status === "rejected")?.value || 0;
-  const rejectionRatio = rejected > 0 ? (rejected / total) * 100 : 0;
+  const approved = data.find((item) => item.status === "approved")?.value || 0;
+  const tasksToQA = approved + rejected; // Tasks to QA = approvedTasks + rejectedTasks
+
+  // QA Rejection Ratio = rejectedTasks > 0 ? (rejectedTasks / Tasks to QA) * 100 : 0
+  const rejectionRatio = rejected > 0 ? (rejected / tasksToQA) * 100 : 0;
+
   const formattedRejectionRatio =
     rejectionRatio % 1 !== 0 ? rejectionRatio.toFixed(2) : rejectionRatio;
 
@@ -88,7 +93,7 @@ export function PieDonutChart({
                           y={viewBox.cy}
                           className="fill-foreground text-3xl font-bold"
                         >
-                          {total.toLocaleString()}
+                          {tasksToQA.toLocaleString()}
                         </tspan>
                         <tspan
                           x={viewBox.cx}
