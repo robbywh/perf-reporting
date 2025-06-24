@@ -7,7 +7,6 @@ export default clerkMiddleware(async (auth, request) => {
   if (!(await authenticatedUser.userId) && !isPublicRoute(request)) {
     return authenticatedUser.redirectToSignIn();
   }
-
   if (!isPublicRoute(request)) {
     await auth.protect();
   }
