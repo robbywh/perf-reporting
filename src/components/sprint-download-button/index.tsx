@@ -51,7 +51,8 @@ export function SprintDownloadButton({
   return (
     <DownloadButton
       onClick={handleDownload}
-      disabled={isLoading || !sprintIds.length}
+      disabled={!sprintIds.length}
+      isLoading={isLoading}
       className={className}
     />
   );
