@@ -98,6 +98,23 @@ Aplikasi menggunakan model data berikut:
 
 Aplikasi menggunakan Cron Jobs di Vercel untuk sinkronisasi otomatis data dari platform eksternal:
 
+## Arsitektur Sistem
+
+Berikut adalah arsitektur sistem PerfReporting yang menggambarkan aliran data dan integrasi antar komponen:
+
+![Arsitektur Sistem PerfReporting](/public/architecture.png)
+
+Arsitektur sistem terdiri dari:
+
+- **Vercel Cron Jobs**: Menjalankan job setiap 5 PM untuk sinkronisasi data
+- **Vercel Blob**: Untuk menyimpan dan mengambil gambar/file
+- **PerfReporting**: Aplikasi utama yang menyediakan endpoint API dan antarmuka pengguna
+- **Clerk**: Sistem autentikasi untuk pengelolaan pengguna
+- **GitLab & ClickUp**: Sumber data eksternal untuk mendapatkan data tugas dan aktivitas coding
+- **Prisma ORM**: Layer abstraksi untuk interaksi dengan database
+- **Prisma Accelerate**: Connection Pool Caching untuk meningkatkan performa database
+- **Prisma Postgres**: Database yang menyimpan semua data aplikasi
+
 ### ClickUp API
 
 - **Sinkronisasi Sprint**: Mengambil data sprint dari ClickUp Lists
