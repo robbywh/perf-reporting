@@ -32,9 +32,6 @@ export async function getSprintDetailsForDownload(
 }> {
   if (!sprintIds.length) return {};
 
-  // Fetch all reviewers to match with engineers
-  const reviewers = await prisma.reviewer.findMany();
-
   // Fetch sprints with engineers and reviewers
   const sprints = await prisma.sprint.findMany({
     where: {
