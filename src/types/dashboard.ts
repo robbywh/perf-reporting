@@ -33,6 +33,8 @@ export interface Performer {
   name: string | undefined;
   email: string | null | undefined;
   storyPoints: number;
+  target: number;
+  completionPercentage: number;
 }
 
 export interface LeaveData {
