@@ -205,6 +205,7 @@ export async function findCapacityVsRealityBySprintIds(
 }
 
 export async function findTopPerformersBySprintIds(sprintIds: string[]) {
+  // Get average story points per engineer
   const avgStoryPoints = await prisma.sprintEngineer.groupBy({
     by: ["engineerId"], // Group only by engineerId
     where: {
@@ -212,11 +213,7 @@ export async function findTopPerformersBySprintIds(sprintIds: string[]) {
     },
     _avg: {
       storyPoints: true, // Calculate the average story points
-    },
-    orderBy: {
-      _avg: {
-        storyPoints: "desc",
-      },
+      target: true, // Calculate the average target
     },
     cacheStrategy: {
       swr: 5 * 60,
@@ -243,18 +240,34 @@ export async function findTopPerformersBySprintIds(sprintIds: string[]) {
   });
 
   // Merge results
-  return avgStoryPoints.map((performer) => {
+  const performersWithCompletion = avgStoryPoints.map((performer) => {
     const engineer = engineers.find((eng) => eng.id === performer.engineerId);
+    const storyPoints =
+      performer._avg.storyPoints instanceof Decimal
+        ? performer._avg.storyPoints.toNumber()
+        : Number(performer._avg.storyPoints || 0);
+    const target =
+      performer._avg.target instanceof Decimal
+        ? performer._avg.target.toNumber()
+        : Number(performer._avg.target || 0);
+
+    // Calculate completion percentage (0 if target is 0 to avoid division by zero)
+    const completionPercentage = target > 0 ? (storyPoints / target) * 100 : 0;
+
     return {
       id: performer.engineerId,
       name: engineer?.name,
       email: engineer?.email,
-      storyPoints:
-        performer._avg.storyPoints instanceof Decimal
-          ? performer._avg.storyPoints.toNumber()
-          : Number(performer._avg.storyPoints || 0),
+      storyPoints,
+      target,
+      completionPercentage,
     };
   });
+
+  // Sort by completion percentage in descending order
+  return performersWithCompletion.sort(
+    (a, b) => b.completionPercentage - a.completionPercentage
+  );
 }
 
 export async function findEngineerTrendBySprintIds(sprintIds: string[]) {

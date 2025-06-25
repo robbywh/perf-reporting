@@ -20,6 +20,8 @@ interface Performer {
   name: string | undefined;
   email: string | null | undefined;
   storyPoints: number;
+  target: number;
+  completionPercentage: number;
 }
 
 interface TopPerformersProps {
@@ -38,12 +40,25 @@ export const TopPerformers = memo(function TopPerformers({
     [performers]
   );
 
+  // Memoize the total target calculation
+  const totalTarget = useMemo(
+    () => performers.reduce((sum, p) => sum + p.target, 0),
+    [performers]
+  );
+
+  // Calculate overall percentage
+  const overallPercentage =
+    totalTarget > 0 ? ((totalSP / totalTarget) * 100).toFixed(0) : null;
+
   return (
     <Card className="h-full">
       <CardHeader>
         <CardTitle>Top Performers</CardTitle>
         <CardDescription>
           Your team&apos;s story points total {totalSP.toFixed(2)}.
+          {overallPercentage && (
+            <> Overall achievement: {overallPercentage}% of target.</>
+          )}
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -110,9 +125,17 @@ const PerformerItem = memo(function PerformerItem({
           </div>
         </div>
         <div className="flex shrink-0 items-center space-x-2">
-          <p className="text-sm font-semibold">
-            {performer.storyPoints.toFixed(2)} SP
-          </p>
+          <div className="flex flex-col items-end">
+            {performer.target > 0 && (
+              <p className="text-sm font-semibold">
+                {performer.completionPercentage.toFixed(0)}%
+              </p>
+            )}
+            <p className="text-xs text-gray-500">
+              {performer.storyPoints.toFixed(1)} / {performer.target.toFixed(1)}{" "}
+              SP
+            </p>
+          </div>
           <ChevronRight className="size-4 text-gray-400" />
         </div>
       </div>
@@ -144,7 +167,10 @@ export function TopPerformersSkeleton() {
                 </div>
               </div>
               <div className="flex shrink-0 items-center space-x-2">
-                <Skeleton className="h-4 w-12" />
+                <div className="flex flex-col items-end">
+                  <Skeleton className="h-4 w-10" />
+                  <Skeleton className="mt-1 h-3 w-20" />
+                </div>
                 <ChevronRight className="size-4 text-gray-400 opacity-50" />
               </div>
             </div>
