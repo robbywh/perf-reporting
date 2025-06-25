@@ -61,32 +61,42 @@ export default async function RootLayout({
   const threeMonthsAgo = getDateMonthsAgo(3);
   const sixMonthsAgo = getDateMonthsAgo(6);
 
+  // Find current sprint
+  const currentSprint = allSprints.find(
+    (sprint: SprintOption) =>
+      new Date(sprint.startDate) <= currentDate &&
+      currentDate <= new Date(sprint.endDate)
+  );
+
+  // Today's sprint
+  const todaySprint = currentSprint ? [currentSprint] : [];
+
+  // Past sprints should exclude current sprint
   const past1MonthSprints = allSprints.filter(
     (sprint: SprintOption) =>
       new Date(sprint.startDate) <= currentDate &&
-      new Date(sprint.startDate) >= oneMonthAgo
+      new Date(sprint.startDate) >= oneMonthAgo &&
+      (currentSprint ? sprint.value !== currentSprint.value : true)
   );
 
   const past3MonthsSprints = allSprints.filter(
     (sprint: SprintOption) =>
       new Date(sprint.startDate) <= currentDate &&
-      new Date(sprint.startDate) >= threeMonthsAgo
+      new Date(sprint.startDate) >= threeMonthsAgo &&
+      (currentSprint ? sprint.value !== currentSprint.value : true)
   );
 
   const past6MonthsSprints = allSprints.filter(
     (sprint: SprintOption) =>
       new Date(sprint.startDate) <= currentDate &&
-      new Date(sprint.startDate) >= sixMonthsAgo
+      new Date(sprint.startDate) >= sixMonthsAgo &&
+      (currentSprint ? sprint.value !== currentSprint.value : true)
   );
 
-  const defaultSprint =
-    allSprints.find(
-      (sprint: SprintOption) =>
-        new Date(sprint.startDate) <= currentDate &&
-        currentDate <= new Date(sprint.endDate)
-    ) || allSprints[allSprints.length - 1];
+  const defaultSprint = currentSprint || allSprints[allSprints.length - 1];
 
   const sprintOptions = [
+    { label: "Today", sprints: todaySprint },
     { label: "Past 1 Month", sprints: past1MonthSprints },
     { label: "Past 3 Months", sprints: past3MonthsSprints },
     { label: "Past 6 Months", sprints: past6MonthsSprints },

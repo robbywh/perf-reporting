@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import Select, { MultiValue } from "react-select";
 
 type Option = {
@@ -32,42 +32,51 @@ export function SprintMultiSelect({
     []
   );
 
-  // Create filter options
-  const filterOptions: Option[] = [
-    { value: "past-1-month", label: "Past 1 Month" },
-    { value: "past-3-months", label: "Past 3 Months" },
-    { value: "past-6-months", label: "Past 6 Months" },
-  ];
+  // Create filter options with useMemo
+  const filterOptions = useMemo(
+    () => [
+      { value: "today", label: "Today" },
+      { value: "past-1-month", label: "Past 1 Month" },
+      { value: "past-3-months", label: "Past 3 Months" },
+      { value: "past-6-months", label: "Past 6 Months" },
+    ],
+    []
+  );
 
-  // Get sprints based on filter
-  const getFilteredSprints = (filterValue: string): Option[] => {
-    const option = sprintOptions.find((opt) => {
-      switch (filterValue) {
-        case "past-1-month":
-          return opt.label === "Past 1 Month";
-        case "past-3-months":
-          return opt.label === "Past 3 Months";
-        case "past-6-months":
-          return opt.label === "Past 6 Months";
-        default:
-          return false;
-      }
-    });
-    return option?.sprints || [];
-  };
+  // Get sprints based on filter with useCallback
+  const getFilteredSprints = useCallback(
+    (filterValue: string): Option[] => {
+      const option = sprintOptions.find((opt) => {
+        switch (filterValue) {
+          case "today":
+            return opt.label === "Today";
+          case "past-1-month":
+            return opt.label === "Past 1 Month";
+          case "past-3-months":
+            return opt.label === "Past 3 Months";
+          case "past-6-months":
+            return opt.label === "Past 6 Months";
+          default:
+            return false;
+        }
+      });
+      return option?.sprints || [];
+    },
+    [sprintOptions]
+  );
 
-  // Find current sprint
-  const getCurrentSprint = (): Option | undefined => {
+  // Find current sprint with useCallback
+  const getCurrentSprint = useCallback((): Option | undefined => {
     return sprints.find((sprint) => sprint.value === defaultSprintId);
-  };
+  }, [sprints, defaultSprintId]);
 
   // Combine filter options with sprint options
-  const getAllOptions = () => {
+  const getAllOptions = useCallback(() => {
     return [
       { label: "Filters", options: filterOptions },
       { label: "Sprints", options: sprints },
     ];
-  };
+  }, [filterOptions, sprints]);
 
   useEffect(() => {
     if (!mounted) {
@@ -92,7 +101,14 @@ export function SprintMultiSelect({
         sprints.filter((sprint) => sprintIdsFromUrl.includes(sprint.value))
       );
     }
-  }, [searchParams, defaultSprintId, sprints]);
+  }, [
+    searchParams,
+    sprints,
+    mounted,
+    filterOptions,
+    getCurrentSprint,
+    getFilteredSprints,
+  ]);
 
   useEffect(() => {
     if (!mounted) return;
@@ -112,7 +128,7 @@ export function SprintMultiSelect({
     router.replace(`${window.location.pathname}?${params.toString()}`, {
       scroll: false,
     });
-  }, [selectedOptions, router, defaultSprintId, mounted]);
+  }, [selectedOptions, router, mounted, getCurrentSprint]);
 
   const handleChange = (options: MultiValue<Option>) => {
     const lastSelected = options[options.length - 1];
