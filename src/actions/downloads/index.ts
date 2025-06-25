@@ -2,6 +2,7 @@
 
 import { APPROVED_STATUS_IDS } from "@/constants/client";
 import { prisma } from "@/services/db";
+import { findTotalTaskToQACounts } from "@/services/tasks";
 
 export interface SprintDetailRow {
   name: string;
@@ -184,42 +185,20 @@ export async function getSprintDetailsForDownload(
       const mrRejected = 0; // Assuming 0 as per requirement
       const mrRejectionRatio = "0%"; // Assuming 0% as per requirement
 
-      // Calculate QA rejection ratio using the same logic as findTotalTaskToQACounts
+      // Calculate QA rejection ratio using findTotalTaskToQACounts function
       // For each engineer, get their reviewer tasks for QA calculation
-      const reviewerId = reviewers.find((r) => r.name === engineerName)?.id;
 
       let approvedQATasks = 0;
       let rejectedQATasks = 0;
 
-      if (reviewerId) {
-        // Fetch all QA tasks for this reviewer
-        const qaTasks = await prisma.task.findMany({
-          where: {
-            sprintId: sprint.id,
-            statusId: { in: APPROVED_STATUS_IDS }, // Using standard approved status IDs
-            OR: [
-              { name: { startsWith: "[QA]", mode: "insensitive" } },
-              { name: { startsWith: "QA", mode: "insensitive" } },
-            ],
-            NOT: [
-              { name: { contains: "[Scenario]", mode: "insensitive" } },
-              { name: { contains: "[support]", mode: "insensitive" } },
-            ],
-          },
-          select: {
-            id: true,
-            name: true,
-          },
-        });
-
-        // Count approved and rejected tasks
-        approvedQATasks = qaTasks.filter(
-          (task) => !task.name.toLowerCase().includes("[rejected]")
-        ).length;
-
-        rejectedQATasks = qaTasks.filter((task) =>
-          task.name.toLowerCase().includes("[rejected]")
-        ).length;
+      if (engineerId) {
+        // Use the findTotalTaskToQACounts function to get QA task counts
+        const qaTaskCounts = await findTotalTaskToQACounts(
+          [sprint.id],
+          engineerId
+        );
+        approvedQATasks = qaTaskCounts.approvedTasks;
+        rejectedQATasks = qaTaskCounts.rejectedTasks;
       }
 
       const noTaskToQA = approvedQATasks + rejectedQATasks;

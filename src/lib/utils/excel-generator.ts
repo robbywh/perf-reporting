@@ -4,11 +4,11 @@ import * as XLSX from "xlsx";
 
 import { SprintDetailRow } from "@/actions/downloads";
 
-export function generateExcel(
+export async function generateExcel(
   sprintData: { [sprintName: string]: SprintDetailRow[] },
   filename = "sprint-details.xlsx",
   sprintIds?: string[]
-): void {
+): Promise<void> {
   // Check if window is available (client-side only)
   if (typeof window === "undefined") {
     console.warn("Attempted to generate Excel on server side");
@@ -49,7 +49,8 @@ export function generateExcel(
     }
 
     // Process each sprint sheet in the defined order
-    for (const sprintName of sprintNames) {
+    for (let i = 0; i < sprintNames.length; i++) {
+      const sprintName = sprintNames[i];
       const rows = sprintData[sprintName];
 
       // Skip if no rows
@@ -59,18 +60,7 @@ export function generateExcel(
       }
 
       // Map the data to the requested column names
-      const renamedRows = rows.map((row) => {
-        // Recalculate the QA rejection ratio using the provided formula
-        const noTaskToQA = row.noTaskToQA || 0;
-        const noOfTaskRejected = row.noOfTaskRejected || 0;
-
-        const rejectionRatio =
-          noTaskToQA > 0 ? (noOfTaskRejected / noTaskToQA) * 100 : 0;
-        const formattedRejectionRatio =
-          rejectionRatio % 1 !== 0
-            ? rejectionRatio.toFixed(2) + "%"
-            : rejectionRatio + "%";
-
+      const renamedRows = rows.map(async (row) => {
         // Map the data
         return {
           Name: row.name,
@@ -88,14 +78,17 @@ export function generateExcel(
           "MR Approved": row.mrApproved,
           "MR Rejected": row.mrRejected,
           "MR Rejection Ratio": row.rejectionRatio,
-          "Tasks to QA": noTaskToQA,
-          "Rejected Tasks": noOfTaskRejected,
-          "QA Rejection Ratio": formattedRejectionRatio,
+          "Tasks to QA": row.noTaskToQA,
+          "Rejected Tasks": row.noOfTaskRejected,
+          "QA Rejection Ratio": row.qaRejectionRatio,
         };
       });
 
+      // Resolve all promises for the renamed rows
+      const resolvedRenamedRows = await Promise.all(renamedRows);
+
       // Create worksheet with renamed data
-      const worksheet = XLSX.utils.json_to_sheet(renamedRows);
+      const worksheet = XLSX.utils.json_to_sheet(resolvedRenamedRows);
 
       // Set column widths for better readability
       const columnWidths: { [key: string]: number } = {
@@ -145,7 +138,7 @@ export async function downloadSprintData(
     const filename = `sprint-details-${date}.xlsx`;
 
     // Generate and download Excel
-    generateExcel(sprintData, filename, sprintIds);
+    await generateExcel(sprintData, filename, sprintIds);
   } catch (error) {
     console.error("Error downloading sprint data:", error);
   }
