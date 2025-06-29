@@ -74,8 +74,8 @@ export default async function RootLayout({
   // Past sprints should exclude current sprint
   const past1MonthSprints = allSprints.filter(
     (sprint: SprintOption) =>
-      new Date(sprint.startDate) <= currentDate &&
-      new Date(sprint.startDate) >= oneMonthAgo &&
+      new Date(sprint.endDate) <= currentDate &&
+      new Date(sprint.endDate) >= oneMonthAgo &&
       (currentSprint ? sprint.value !== currentSprint.value : true)
   );
 
