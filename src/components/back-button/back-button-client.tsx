@@ -1,6 +1,6 @@
 "use client";
 
-import { useRouter, usePathname, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { type ReactNode } from "react";
 
 interface BackButtonClientProps {
@@ -9,21 +9,14 @@ interface BackButtonClientProps {
 
 export function BackButtonClient({ children }: BackButtonClientProps) {
   const router = useRouter();
-  const pathname = usePathname();
-  const searchParams = useSearchParams();
 
   const handleBack = () => {
-    // If we're on the engineer page
-    if (pathname.startsWith("/engineer/")) {
-      // Preserve the sprint IDs when navigating back
-      const sprintIds = searchParams.get("sprintIds");
-      const query = sprintIds ? `?sprintIds=${sprintIds}` : "";
-      router.push(`/${query}`);
-    } else if (window.history.length > 2) {
-      // If there's history, go back
+    // Check if there's browser history to go back to
+    if (window.history.length > 1) {
+      // Use browser history - this won't reload the page
       router.back();
     } else {
-      // If no history, navigate to home
+      // Fallback: navigate to home if no history exists
       router.push("/");
     }
   };
