@@ -20,9 +20,8 @@ interface TaskChartProps {
 export function PieDonutTaskChart({ data, detailedData }: TaskChartProps) {
   const [modalOpen, setModalOpen] = useState(false);
   const [modalTasks, setModalTasks] = useState<DetailedTask[]>([]);
-  const [modalTitle, setModalTitle] = useState("");
 
-  const handleSegmentClick = (segmentType: string) => {
+  const handleSegmentClick = () => {
     if (!detailedData) return;
 
     // Always show ALL tasks (approved + rejected merged) regardless of which segment is clicked
@@ -76,7 +75,6 @@ export function PieDonutTaskChart({ data, detailedData }: TaskChartProps) {
         isOpen={modalOpen}
         onClose={() => setModalOpen(false)}
         tasks={modalTasks}
-        title={modalTitle}
       />
     </>
   );

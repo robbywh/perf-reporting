@@ -154,6 +154,11 @@ export async function findCapacityVsRealityBySprintIds(
       },
     },
     orderBy: { id: "asc" },
+    cacheStrategy: {
+      swr: 5 * 60,
+      ttl: 8 * 60 * 60,
+      tags: ["capacityVsReality"],
+    },
   });
   // Map and aggregate the results
   return sprints.map(

@@ -53,7 +53,7 @@ interface TaskDetailsModalProps {
   isOpen: boolean;
   onClose: () => void;
   tasks: TaskDetail[];
-  title: string;
+  title?: string;
 }
 
 export function TaskDetailsModal({
@@ -210,8 +210,8 @@ export function TaskDetailsModal({
       <DialogContent className="max-h-[90vh] max-w-7xl overflow-y-auto">
         <DialogHeader>
           <DialogTitle>
-            {title} Tasks Details ({tasks.length} total, {approvedTasks.length}{" "}
-            approved, {rejectedTasks.length} rejected)
+            {title || "Task"} Details ({tasks.length} total,{" "}
+            {approvedTasks.length} approved, {rejectedTasks.length} rejected)
           </DialogTitle>
         </DialogHeader>
 

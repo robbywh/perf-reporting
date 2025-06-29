@@ -35,52 +35,88 @@ import {
   findTotalTaskToQACounts,
 } from "@/services/tasks";
 import { findRoleIdAndEngineerIdByUserId } from "@/services/users";
-import { DashboardData } from "@/types/dashboard";
 import { ROLE } from "@/types/roles";
 
-// Centralized data fetching function
-async function fetchDashboardData(sprintIds: string[]): Promise<DashboardData> {
+// Centralized critical data fetching (auth and role info only)
+async function fetchCriticalData(): Promise<{ roleId: string }> {
   noStore();
 
-  // Fetch all data in parallel
-  const [
-    topPerformersData,
-    sprintsCapacity,
-    sprintData,
-    taskCategoryData,
-    taskQAData,
-    detailedTaskQAData,
-    leavesAndHolidays,
-    engineers,
-    authData,
-  ] = await Promise.all([
-    findTopPerformersBySprintIds(sprintIds),
-    findCapacityVsRealityBySprintIds(sprintIds),
-    findEngineerTrendBySprintIds(sprintIds),
-    findCountTasksByCategory(sprintIds),
-    findTotalTaskToQACounts(sprintIds),
-    findDetailedTaskToQACounts(sprintIds),
-    findSprintsWithLeavesAndHolidays(sprintIds),
-    findAllEngineers(),
-    auth(),
-  ]);
-
-  // Get role info after auth
+  const authData = await auth();
   const { roleId } = await findRoleIdAndEngineerIdByUserId(
     authData.userId || ""
   );
 
   return {
-    topPerformersData,
-    sprintsCapacity,
-    sprintData,
-    taskCategoryData,
-    taskQAData,
-    detailedTaskQAData,
-    leavesAndHolidays,
-    engineers,
     roleId: roleId || "",
   };
+}
+
+// Individual async components for progressive loading
+async function AsyncTopPerformers({ sprintIds }: { sprintIds: string[] }) {
+  const topPerformersData = await findTopPerformersBySprintIds(sprintIds);
+  return (
+    <DynamicTopPerformers
+      performers={topPerformersData}
+      sprintIds={sprintIds.join(",")}
+    />
+  );
+}
+
+async function AsyncBarChartCapacity({ sprintIds }: { sprintIds: string[] }) {
+  const sprintsCapacity = await findCapacityVsRealityBySprintIds(sprintIds);
+  return <DynamicBarChartCapacity sprints={sprintsCapacity} />;
+}
+
+async function AsyncLineChartSPCoding({ sprintIds }: { sprintIds: string[] }) {
+  const sprintData = await findEngineerTrendBySprintIds(sprintIds);
+  return <DynamicLineChartSPCoding sprintData={sprintData} />;
+}
+
+async function AsyncPieTaskCategoryChart({
+  sprintIds,
+}: {
+  sprintIds: string[];
+}) {
+  const taskCategoryData = await findCountTasksByCategory(sprintIds);
+  return <DynamicPieTaskCategoryChart taskData={taskCategoryData} />;
+}
+
+async function AsyncPieDonutTaskChart({ sprintIds }: { sprintIds: string[] }) {
+  const [taskQAData, detailedTaskQAData] = await Promise.all([
+    findTotalTaskToQACounts(sprintIds),
+    findDetailedTaskToQACounts(sprintIds),
+  ]);
+  return (
+    <DynamicPieDonutTaskChart
+      data={taskQAData}
+      detailedData={detailedTaskQAData}
+    />
+  );
+}
+
+async function AsyncLeavePublicHoliday({
+  sprintIds,
+  roleId,
+  showActionButton,
+}: {
+  sprintIds: string[];
+  roleId: string;
+  showActionButton: boolean;
+}) {
+  const [leavesAndHolidays, engineers] = await Promise.all([
+    findSprintsWithLeavesAndHolidays(sprintIds),
+    findAllEngineers(),
+  ]);
+  return (
+    <DynamicLeavePublicHoliday
+      sprints={leavesAndHolidays}
+      roleId={roleId}
+      engineers={engineers}
+      addLeaveOrHolidayAction={addLeaveOrHolidayAction}
+      deleteLeaveOrHolidayAction={deleteLeaveOrHolidayAction}
+      showActionButton={showActionButton}
+    />
+  );
 }
 
 export default async function Home({
@@ -100,67 +136,48 @@ export default async function Home({
     sprintIds = currentSprintId ? [currentSprintId] : [];
   }
 
-  // Fetch all data at once
-  const {
-    topPerformersData,
-    sprintsCapacity,
-    sprintData,
-    taskCategoryData,
-    taskQAData,
-    detailedTaskQAData,
-    leavesAndHolidays,
-    engineers,
-    roleId,
-  } = await fetchDashboardData(sprintIds);
+  // Fetch only critical data (role info) for immediate rendering
+  const { roleId } = await fetchCriticalData();
 
   return (
     <main>
       <div className="mb-6 grid grid-cols-1 gap-4 lg:grid-cols-3">
         <div className="min-h-[400px] lg:col-span-2">
           <Suspense fallback={<BarChartCapacitySkeleton />}>
-            <DynamicBarChartCapacity sprints={sprintsCapacity} />
+            <AsyncBarChartCapacity sprintIds={sprintIds} />
           </Suspense>
         </div>
         <div className="min-h-[400px] lg:col-span-1">
           <Suspense fallback={<TopPerformersSkeleton />}>
-            <DynamicTopPerformers
-              performers={topPerformersData}
-              sprintIds={sprintIds.join(",")}
-            />
+            <AsyncTopPerformers sprintIds={sprintIds} />
           </Suspense>
         </div>
       </div>
 
       <div className="mb-6 min-h-[500px]">
         <Suspense fallback={<LineChartSPCodingSkeleton />}>
-          <DynamicLineChartSPCoding sprintData={sprintData} />
+          <AsyncLineChartSPCoding sprintIds={sprintIds} />
         </Suspense>
       </div>
 
       <div className="mb-6 grid grid-cols-1 gap-4 lg:grid-cols-3">
         <div className="min-h-[400px] lg:col-span-2">
           <Suspense fallback={<PieChartSkeleton title="Task Category" />}>
-            <DynamicPieTaskCategoryChart taskData={taskCategoryData} />
+            <AsyncPieTaskCategoryChart sprintIds={sprintIds} />
           </Suspense>
         </div>
         <div className="min-h-[400px]">
           <Suspense fallback={<PieDonutChartSkeleton title="Tasks to QA" />}>
-            <DynamicPieDonutTaskChart
-              data={taskQAData}
-              detailedData={detailedTaskQAData}
-            />
+            <AsyncPieDonutTaskChart sprintIds={sprintIds} />
           </Suspense>
         </div>
       </div>
 
       <div className="min-h-[300px]">
         <Suspense fallback={<LeavePublicHolidaySkeleton />}>
-          <DynamicLeavePublicHoliday
-            sprints={leavesAndHolidays}
+          <AsyncLeavePublicHoliday
+            sprintIds={sprintIds}
             roleId={roleId}
-            engineers={engineers}
-            addLeaveOrHolidayAction={addLeaveOrHolidayAction}
-            deleteLeaveOrHolidayAction={deleteLeaveOrHolidayAction}
             showActionButton={roleId === ROLE.ENGINEERING_MANAGER}
           />
         </Suspense>
