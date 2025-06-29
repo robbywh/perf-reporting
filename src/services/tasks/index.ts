@@ -282,7 +282,13 @@ export async function findAverageSPAndMergedCountBySprintIds(
   sprintIds: string[],
   engineerId: number
 ) {
-  // Fetch tasks and sprint engineer data in parallel
+  // Create a hash or composite identifier for multiple sprints to stay within cache tag limits
+  const sprintKey =
+    sprintIds.length === 1
+      ? sprintIds[0]
+      : sprintIds.sort().join("_").substring(0, 20);
+
+  // Fetch tasks and sprint engineer data in parallel with optimized caching
   const [tasks, sprintEngineerData] = await Promise.all([
     (await prisma.task.findMany({
       where: {
@@ -295,10 +301,20 @@ export async function findAverageSPAndMergedCountBySprintIds(
         sprintId: true,
         taskTags: { select: { tag: { select: { id: true } } } },
       },
+      cacheStrategy: {
+        swr: 2 * 60, // 2 minutes
+        ttl: 10 * 60, // 10 minutes
+        tags: [`tasks_eng_${engineerId}`, `sprints_${sprintKey}`],
+      },
     })) as TaskWithTags[],
     (await prisma.sprintEngineer.findMany({
       where: { sprintId: { in: sprintIds }, engineerId },
       select: { mergedCount: true },
+      cacheStrategy: {
+        swr: 2 * 60, // 2 minutes
+        ttl: 10 * 60, // 10 minutes
+        tags: [`sprint_eng_${engineerId}`, `sprints_${sprintKey}`],
+      },
     })) as SprintEngineerData[],
   ]);
 

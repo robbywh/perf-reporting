@@ -38,36 +38,19 @@ import {
   findEngineerById,
   findRoleIdAndEngineerIdByUserId,
 } from "@/services/users";
-import { PageProps, PageData } from "@/types/engineer-page";
+import { PageProps } from "@/types/engineer-page";
 
 // Centralize data fetching to reduce waterfall requests
-async function fetchPageData(
+async function fetchCriticalData(
   sprintIds: string[],
   engineerId: number
-): Promise<
-  PageData & { engineer: Awaited<ReturnType<typeof findEngineerById>> }
-> {
+): Promise<{
+  engineer: Awaited<ReturnType<typeof findEngineerById>>;
+  roleId: string;
+}> {
   noStore();
 
-  // Fetch all data in parallel with proper caching
-  const [
-    statsData,
-    taskData,
-    detailedTaskData,
-    averagesData,
-    sprintsForCodingHours,
-    sprintsWithLeaves,
-    engineers,
-    { userId },
-    engineer,
-  ] = await Promise.all([
-    findAverageSPAndMergedCountBySprintIds(sprintIds, engineerId),
-    findTotalTaskToQACounts(sprintIds, engineerId),
-    findDetailedTaskToQACounts(sprintIds, engineerId),
-    findAveragesByEngineerAndSprintIds(sprintIds, engineerId),
-    findSprintsBySprintIds(sprintIds, engineerId),
-    findSprintsWithLeavesAndHolidays(sprintIds),
-    findAllEngineers(),
+  const [{ userId }, engineer] = await Promise.all([
     auth(),
     findEngineerById(engineerId),
   ]);
@@ -83,15 +66,8 @@ async function fetchPageData(
   }
 
   return {
-    statsData,
-    taskData,
-    detailedTaskData,
-    averagesData,
-    sprintsForCodingHours,
-    sprintsWithLeaves,
-    engineers,
-    roleId,
     engineer,
+    roleId,
   };
 }
 
@@ -111,89 +87,163 @@ export default async function EngineerPage({
 
   const engineerId = parseInt(parameters.engineerId || "0");
 
-  // Fetch all data in parallel
-  const {
-    statsData,
-    taskData,
-    detailedTaskData,
-    averagesData,
-    sprintsForCodingHours,
-    sprintsWithLeaves,
-    engineers,
-    roleId,
-    engineer,
-  } = await fetchPageData(sprintIds, engineerId);
+  // Fetch critical data first (user info and engineer details)
+  const { engineer, roleId } = await fetchCriticalData(sprintIds, engineerId);
 
   const isEngineeringManager = roleId === "em";
   const isSoftwareEngineer = roleId === "se";
 
   // Add loading boundary at the page level
   return (
-    <Suspense fallback={<div>Loading...</div>}>
-      <div>
-        {!isSoftwareEngineer && (
-          <div className="mb-6">
-            <div className="flex items-center gap-4">
-              <BackButton />
-              <h1 className="text-2xl font-bold">
-                {engineer?.firstName}&apos;s Performance Report
-              </h1>
-            </div>
+    <div>
+      {!isSoftwareEngineer && (
+        <div className="mb-6">
+          <div className="flex items-center gap-4">
+            <BackButton />
+            <h1 className="text-2xl font-bold">
+              {engineer?.firstName}&apos;s Performance Report
+            </h1>
           </div>
-        )}
+        </div>
+      )}
 
-        {/* Stats Cards */}
-        <div className="mb-6 min-h-[120px]">
-          <Suspense fallback={<StatsCardsSkeleton />}>
-            <DynamicStatsCards data={statsData} />
+      {/* Stats Cards - Load independently */}
+      <div className="mb-6 min-h-[120px]">
+        <Suspense fallback={<StatsCardsSkeleton />}>
+          <AsyncStatsCards sprintIds={sprintIds} engineerId={engineerId} />
+        </Suspense>
+      </div>
+
+      {/* Charts Section - Load independently */}
+      <div className="flex min-h-[400px] flex-row items-stretch gap-4">
+        <div className="min-h-[400px] flex-[6]">
+          <Suspense fallback={<BarChartMultipleSkeleton />}>
+            <AsyncBarChart sprintIds={sprintIds} engineerId={engineerId} />
           </Suspense>
         </div>
-
-        {/* Charts Section */}
-        <div className="flex min-h-[400px] flex-row items-stretch gap-4">
-          <div className="min-h-[400px] flex-[6]">
-            <Suspense fallback={<BarChartMultipleSkeleton />}>
-              <DynamicBarChart data={averagesData} />
-            </Suspense>
-          </div>
-          <div className="min-h-[400px] flex-[4]">
-            <Suspense fallback={<PieDonutChartSkeleton title="Tasks to QA" />}>
-              <DynamicPieDonutTaskChart
-                data={taskData}
-                detailedData={detailedTaskData}
-              />
-            </Suspense>
-          </div>
+        <div className="min-h-[400px] flex-[4]">
+          <Suspense fallback={<PieDonutChartSkeleton title="Tasks to QA" />}>
+            <AsyncPieDonutChart sprintIds={sprintIds} engineerId={engineerId} />
+          </Suspense>
         </div>
+      </div>
 
-        {/* Coding Hours Form */}
-        <div className="mb-6 flex min-h-[200px]">
-          <Suspense fallback={<CodingHoursFormSkeleton />}>
-            <DynamicCodingHoursForm
-              sprints={sprintsForCodingHours}
-              engineerId={engineerId}
+      {/* Coding Hours Form - Load independently */}
+      <div className="mb-6 flex min-h-[200px]">
+        <Suspense fallback={<CodingHoursFormSkeleton />}>
+          <AsyncCodingHoursForm
+            sprintIds={sprintIds}
+            engineerId={engineerId}
+            roleId={roleId}
+          />
+        </Suspense>
+      </div>
+
+      {/* Leave & Public Holiday Form - Load independently */}
+      {isSoftwareEngineer && (
+        <div className="min-h-[300px]">
+          <Suspense fallback={<LeavePublicHolidaySkeleton />}>
+            <AsyncLeavePublicHoliday
+              sprintIds={sprintIds}
               roleId={roleId}
-              onSave={updateCodingHoursAction}
+              isEngineeringManager={isEngineeringManager}
             />
           </Suspense>
         </div>
+      )}
+    </div>
+  );
+}
 
-        {/* Leave & Public Holiday Form */}
-        {isSoftwareEngineer && (
-          <div className="min-h-[300px]">
-            <Suspense fallback={<LeavePublicHolidaySkeleton />}>
-              <DynamicLeavePublicHoliday
-                sprints={sprintsWithLeaves}
-                roleId={roleId}
-                engineers={engineers}
-                addLeaveOrHolidayAction={addLeaveOrHolidayAction}
-                deleteLeaveOrHolidayAction={deleteLeaveOrHolidayAction}
-                showActionButton={isEngineeringManager}
-              />
-            </Suspense>
-          </div>
-        )}
-      </div>
-    </Suspense>
+// Async components for independent loading
+async function AsyncStatsCards({
+  sprintIds,
+  engineerId,
+}: {
+  sprintIds: string[];
+  engineerId: number;
+}) {
+  const statsData = await findAverageSPAndMergedCountBySprintIds(
+    sprintIds,
+    engineerId
+  );
+  return <DynamicStatsCards data={statsData} />;
+}
+
+async function AsyncBarChart({
+  sprintIds,
+  engineerId,
+}: {
+  sprintIds: string[];
+  engineerId: number;
+}) {
+  const averagesData = await findAveragesByEngineerAndSprintIds(
+    sprintIds,
+    engineerId
+  );
+  return <DynamicBarChart data={averagesData} />;
+}
+
+async function AsyncPieDonutChart({
+  sprintIds,
+  engineerId,
+}: {
+  sprintIds: string[];
+  engineerId: number;
+}) {
+  const [taskData, detailedTaskData] = await Promise.all([
+    findTotalTaskToQACounts(sprintIds, engineerId),
+    findDetailedTaskToQACounts(sprintIds, engineerId),
+  ]);
+  return (
+    <DynamicPieDonutTaskChart data={taskData} detailedData={detailedTaskData} />
+  );
+}
+
+async function AsyncCodingHoursForm({
+  sprintIds,
+  engineerId,
+  roleId,
+}: {
+  sprintIds: string[];
+  engineerId: number;
+  roleId: string;
+}) {
+  const sprintsForCodingHours = await findSprintsBySprintIds(
+    sprintIds,
+    engineerId
+  );
+  return (
+    <DynamicCodingHoursForm
+      sprints={sprintsForCodingHours}
+      engineerId={engineerId}
+      roleId={roleId}
+      onSave={updateCodingHoursAction}
+    />
+  );
+}
+
+async function AsyncLeavePublicHoliday({
+  sprintIds,
+  roleId,
+  isEngineeringManager,
+}: {
+  sprintIds: string[];
+  roleId: string;
+  isEngineeringManager: boolean;
+}) {
+  const [sprintsWithLeaves, engineers] = await Promise.all([
+    findSprintsWithLeavesAndHolidays(sprintIds),
+    findAllEngineers(),
+  ]);
+  return (
+    <DynamicLeavePublicHoliday
+      sprints={sprintsWithLeaves}
+      roleId={roleId}
+      engineers={engineers}
+      addLeaveOrHolidayAction={addLeaveOrHolidayAction}
+      deleteLeaveOrHolidayAction={deleteLeaveOrHolidayAction}
+      showActionButton={isEngineeringManager}
+    />
   );
 }

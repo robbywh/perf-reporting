@@ -74,7 +74,10 @@ model Task {
   assignees    TaskAssignee[]
   taskTags     TaskTag[]
   reviewers    TaskReviewer[]
+  
   @@id([id, sprintId])
+  @@index([sprintId])
+  @@index([sprintId, statusId])
   @@map("task")
 }
 
@@ -86,6 +89,8 @@ model TaskTag {
   task      Task   @relation(fields: [taskId, sprintId], references: [id, sprintId])
 
   @@id([taskId, tagId, sprintId])
+  @@index([taskId, sprintId])
+  @@index([sprintId])
   @@map("task_tag")
 }
 
@@ -97,6 +102,8 @@ model TaskAssignee {
   task       Task     @relation(fields: [taskId, sprintId], references: [id, sprintId])
 
   @@id([taskId, engineerId, sprintId])
+  @@index([engineerId, sprintId])
+  @@index([sprintId])
   @@map("task_assignee")
 }
 

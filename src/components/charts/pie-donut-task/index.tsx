@@ -31,12 +31,6 @@ export function PieDonutTaskChart({ data, detailedData }: TaskChartProps) {
       ...detailedData.rejectedTasks,
     ];
     setModalTasks(allTasks);
-
-    if (segmentType === "approved") {
-      setModalTitle("All Tasks (Clicked: Approved)");
-    } else if (segmentType === "rejected") {
-      setModalTitle("All Tasks (Clicked: Rejected)");
-    }
     setModalOpen(true);
   };
 

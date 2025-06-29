@@ -1,6 +1,5 @@
 "use client";
 import { ChevronRight } from "lucide-react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { memo, useMemo, useCallback } from "react";
 
@@ -97,22 +96,31 @@ const PerformerItem = memo(function PerformerItem({
     );
   }, [performer?.name]);
 
-  // Prefetch the engineer page on hover
+  // Prefetch the engineer page on hover with debounce
   const handleMouseEnter = useCallback(() => {
+    // Prefetch critical data only, not the full page
     router.prefetch(
       `/engineer/${performer.id}${sprintIds ? `?sprintIds=${sprintIds}` : ""}`
     );
   }, [router, performer.id, sprintIds]);
 
+  // Add optimistic navigation to make the click feel more responsive
+  const handleClick = useCallback(
+    (e: React.MouseEvent) => {
+      e.preventDefault();
+      // Show immediate loading state while navigating
+      router.push(
+        `/engineer/${performer.id}${sprintIds ? `?sprintIds=${sprintIds}` : ""}`
+      );
+    },
+    [router, performer.id, sprintIds]
+  );
+
   return (
-    <Link
-      href={{
-        pathname: `/engineer/${performer.id}`,
-        query: sprintIds ? { sprintIds } : undefined,
-      }}
-      className="block w-full"
+    <div
+      className="block w-full cursor-pointer"
       onMouseEnter={handleMouseEnter}
-      prefetch={false} // We'll handle prefetching manually on hover
+      onClick={handleClick}
     >
       <div className="flex cursor-pointer items-center justify-between rounded-md p-3 transition hover:bg-gray-100">
         <div className="flex min-w-0 items-center space-x-3">
@@ -139,7 +147,7 @@ const PerformerItem = memo(function PerformerItem({
           <ChevronRight className="size-4 text-gray-400" />
         </div>
       </div>
-    </Link>
+    </div>
   );
 });
 
