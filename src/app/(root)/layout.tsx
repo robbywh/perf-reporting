@@ -130,29 +130,7 @@ export default async function RootLayout({
           </Suspense>
         </div>
       </div>
-      <div className="p-10">
-        {children}
-        <div className="mt-4">
-          {defaultSprint && (
-            <div className="text-sm text-muted-foreground">
-              Showing data for sprint:{" "}
-              <span className="font-medium">{defaultSprint.label}</span> (
-              {new Intl.DateTimeFormat("default", {
-                year: "numeric",
-                month: "short",
-                day: "numeric",
-              }).format(new Date(defaultSprint.startDate))}{" "}
-              -{" "}
-              {new Intl.DateTimeFormat("default", {
-                year: "numeric",
-                month: "short",
-                day: "numeric",
-              }).format(new Date(defaultSprint.endDate))}
-              )
-            </div>
-          )}
-        </div>
-      </div>
+      <div className="p-10">{children}</div>
     </div>
   );
 }
