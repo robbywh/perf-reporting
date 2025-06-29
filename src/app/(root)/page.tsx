@@ -31,6 +31,7 @@ import { findSprintsWithLeavesAndHolidays } from "@/services/sprints";
 import { getCurrentSprintId } from "@/services/sprints/getCurrentSprintId";
 import {
   findCountTasksByCategory,
+  findDetailedTaskToQACounts,
   findTotalTaskToQACounts,
 } from "@/services/tasks";
 import { findRoleIdAndEngineerIdByUserId } from "@/services/users";
@@ -48,6 +49,7 @@ async function fetchDashboardData(sprintIds: string[]): Promise<DashboardData> {
     sprintData,
     taskCategoryData,
     taskQAData,
+    detailedTaskQAData,
     leavesAndHolidays,
     engineers,
     authData,
@@ -57,6 +59,7 @@ async function fetchDashboardData(sprintIds: string[]): Promise<DashboardData> {
     findEngineerTrendBySprintIds(sprintIds),
     findCountTasksByCategory(sprintIds),
     findTotalTaskToQACounts(sprintIds),
+    findDetailedTaskToQACounts(sprintIds),
     findSprintsWithLeavesAndHolidays(sprintIds),
     findAllEngineers(),
     auth(),
@@ -73,6 +76,7 @@ async function fetchDashboardData(sprintIds: string[]): Promise<DashboardData> {
     sprintData,
     taskCategoryData,
     taskQAData,
+    detailedTaskQAData,
     leavesAndHolidays,
     engineers,
     roleId: roleId || "",
@@ -103,6 +107,7 @@ export default async function Home({
     sprintData,
     taskCategoryData,
     taskQAData,
+    detailedTaskQAData,
     leavesAndHolidays,
     engineers,
     roleId,
@@ -140,7 +145,10 @@ export default async function Home({
         </div>
         <div className="min-h-[400px]">
           <Suspense fallback={<PieDonutChartSkeleton title="Tasks to QA" />}>
-            <DynamicPieDonutTaskChart data={taskQAData} />
+            <DynamicPieDonutTaskChart
+              data={taskQAData}
+              detailedData={detailedTaskQAData}
+            />
           </Suspense>
         </div>
       </div>

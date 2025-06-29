@@ -7,6 +7,7 @@ import {
 import {
   findAverageSPAndMergedCountBySprintIds,
   findTotalTaskToQACounts,
+  findDetailedTaskToQACounts,
 } from "@/services/tasks";
 
 export interface PageProps {
@@ -41,6 +42,7 @@ export interface LeavePublicHolidayProps {
 export interface PageData {
   statsData: Awaited<ReturnType<typeof findAverageSPAndMergedCountBySprintIds>>;
   taskData: Awaited<ReturnType<typeof findTotalTaskToQACounts>>;
+  detailedTaskData: Awaited<ReturnType<typeof findDetailedTaskToQACounts>>;
   averagesData: Awaited<ReturnType<typeof findAveragesByEngineerAndSprintIds>>;
   sprintsForCodingHours: Awaited<ReturnType<typeof findSprintsBySprintIds>>;
   sprintsWithLeaves: Awaited<

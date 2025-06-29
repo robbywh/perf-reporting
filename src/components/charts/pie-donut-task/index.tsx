@@ -1,15 +1,45 @@
 "use client";
 
+import { useState } from "react";
+
 import { PieDonutChart } from "@/components/charts/pie-donut-chart";
+import { TaskDetailsModal } from "@/components/task-details-modal";
+import type { DetailedTask } from "@/services/tasks";
 
 interface TaskChartProps {
   data: {
     approvedTasks: number;
     rejectedTasks: number;
   };
+  detailedData?: {
+    approvedTasks: DetailedTask[];
+    rejectedTasks: DetailedTask[];
+  };
 }
 
-export function PieDonutTaskChart({ data }: TaskChartProps) {
+export function PieDonutTaskChart({ data, detailedData }: TaskChartProps) {
+  const [modalOpen, setModalOpen] = useState(false);
+  const [modalTasks, setModalTasks] = useState<DetailedTask[]>([]);
+  const [modalTitle, setModalTitle] = useState("");
+
+  const handleSegmentClick = (segmentType: string) => {
+    if (!detailedData) return;
+
+    // Always show ALL tasks (approved + rejected merged) regardless of which segment is clicked
+    const allTasks = [
+      ...detailedData.approvedTasks,
+      ...detailedData.rejectedTasks,
+    ];
+    setModalTasks(allTasks);
+
+    if (segmentType === "approved") {
+      setModalTitle("All Tasks (Clicked: Approved)");
+    } else if (segmentType === "rejected") {
+      setModalTitle("All Tasks (Clicked: Rejected)");
+    }
+    setModalOpen(true);
+  };
+
   // Dynamically map data to chart format
   const chartData = [
     {
@@ -39,11 +69,21 @@ export function PieDonutTaskChart({ data }: TaskChartProps) {
   };
 
   return (
-    <PieDonutChart
-      title="Tasks to QA"
-      totalLabel="Total QA Tasks"
-      data={chartData}
-      config={chartConfig}
-    />
+    <>
+      <PieDonutChart
+        title="Tasks to QA"
+        totalLabel="Total QA Tasks"
+        data={chartData}
+        config={chartConfig}
+        onSegmentClick={detailedData ? handleSegmentClick : undefined}
+      />
+
+      <TaskDetailsModal
+        isOpen={modalOpen}
+        onClose={() => setModalOpen(false)}
+        tasks={modalTasks}
+        title={modalTitle}
+      />
+    </>
   );
 }

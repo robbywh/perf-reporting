@@ -1,3 +1,5 @@
+import type { QATasksBreakdown } from "@/services/tasks";
+
 export interface SprintData {
   sprintId: string;
   sprintName: string;
@@ -65,6 +67,7 @@ export interface DashboardData {
   sprintData: SprintTrend[];
   taskCategoryData: TaskCategory[];
   taskQAData: TaskQAData;
+  detailedTaskQAData: QATasksBreakdown;
   leavesAndHolidays: SprintLeaveData[];
   engineers: Engineer[];
   roleId: string;

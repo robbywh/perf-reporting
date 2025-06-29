@@ -32,6 +32,7 @@ import { getCurrentSprintId } from "@/services/sprints/getCurrentSprintId";
 import {
   findAverageSPAndMergedCountBySprintIds,
   findTotalTaskToQACounts,
+  findDetailedTaskToQACounts,
 } from "@/services/tasks";
 import {
   findEngineerById,
@@ -52,6 +53,7 @@ async function fetchPageData(
   const [
     statsData,
     taskData,
+    detailedTaskData,
     averagesData,
     sprintsForCodingHours,
     sprintsWithLeaves,
@@ -61,6 +63,7 @@ async function fetchPageData(
   ] = await Promise.all([
     findAverageSPAndMergedCountBySprintIds(sprintIds, engineerId),
     findTotalTaskToQACounts(sprintIds, engineerId),
+    findDetailedTaskToQACounts(sprintIds, engineerId),
     findAveragesByEngineerAndSprintIds(sprintIds, engineerId),
     findSprintsBySprintIds(sprintIds, engineerId),
     findSprintsWithLeavesAndHolidays(sprintIds),
@@ -82,6 +85,7 @@ async function fetchPageData(
   return {
     statsData,
     taskData,
+    detailedTaskData,
     averagesData,
     sprintsForCodingHours,
     sprintsWithLeaves,
@@ -111,6 +115,7 @@ export default async function EngineerPage({
   const {
     statsData,
     taskData,
+    detailedTaskData,
     averagesData,
     sprintsForCodingHours,
     sprintsWithLeaves,
@@ -153,7 +158,10 @@ export default async function EngineerPage({
           </div>
           <div className="min-h-[400px] flex-[4]">
             <Suspense fallback={<PieDonutChartSkeleton title="Tasks to QA" />}>
-              <DynamicPieDonutTaskChart data={taskData} />
+              <DynamicPieDonutTaskChart
+                data={taskData}
+                detailedData={detailedTaskData}
+              />
             </Suspense>
           </div>
         </div>

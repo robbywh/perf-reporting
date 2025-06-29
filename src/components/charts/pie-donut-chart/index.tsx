@@ -29,6 +29,7 @@ interface PieDonutChartProps {
   totalLabel: string;
   config: ChartConfig;
   data: ChartData[];
+  onSegmentClick?: (segmentType: string) => void;
 }
 
 export function PieDonutChart({
@@ -36,6 +37,7 @@ export function PieDonutChart({
   totalLabel,
   config,
   data,
+  onSegmentClick,
 }: PieDonutChartProps) {
   // Calculate using the formula: Tasks to QA = approvedTasks + rejectedTasks
   const rejected = data.find((item) => item.status === "rejected")?.value || 0;
@@ -77,6 +79,12 @@ export function PieDonutChart({
               nameKey="status"
               innerRadius={60}
               strokeWidth={5}
+              onClick={
+                onSegmentClick
+                  ? (entry) => onSegmentClick(entry.status)
+                  : undefined
+              }
+              style={onSegmentClick ? { cursor: "pointer" } : undefined}
             >
               <Label
                 content={({ viewBox }) => {

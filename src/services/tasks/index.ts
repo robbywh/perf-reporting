@@ -48,6 +48,43 @@ type SprintEngineerData = {
   mergedCount: number | null;
 };
 
+// Type for detailed task information
+export type DetailedTask = {
+  id: string;
+  name: string;
+  status: {
+    name: string;
+  } | null;
+  assignees: Array<{
+    engineer: {
+      id: number;
+      name: string;
+    };
+  }>;
+  parentTaskAssignees: Array<{
+    engineer: {
+      id: number;
+      name: string;
+    };
+  }>;
+  parentTask: {
+    id: string;
+    name: string;
+  } | null;
+  reviewers: Array<{
+    reviewer: {
+      id: number;
+      name: string;
+    };
+  }>;
+};
+
+// Type for QA tasks breakdown
+export type QATasksBreakdown = {
+  approvedTasks: DetailedTask[];
+  rejectedTasks: DetailedTask[];
+};
+
 export async function upsertTask(task: Task) {
   try {
     if (!task.statusName) {
@@ -359,4 +396,158 @@ export async function deleteTaskFromSprint(taskId: string, sprintId: string) {
     );
     throw new Error("Failed to delete task from sprint");
   }
+}
+
+export async function findDetailedTaskToQACounts(
+  sprintIds: string[],
+  engineerId?: number
+): Promise<QATasksBreakdown> {
+  const tasks = await prisma.task.findMany({
+    where: {
+      sprintId: { in: sprintIds },
+      statusId: { in: APPROVED_STATUS_IDS },
+      OR: [
+        { name: { startsWith: "[QA]", mode: "insensitive" } },
+        { name: { startsWith: "QA", mode: "insensitive" } },
+      ],
+      NOT: [
+        { name: { contains: "[Scenario]", mode: "insensitive" } },
+        { name: { contains: "[support]", mode: "insensitive" } },
+      ],
+    },
+    select: {
+      id: true,
+      name: true,
+      parentTaskId: true,
+      status: {
+        select: {
+          name: true,
+        },
+      },
+      assignees: {
+        select: {
+          engineer: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+        },
+      },
+      reviewers: {
+        select: {
+          reviewer: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+        },
+      },
+    },
+    cacheStrategy: {
+      swr: 5 * 60,
+      ttl: 8 * 60 * 60,
+      tags: ["findDetailedTaskToQACounts"],
+    },
+  });
+
+  // Fetch parent tasks with their assignees
+  const parentTaskIds = tasks
+    .map((task) => task.parentTaskId)
+    .filter((id): id is string => id !== null);
+
+  const parentTasks = parentTaskIds.length
+    ? await prisma.task.findMany({
+        where: {
+          id: { in: parentTaskIds },
+        },
+        select: {
+          id: true,
+          name: true,
+          assignees: {
+            select: {
+              engineerId: true,
+              engineer: {
+                select: {
+                  id: true,
+                  name: true,
+                },
+              },
+            },
+          },
+        },
+      })
+    : [];
+
+  // Create a map of parent task ID to assignees
+  const parentTaskAssigneesMap = new Map<
+    string,
+    Array<{ engineer: { id: number; name: string } }>
+  >(
+    parentTasks.map((task) => [
+      task.id,
+      task.assignees.map((assignee) => ({
+        engineer: assignee.engineer,
+      })),
+    ])
+  );
+
+  // Create a map of parent task ID to task info
+  const parentTaskMap = new Map<string, { id: string; name: string }>(
+    parentTasks.map((task) => [task.id, { id: task.id, name: task.name }])
+  );
+
+  // If engineerId is provided, filter tasks by engineer assignment
+  let filteredTasks = tasks;
+
+  if (engineerId) {
+    const parentTaskEngineerMap = new Map<string, number[]>(
+      parentTasks.map((task) => [
+        task.id,
+        task.assignees.map((a) => a.engineerId),
+      ])
+    );
+
+    filteredTasks = tasks.filter(
+      (task) =>
+        // Task has direct engineer assignment
+        task.assignees.some(
+          (assignee) => assignee.engineer.id === engineerId
+        ) ||
+        // Parent task has engineer assigned
+        (task.parentTaskId &&
+          parentTaskEngineerMap.get(task.parentTaskId)?.includes(engineerId))
+    );
+  }
+
+  // Map tasks to include parent task assignees
+  const mapTaskWithParentAssignees = (
+    task: (typeof tasks)[0]
+  ): DetailedTask => ({
+    id: task.id,
+    name: task.name,
+    status: task.status,
+    assignees: task.assignees,
+    parentTaskAssignees: task.parentTaskId
+      ? parentTaskAssigneesMap.get(task.parentTaskId) || []
+      : [],
+    parentTask: task.parentTaskId
+      ? parentTaskMap.get(task.parentTaskId) || null
+      : null,
+    reviewers: task.reviewers,
+  });
+
+  const approvedTasks = filteredTasks
+    .filter((task) => !task.name.toLowerCase().includes("[rejected]"))
+    .map(mapTaskWithParentAssignees);
+
+  const rejectedTasks = filteredTasks
+    .filter((task) => task.name.toLowerCase().includes("[rejected]"))
+    .map(mapTaskWithParentAssignees);
+
+  return {
+    approvedTasks,
+    rejectedTasks,
+  };
 }
