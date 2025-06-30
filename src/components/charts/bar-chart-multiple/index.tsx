@@ -99,9 +99,9 @@ const CustomTooltip = ({ active, payload, label }: CustomTooltipProps) => {
 
   // Calculate percentages
   const targetPercentage =
-    target > 0 ? ((done / target) * 100).toFixed(1) : "0.0";
+    target > 0 ? ((done / target) * 100).toFixed(2) : "0.0";
   const baselinePercentage =
-    baseline > 0 ? ((done / baseline) * 100).toFixed(1) : "0.0";
+    baseline > 0 ? ((done / baseline) * 100).toFixed(2) : "0.0";
 
   return (
     <div className="rounded-lg border border-gray-200 bg-white p-3 shadow-lg">
@@ -114,7 +114,7 @@ const CustomTooltip = ({ active, payload, label }: CustomTooltipProps) => {
               style={{ backgroundColor: entry.color }}
             />
             <span className="font-medium">{entry.name}:</span>
-            <span>{entry.value.toFixed(1)}</span>
+            <span>{entry.value.toFixed(2)}</span>
           </div>
         ))}
         <div className="mt-2 space-y-1 border-t pt-2">

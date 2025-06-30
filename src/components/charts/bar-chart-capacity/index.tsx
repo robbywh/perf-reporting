@@ -61,7 +61,7 @@ const renderCustomLabel = (props: CustomBarLabelProps, key: string) => {
         fontWeight="bold"
         textAnchor="middle"
       >
-        {typeof value === "number" ? value.toFixed(1) : value}
+        {typeof value === "number" ? value.toFixed(2) : value}
       </text>
       <text
         x={x + width / 2}
@@ -101,15 +101,15 @@ const CustomTooltip = ({ active, payload, label }: TooltipProps) => {
         <p className="mb-2 font-semibold text-gray-800">{label}</p>
         <div className="space-y-1 text-sm">
           <p className="text-orange-600">
-            <span className="font-medium">Reality:</span> {reality.toFixed(1)}{" "}
+            <span className="font-medium">Reality:</span> {reality.toFixed(2)}{" "}
             SP
           </p>
           <p className="text-blue-600">
-            <span className="font-medium">Capacity:</span> {capacity.toFixed(1)}{" "}
+            <span className="font-medium">Capacity:</span> {capacity.toFixed(2)}{" "}
             SP
           </p>
           <p className="font-medium text-gray-700">
-            Reality is {percentage.toFixed(1)}% from {capacity.toFixed(1)} SP
+            Reality is {percentage.toFixed(2)}% from {capacity.toFixed(2)} SP
             capacity
           </p>
         </div>

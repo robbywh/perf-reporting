@@ -140,7 +140,7 @@ const PerformerItem = memo(function PerformerItem({
               </p>
             )}
             <p className="text-xs text-gray-500">
-              {performer.storyPoints.toFixed(1)} / {performer.target.toFixed(1)}{" "}
+              {performer.storyPoints.toFixed(2)} / {performer.target.toFixed(2)}{" "}
               SP
             </p>
           </div>
