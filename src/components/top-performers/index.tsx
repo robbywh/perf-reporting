@@ -47,7 +47,7 @@ export const TopPerformers = memo(function TopPerformers({
 
   // Calculate overall percentage
   const overallPercentage =
-    totalTarget > 0 ? ((totalSP / totalTarget) * 100).toFixed(0) : null;
+    totalTarget > 0 ? ((totalSP / totalTarget) * 100).toFixed(2) : null;
 
   return (
     <Card className="h-full">
@@ -136,7 +136,7 @@ const PerformerItem = memo(function PerformerItem({
           <div className="flex flex-col items-end">
             {performer.target > 0 && (
               <p className="text-sm font-semibold">
-                {performer.completionPercentage.toFixed(0)}%
+                {performer.completionPercentage.toFixed(2)}%
               </p>
             )}
             <p className="text-xs text-gray-500">
