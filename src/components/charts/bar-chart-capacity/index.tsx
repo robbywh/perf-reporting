@@ -152,22 +152,6 @@ export const BarChartCapacity = memo(function BarChartCapacity({
     ).toFixed(2);
   }, [chartData]);
 
-  // Memoize the overall percentage calculation
-  const overallPercentage = useMemo(() => {
-    if (chartData.length === 0) return 0;
-    const totalReality = chartData.reduce(
-      (acc, sprint) => acc + sprint.reality,
-      0
-    );
-    const totalCapacity = chartData.reduce(
-      (acc, sprint) => acc + sprint.capacity,
-      0
-    );
-    return totalCapacity > 0
-      ? Math.round((totalReality / totalCapacity) * 100 * 100) / 100
-      : 0;
-  }, [chartData]);
-
   useEffect(() => {
     setMounted(true);
     return () => setMounted(false);
