@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
-import { Bar, BarChart, CartesianGrid, XAxis } from "recharts";
+import { Bar, BarChart, CartesianGrid, XAxis, Tooltip } from "recharts";
 
 import {
   Card,
@@ -73,6 +73,63 @@ const renderCustomLabel = (props: CustomBarLabelProps, key: string) => {
   );
 };
 
+// Custom tooltip component for showing percentages
+interface CustomTooltipProps {
+  active?: boolean;
+  payload?: Array<{
+    dataKey: string;
+    value: number;
+    color: string;
+    name: string;
+    payload: {
+      done: number;
+      baseline: number;
+      target: number;
+      name: string;
+    };
+  }>;
+  label?: string;
+}
+
+const CustomTooltip = ({ active, payload, label }: CustomTooltipProps) => {
+  if (!active || !payload || payload.length === 0) return null;
+
+  const data = payload[0].payload;
+  const { done, baseline, target } = data;
+
+  // Calculate percentages
+  const targetPercentage =
+    target > 0 ? ((done / target) * 100).toFixed(1) : "0.0";
+  const baselinePercentage =
+    baseline > 0 ? ((done / baseline) * 100).toFixed(1) : "0.0";
+
+  return (
+    <div className="rounded-lg border border-gray-200 bg-white p-3 shadow-lg">
+      <p className="mb-2 font-semibold text-gray-800">{label}</p>
+      <div className="space-y-1 text-sm">
+        {payload.map((entry, index) => (
+          <div key={index} className="flex items-center gap-2">
+            <div
+              className="size-3 rounded-sm"
+              style={{ backgroundColor: entry.color }}
+            />
+            <span className="font-medium">{entry.name}:</span>
+            <span>{entry.value.toFixed(1)}</span>
+          </div>
+        ))}
+        <div className="mt-2 space-y-1 border-t pt-2">
+          <p className="font-medium text-green-600">
+            Achievement vs Target: {targetPercentage}%
+          </p>
+          <p className="font-medium text-orange-600">
+            Achievement vs Baseline: {baselinePercentage}%
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 export function BarChartMultiple({ data }: { data: ChartDataProps }) {
   const [mounted, setMounted] = useState(false);
 
@@ -109,6 +166,7 @@ export function BarChartMultiple({ data }: { data: ChartDataProps }) {
           <BarChart accessibilityLayer data={chartData}>
             <CartesianGrid vertical={false} />
             <XAxis dataKey="name" tickLine tickMargin={10} axisLine />
+            <Tooltip content={<CustomTooltip />} />
             <Bar
               dataKey="done"
               fill="var(--color-done)"
