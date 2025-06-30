@@ -54,7 +54,7 @@ export const TopPerformers = memo(function TopPerformers({
       <CardHeader>
         <CardTitle>Top Performers</CardTitle>
         <CardDescription>
-          Your team&apos;s story points total {totalSP.toFixed(2)}.
+          Your team&apos;s story points velocity {totalSP.toFixed(2)}.
           {overallPercentage && (
             <> Overall achievement: {overallPercentage}% of target.</>
           )}

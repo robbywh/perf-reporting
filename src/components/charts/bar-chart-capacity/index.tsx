@@ -180,8 +180,7 @@ export const BarChartCapacity = memo(function BarChartCapacity({
       <CardHeader>
         <CardTitle>Capacity VS Reality</CardTitle>
         <CardDescription>
-          Your team&apos;s sprint velocity is {averageVelocity} (
-          {overallPercentage}% of capacity)
+          Your team&apos;s sprint velocity is {averageVelocity}
         </CardDescription>
       </CardHeader>
       <CardContent>
