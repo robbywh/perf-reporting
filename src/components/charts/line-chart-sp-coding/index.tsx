@@ -14,25 +14,7 @@ import {
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-
-// ✅ Function to generate unique colors for engineers dynamically
-const generateColor = (index: number) => {
-  const predefinedColors = [
-    "#8884d8", // Blue
-    "#82ca9d", // Green
-    "#ffc658", // Yellow
-    "#ff7300", // Orange
-    "#888888", // Gray
-    "#8a2be2", // Purple
-  ];
-
-  // If more engineers than predefined colors, generate a unique color
-  if (index < predefinedColors.length) return predefinedColors[index];
-
-  // Generate color dynamically based on index
-  const hue = (index * 137) % 360; // Spread colors evenly across hue spectrum
-  return `hsl(${hue}, 70%, 50%)`;
-};
+import { generateChartColor } from "@/lib/utils/chart-colors";
 
 interface SprintTrend {
   sprintId: string;
@@ -102,7 +84,7 @@ export function LineChartSPCoding({ sprintData }: LineChartSPCodingProps) {
                 <Line
                   key={engineer}
                   dataKey={engineer}
-                  stroke={generateColor(index)}
+                  stroke={generateChartColor(index)}
                   strokeWidth={2}
                   dot={{ r: 4 }}
                 />
