@@ -368,6 +368,7 @@ export async function findAverageSPAndMergedCountBySprintIds(
     product_review: "#F59E0B", // Amber
     product_approval: "#10B981", // Emerald
     ready_for_qa: "#8B5CF6", // Purple
+    ready_to_qa: "#8B5CF6", // Purple
     qa_review: "#EC4899", // Pink
     rejected: "#DC2626", // Red
     product_approved: "#059669", // Green
