@@ -1,8 +1,9 @@
 "use client";
 
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, X } from "lucide-react";
 import { useEffect, useState } from "react";
 
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -51,6 +52,9 @@ export function StatsTaskDetailsModal({
   const [filteredTasks, setFilteredTasks] = useState<TaskDetail[]>([]);
   const [totalTasks, setTotalTasks] = useState(0);
   const [totalStoryPoints, setTotalStoryPoints] = useState(0);
+  const [activeStatusFilter, setActiveStatusFilter] = useState<string | null>(
+    null
+  );
   const itemsPerPage = 10;
 
   // Filter tasks and calculate statistics
@@ -62,35 +66,57 @@ export function StatsTaskDetailsModal({
         task.parentTaskId !== null &&
         task.parentTaskId !== ""
     );
-    setFilteredTasks(filtered);
+
+    // Apply status filter if active
+    const statusFiltered = activeStatusFilter
+      ? filtered.filter((task) => task.statusName === activeStatusFilter)
+      : filtered;
+
+    setFilteredTasks(statusFiltered);
 
     // Calculate summary statistics based on filtered tasks
-    setTotalTasks(filtered.length);
+    setTotalTasks(statusFiltered.length);
     setTotalStoryPoints(
-      filtered.reduce((sum, task) => sum + task.storyPoint, 0)
+      statusFiltered.reduce((sum, task) => sum + task.storyPoint, 0)
     );
-  }, [tasks]);
+  }, [tasks, activeStatusFilter]);
 
   // Calculate average story points per sprint using the provided sprint count
   const averageStoryPointPerSprint = totalStoryPoints / sprintCount;
 
   // Count tasks by status and collect status colors
-  const [statusCounts, setStatusCounts] = useState<Record<string, number>>({});
   const [statusColors, setStatusColors] = useState<Record<string, string>>({});
+  const [allTasksStatusCounts, setAllTasksStatusCounts] = useState<
+    Record<string, number>
+  >({});
 
-  // Update status counts when filtered tasks change
+  // Get counts for all tasks regardless of current filter
   useEffect(() => {
-    const counts: Record<string, number> = {};
+    const allCounts: Record<string, number> = {};
     const colors: Record<string, string> = {};
 
-    filteredTasks.forEach((task) => {
+    // Process all valid tasks (with parentTaskId)
+    const validTasks = tasks.filter(
+      (task) =>
+        task.parentTaskId !== undefined &&
+        task.parentTaskId !== null &&
+        task.parentTaskId !== ""
+    );
+
+    validTasks.forEach((task) => {
       const status = task.statusName;
-      counts[status] = (counts[status] || 0) + 1;
+      allCounts[status] = (allCounts[status] || 0) + 1;
       colors[status] = task.statusColor || "#9CA3AF";
     });
 
-    setStatusCounts(counts);
+    setAllTasksStatusCounts(allCounts);
     setStatusColors(colors);
+  }, [tasks]);
+
+  // Update status counts when filtered tasks change
+  useEffect(() => {
+    // Status counts are already tracked in allTasksStatusCounts
+    // We don't need to update separate status counts here
   }, [filteredTasks]);
 
   // Update pagination when filtered tasks or page changes
@@ -118,12 +144,32 @@ export function StatsTaskDetailsModal({
     }
   };
 
-  // Reset page when modal is opened
+  // Reset page and filter when modal is opened
   useEffect(() => {
     if (open) {
       setPage(1);
+      setActiveStatusFilter(null);
     }
   }, [open]);
+
+  // Handle status filter click
+  const handleStatusFilter = (status: string) => {
+    if (activeStatusFilter === status) {
+      // If clicking the active filter, clear it
+      setActiveStatusFilter(null);
+    } else {
+      // Set new filter
+      setActiveStatusFilter(status);
+      // Reset to first page
+      setPage(1);
+    }
+  };
+
+  // Clear active filter
+  const clearFilter = () => {
+    setActiveStatusFilter(null);
+    setPage(1);
+  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -153,15 +199,31 @@ export function StatsTaskDetailsModal({
           </div>
 
           <div className="mt-3 rounded-md bg-white p-2 shadow-sm">
-            <p className="text-xs text-gray-500">Status Breakdown</p>
+            <div className="flex items-center justify-between">
+              <p className="text-xs text-gray-500">
+                Status Breakdown (click to filter)
+              </p>
+              {activeStatusFilter && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={clearFilter}
+                  className="h-6 px-2 py-1 text-xs"
+                >
+                  Clear filter <X className="ml-1 size-3" />
+                </Button>
+              )}
+            </div>
             <div className="mt-1 flex max-h-[80px] flex-wrap gap-1 overflow-y-auto">
-              {Object.entries(statusCounts).map(([status, count]) => (
+              {Object.entries(allTasksStatusCounts).map(([status, count]) => (
                 <span
                   key={status}
-                  className="my-1 inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium text-white"
+                  className={`my-1 inline-flex cursor-pointer items-center rounded-full px-2 py-0.5 text-xs font-medium text-white transition-all ${activeStatusFilter === status ? "ring-2 ring-offset-1" : "hover:opacity-90"}`}
                   style={{
                     backgroundColor: statusColors[status] || "#9CA3AF",
                   }}
+                  onClick={() => handleStatusFilter(status)}
+                  title={`Filter by ${status}`}
                 >
                   <span className="font-bold">{count}</span>
                   <span className="ml-1">{status}</span>
@@ -169,6 +231,24 @@ export function StatsTaskDetailsModal({
               ))}
             </div>
           </div>
+
+          {activeStatusFilter && (
+            <div className="mt-2 flex items-center">
+              <Badge
+                className="flex items-center gap-1"
+                style={{
+                  backgroundColor:
+                    statusColors[activeStatusFilter] || "#9CA3AF",
+                }}
+              >
+                Filtering by: {activeStatusFilter}
+                <X
+                  className="ml-1 size-3 cursor-pointer"
+                  onClick={clearFilter}
+                />
+              </Badge>
+            </div>
+          )}
         </div>
 
         <div className="max-h-[300px] overflow-auto">
@@ -186,7 +266,9 @@ export function StatsTaskDetailsModal({
               {paginatedTasks.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={3} className="text-center">
-                    No tasks found
+                    {activeStatusFilter
+                      ? `No tasks found with status "${activeStatusFilter}"`
+                      : "No tasks found"}
                   </TableCell>
                 </TableRow>
               ) : (
