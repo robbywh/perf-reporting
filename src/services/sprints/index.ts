@@ -36,7 +36,7 @@ export async function findAllSprints() {
       endDate: true,
     },
     orderBy: { startDate: "desc" },
-    take: 12,
+    take: 14,
     cacheStrategy: {
       swr: 5 * 60,
       ttl: 8 * 60 * 60,
