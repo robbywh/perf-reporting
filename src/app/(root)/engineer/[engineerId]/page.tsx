@@ -167,7 +167,22 @@ async function AsyncStatsCards({
     sprintIds,
     engineerId
   );
-  return <DynamicStatsCards data={statsData} />;
+
+  // Map taskDetails to the expected TaskDetailsGroup structure
+  const mappedStatsData = {
+    ...statsData,
+    taskDetails: {
+      ongoingDev: statsData.taskDetails?.ongoingDev ?? [],
+      ongoingSupport: statsData.taskDetails?.ongoingSupport ?? [],
+      nonDevelopment: statsData.taskDetails?.nonDevelopment ?? [],
+      supportApproved: statsData.taskDetails?.supportApproved ?? [],
+      devApproved: statsData.taskDetails?.devApproved ?? [],
+    },
+  };
+
+  return (
+    <DynamicStatsCards data={mappedStatsData} sprintCount={sprintIds.length} />
+  );
 }
 
 async function AsyncBarChart({

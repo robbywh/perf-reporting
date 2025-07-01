@@ -296,17 +296,32 @@ export async function findAverageSPAndMergedCountBySprintIds(
         assignees: { some: { engineerId } },
       },
       select: {
+        id: true,
+        name: true,
         storyPoint: true,
         statusId: true,
         sprintId: true,
         taskTags: { select: { tag: { select: { id: true } } } },
+        status: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
       },
       cacheStrategy: {
         swr: 2 * 60, // 2 minutes
         ttl: 10 * 60, // 10 minutes
         tags: [`tasks_eng_${engineerId}`, `sprints_${sprintKey}`],
       },
-    })) as TaskWithTags[],
+    })) as (TaskWithTags & {
+      id: string;
+      name: string;
+      status: {
+        id: string;
+        name: string;
+      };
+    })[],
     (await prisma.sprintEngineer.findMany({
       where: { sprintId: { in: sprintIds }, engineerId },
       select: { mergedCount: true },
@@ -327,13 +342,47 @@ export async function findAverageSPAndMergedCountBySprintIds(
     devApproved: 0,
   };
 
-  tasks.forEach(({ storyPoint, statusId, taskTags }: TaskWithTags) => {
-    const sp = Number(storyPoint) || 0;
-    const tags = taskTags.map(({ tag }: { tag: { id: string } }) => tag.id);
+  // Store tasks by category for modal display
+  interface TaskDetail {
+    id: string;
+    name: string;
+    storyPoint: number;
+    statusId: string;
+    statusName: string;
+    statusColor: string;
+  }
+
+  const tasksByCategory: Record<string, TaskDetail[]> = {
+    ongoingDev: [],
+    ongoingSupport: [],
+    nonDevelopment: [],
+    supportApproved: [],
+    devApproved: [],
+  };
+
+  // Define status colors based on categories
+  const statusColors: Record<string, string> = {
+    to_do: "#6B7280", // Gray
+    in_progress: "#3B82F6", // Blue
+    tech_review: "#8B5CF6", // Purple
+    product_review: "#F59E0B", // Amber
+    product_approval: "#10B981", // Emerald
+    ready_for_qa: "#8B5CF6", // Purple
+    qa_review: "#EC4899", // Pink
+    rejected: "#DC2626", // Red
+    product_approved: "#059669", // Green
+  };
+
+  tasks.forEach((task) => {
+    const sp = Number(task.storyPoint) || 0;
+    const tags = task.taskTags.map(
+      ({ tag }: { tag: { id: string } }) => tag.id
+    );
     const isSupport = tags.includes("support");
     const isNonDev = tags.includes("nodev");
-    const isApproved = APPROVED_STATUS_IDS.includes(statusId || "");
+    const isApproved = APPROVED_STATUS_IDS.includes(task.statusId || "");
 
+    // Determine the task category
     const category = isApproved
       ? isSupport
         ? "supportApproved"
@@ -343,10 +392,28 @@ export async function findAverageSPAndMergedCountBySprintIds(
       : isSupport
         ? "ongoingSupport"
         : isNonDev
-          ? "ongoingNonDev"
+          ? "nonDevelopment" // Changed from ongoingNonDev to match the categorySums keys
           : "ongoingDev";
 
-    categorySums[category] += sp;
+    // Sum up story points by category
+    if (category in categorySums) {
+      categorySums[category] += sp;
+    }
+
+    // Get status color based on statusId
+    const statusColor = statusColors[task.statusId || ""] || "#9CA3AF"; // Default gray
+
+    // Store task details for the modal
+    if (category in tasksByCategory) {
+      tasksByCategory[category].push({
+        id: task.id,
+        name: task.name,
+        storyPoint: sp,
+        statusId: task.statusId || "",
+        statusName: task.status?.name || "Unknown",
+        statusColor,
+      });
+    }
   });
 
   // Compute averages by dividing by sprint count
@@ -368,6 +435,7 @@ export async function findAverageSPAndMergedCountBySprintIds(
     averageSupportApproved: computeAverage(categorySums.supportApproved),
     averageDevApproved: computeAverage(categorySums.devApproved),
     averageMergedCount,
+    taskDetails: tasksByCategory,
   };
 }
 
