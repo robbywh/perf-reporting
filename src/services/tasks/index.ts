@@ -295,6 +295,7 @@ export async function findAverageSPAndMergedCountBySprintIds(
       where: {
         sprintId: { in: sprintIds },
         assignees: { some: { engineerId } },
+        parentTaskId: { not: null },
       },
       select: {
         id: true,
