@@ -392,7 +392,7 @@ export async function findAverageSPAndMergedCountBySprintIds(
       : isSupport
         ? "ongoingSupport"
         : isNonDev
-          ? "nonDevelopment" // Changed from ongoingNonDev to match the categorySums keys
+          ? "ongoingNonDev"
           : "ongoingDev";
 
     // Sum up story points by category
