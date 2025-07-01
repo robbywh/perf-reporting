@@ -39,6 +39,7 @@ type ParentTask = {
 type TaskWithTags = {
   storyPoint: Decimal | null;
   statusId: string | null;
+  parentTaskId: string | null;
   taskTags: { tag: { id: string } }[];
   sprintId: string;
 };
@@ -298,6 +299,7 @@ export async function findAverageSPAndMergedCountBySprintIds(
       select: {
         id: true,
         name: true,
+        parentTaskId: true,
         storyPoint: true,
         statusId: true,
         sprintId: true,
@@ -350,6 +352,7 @@ export async function findAverageSPAndMergedCountBySprintIds(
     statusId: string;
     statusName: string;
     statusColor: string;
+    parentTaskId?: string;
   }
 
   const tasksByCategory: Record<string, TaskDetail[]> = {
@@ -396,7 +399,7 @@ export async function findAverageSPAndMergedCountBySprintIds(
           ? "ongoingNonDev"
           : "ongoingDev";
 
-    // Sum up story points by category
+    // Sum up story points by category (include all tasks in sum, even without parentTaskId)
     if (category in categorySums) {
       categorySums[category] += sp;
     }
@@ -404,8 +407,8 @@ export async function findAverageSPAndMergedCountBySprintIds(
     // Get status color based on statusId
     const statusColor = statusColors[task.statusId || ""] || "#9CA3AF"; // Default gray
 
-    // Store task details for the modal
-    if (category in tasksByCategory) {
+    // Store task details for the modal, but only if it has a parentTaskId
+    if (category in tasksByCategory && task.parentTaskId) {
       tasksByCategory[category].push({
         id: task.id,
         name: task.name,
@@ -413,6 +416,7 @@ export async function findAverageSPAndMergedCountBySprintIds(
         statusId: task.statusId || "",
         statusName: task.status?.name || "Unknown",
         statusColor,
+        parentTaskId: task.parentTaskId,
       });
     }
   });

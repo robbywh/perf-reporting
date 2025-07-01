@@ -27,6 +27,7 @@ export interface TaskDetail {
   statusId: string;
   statusName: string;
   statusColor: string;
+  parentTaskId?: string; // Optional field for parent task ID
 }
 
 interface StatsTaskDetailsModalProps {
@@ -47,39 +48,63 @@ export function StatsTaskDetailsModal({
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [paginatedTasks, setPaginatedTasks] = useState<TaskDetail[]>([]);
+  const [filteredTasks, setFilteredTasks] = useState<TaskDetail[]>([]);
+  const [totalTasks, setTotalTasks] = useState(0);
+  const [totalStoryPoints, setTotalStoryPoints] = useState(0);
   const itemsPerPage = 10;
 
-  // Calculate summary statistics
-  const totalTasks = tasks.length;
-  const totalStoryPoints = tasks.reduce(
-    (sum, task) => sum + task.storyPoint,
-    0
-  );
+  // Filter tasks and calculate statistics
+  useEffect(() => {
+    // Only show tasks that have a parent task ID (subtasks)
+    const filtered = tasks.filter(
+      (task) =>
+        task.parentTaskId !== undefined &&
+        task.parentTaskId !== null &&
+        task.parentTaskId !== ""
+    );
+    setFilteredTasks(filtered);
+
+    // Calculate summary statistics based on filtered tasks
+    setTotalTasks(filtered.length);
+    setTotalStoryPoints(
+      filtered.reduce((sum, task) => sum + task.storyPoint, 0)
+    );
+  }, [tasks]);
 
   // Calculate average story points per sprint using the provided sprint count
   const averageStoryPointPerSprint = totalStoryPoints / sprintCount;
 
   // Count tasks by status and collect status colors
-  const statusCounts: Record<string, number> = {};
-  const statusColors: Record<string, string> = {};
+  const [statusCounts, setStatusCounts] = useState<Record<string, number>>({});
+  const [statusColors, setStatusColors] = useState<Record<string, string>>({});
 
-  tasks.forEach((task) => {
-    const status = task.statusName;
-    statusCounts[status] = (statusCounts[status] || 0) + 1;
-    statusColors[status] = task.statusColor || "#9CA3AF";
-  });
-
+  // Update status counts when filtered tasks change
   useEffect(() => {
-    if (tasks.length > 0) {
-      setTotalPages(Math.ceil(tasks.length / itemsPerPage));
+    const counts: Record<string, number> = {};
+    const colors: Record<string, string> = {};
+
+    filteredTasks.forEach((task) => {
+      const status = task.statusName;
+      counts[status] = (counts[status] || 0) + 1;
+      colors[status] = task.statusColor || "#9CA3AF";
+    });
+
+    setStatusCounts(counts);
+    setStatusColors(colors);
+  }, [filteredTasks]);
+
+  // Update pagination when filtered tasks or page changes
+  useEffect(() => {
+    if (filteredTasks.length > 0) {
+      setTotalPages(Math.ceil(filteredTasks.length / itemsPerPage));
       setPaginatedTasks(
-        tasks.slice((page - 1) * itemsPerPage, page * itemsPerPage)
+        filteredTasks.slice((page - 1) * itemsPerPage, page * itemsPerPage)
       );
     } else {
       setTotalPages(1);
       setPaginatedTasks([]);
     }
-  }, [tasks, page]);
+  }, [filteredTasks, page, itemsPerPage]);
 
   const handlePreviousPage = () => {
     if (page > 1) {
@@ -189,11 +214,11 @@ export function StatsTaskDetailsModal({
         </div>
         <DialogFooter className="flex items-center justify-between">
           <div className="text-sm text-gray-500">
-            {tasks.length > 0 && (
+            {filteredTasks.length > 0 && (
               <>
                 Showing {(page - 1) * itemsPerPage + 1} to{" "}
-                {Math.min(page * itemsPerPage, tasks.length)} of {tasks.length}{" "}
-                tasks
+                {Math.min(page * itemsPerPage, filteredTasks.length)} of{" "}
+                {filteredTasks.length} tasks
               </>
             )}
           </div>
