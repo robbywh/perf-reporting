@@ -15,6 +15,11 @@ export async function findMRDetailsBySprintIdsAndEngineerId(
   sprintIds: string[],
   engineerId: number
 ): Promise<MRDetailsResponse> {
+  const sprintKey =
+    sprintIds.length === 1
+      ? sprintIds[0]
+      : sprintIds.sort().join("_").substring(0, 20);
+
   const mrData = await prisma.sprintGitlab.findMany({
     where: {
       sprintId: { in: sprintIds },
@@ -27,6 +32,11 @@ export async function findMRDetailsBySprintIdsAndEngineerId(
           title: true,
         },
       },
+    },
+    cacheStrategy: {
+      swr: 5 * 60, // 5 minutes
+      ttl: 8 * 60 * 60, // 8 hours
+      tags: [`mr_details_eng_${engineerId}`, `sprints_${sprintKey}`],
     },
   });
 
