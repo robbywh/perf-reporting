@@ -4,6 +4,7 @@ import { useState } from "react";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
+import { MRDetailsModal, MRDetail } from "../mr-details-modal";
 import { StatsTaskDetailsModal, TaskDetail } from "../stats-task-details-modal";
 import { Skeleton } from "../ui/skeleton";
 
@@ -23,6 +24,9 @@ interface StatsData {
   averageDevApproved: number;
   averageMergedCount: number;
   taskDetails?: TaskDetailsGroup;
+  mrDetails?: MRDetail[];
+  totalMRSubmitted?: number;
+  averageMRSubmitted?: number;
 }
 
 interface StatsCardsProps {
@@ -34,12 +38,19 @@ export function StatsCards({ data, sprintCount = 1 }: StatsCardsProps) {
   const [modalOpen, setModalOpen] = useState(false);
   const [selectedTasks, setSelectedTasks] = useState<TaskDetail[]>([]);
   const [modalTitle, setModalTitle] = useState("");
+  const [mrModalOpen, setMrModalOpen] = useState(false);
 
   const handleCardClick = (category: keyof TaskDetailsGroup) => {
     if (data.taskDetails && data.taskDetails[category]?.length > 0) {
       setSelectedTasks(data.taskDetails[category]);
       setModalTitle(`${getCategoryTitle(category)} Tasks`);
       setModalOpen(true);
+    }
+  };
+
+  const handleMRClick = () => {
+    if (data.mrDetails && data.mrDetails.length > 0) {
+      setMrModalOpen(true);
     }
   };
 
@@ -95,7 +106,7 @@ export function StatsCards({ data, sprintCount = 1 }: StatsCardsProps) {
       title: "MR Submitted",
       value: `${data.averageMergedCount}`,
       category: "mergedCount",
-      clickable: false,
+      clickable: data.mrDetails && data.mrDetails.length > 0,
     },
   ];
 
@@ -106,10 +117,13 @@ export function StatsCards({ data, sprintCount = 1 }: StatsCardsProps) {
           <Card
             key={index}
             className={`shadow-md ${stat.clickable ? "cursor-pointer hover:bg-gray-50" : ""}`}
-            onClick={() =>
-              stat.clickable &&
-              handleCardClick(stat.category as keyof TaskDetailsGroup)
-            }
+            onClick={() => {
+              if (stat.category === "mergedCount") {
+                handleMRClick();
+              } else if (stat.clickable) {
+                handleCardClick(stat.category as keyof TaskDetailsGroup);
+              }
+            }}
           >
             <CardHeader className="flex items-start justify-between">
               <CardTitle>{stat.title}</CardTitle>
@@ -130,6 +144,14 @@ export function StatsCards({ data, sprintCount = 1 }: StatsCardsProps) {
         tasks={selectedTasks}
         title={modalTitle}
         sprintCount={sprintCount}
+      />
+
+      <MRDetailsModal
+        open={mrModalOpen}
+        onOpenChange={setMrModalOpen}
+        mrDetails={data.mrDetails || []}
+        totalMRSubmitted={data.totalMRSubmitted || 0}
+        averageMRSubmitted={data.averageMRSubmitted || 0}
       />
     </>
   );

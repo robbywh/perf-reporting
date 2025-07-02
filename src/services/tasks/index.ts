@@ -3,6 +3,7 @@ import type { Decimal } from "@prisma/client/runtime/library";
 import { APPROVED_STATUS_IDS } from "@/constants/client";
 
 import { prisma } from "../db";
+import { findMRDetailsBySprintIdsAndEngineerId } from "../gitlab";
 
 interface Task {
   id: string;
@@ -434,6 +435,12 @@ export async function findAverageSPAndMergedCountBySprintIds(
     mergedCounts.reduce((sum: number, v: number) => sum + v, 0)
   );
 
+  // Fetch MR details
+  const mrData = await findMRDetailsBySprintIdsAndEngineerId(
+    sprintIds,
+    engineerId
+  );
+
   return {
     averageOngoingDev: computeAverage(categorySums.ongoingDev),
     averageOngoingSupport: computeAverage(categorySums.ongoingSupport),
@@ -442,6 +449,9 @@ export async function findAverageSPAndMergedCountBySprintIds(
     averageDevApproved: computeAverage(categorySums.devApproved),
     averageMergedCount,
     taskDetails: tasksByCategory,
+    mrDetails: mrData.mrDetails,
+    totalMRSubmitted: mrData.totalMRSubmitted,
+    averageMRSubmitted: mrData.averageMRSubmitted,
   };
 }
 
