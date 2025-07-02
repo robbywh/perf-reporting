@@ -45,11 +45,6 @@ type TaskWithTags = {
   sprintId: string;
 };
 
-// Type for sprint engineer data
-type SprintEngineerData = {
-  mergedCount: number | null;
-};
-
 // Type for detailed task information
 export type DetailedTask = {
   id: string;
@@ -290,8 +285,8 @@ export async function findAverageSPAndMergedCountBySprintIds(
       ? sprintIds[0]
       : sprintIds.sort().join("_").substring(0, 20);
 
-  // Fetch tasks and sprint engineer data in parallel with optimized caching
-  const [tasks, sprintEngineerData] = await Promise.all([
+  // Fetch tasks and GitLab merge request data in parallel with optimized caching
+  const [tasks, gitlabMRData] = await Promise.all([
     (await prisma.task.findMany({
       where: {
         sprintId: { in: sprintIds },
@@ -326,15 +321,15 @@ export async function findAverageSPAndMergedCountBySprintIds(
         name: string;
       };
     })[],
-    (await prisma.sprintEngineer.findMany({
+    await prisma.sprintGitlab.findMany({
       where: { sprintId: { in: sprintIds }, engineerId },
-      select: { mergedCount: true },
+      select: { sprintId: true },
       cacheStrategy: {
         swr: 2 * 60, // 2 minutes
         ttl: 10 * 60, // 10 minutes
-        tags: [`sprint_eng_${engineerId}`, `sprints_${sprintKey}`],
+        tags: [`gitlab_eng_${engineerId}`, `sprints_${sprintKey}`],
       },
-    })) as SprintEngineerData[],
+    }),
   ]);
 
   // Define category mappings for story point sum per sprint
@@ -427,13 +422,9 @@ export async function findAverageSPAndMergedCountBySprintIds(
   const computeAverage = (total: number) =>
     sprintIds.length > 0 ? Number((total / sprintIds.length).toFixed(2)) : 0;
 
-  // Compute merged count average
-  const mergedCounts = sprintEngineerData.map(
-    (se: SprintEngineerData) => se.mergedCount || 0
-  );
-  const averageMergedCount = computeAverage(
-    mergedCounts.reduce((sum: number, v: number) => sum + v, 0)
-  );
+  // Compute merged count average from GitLab data
+  const totalMergedCount = gitlabMRData.length;
+  const averageMergedCount = computeAverage(totalMergedCount);
 
   // Fetch MR details
   const mrData = await findMRDetailsBySprintIdsAndEngineerId(
