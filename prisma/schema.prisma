@@ -55,6 +55,7 @@ model Sprint {
   endDate         DateTime         @map("end_date")
   sprintEngineers SprintEngineer[]
   sprintReviewers SprintReviewer[]
+  sprintGitlab    SprintGitlab[]
   tasks           Task[]
 
   @@map("sprint")
@@ -214,4 +215,22 @@ model SprintReviewer {
 
   @@id([sprintId, reviewerId])
   @@map("sprint_reviewer")
+}
+
+model Gitlab {
+  id           Int            @id
+  title        String         @db.VarChar(255)
+  sprintGitlab SprintGitlab[]
+
+  @@map("gitlab")
+}
+
+model SprintGitlab {
+  gitlabId Int    @map("gitlab_id")
+  sprintId String @map("sprint_id") @db.VarChar(25)
+  gitlab   Gitlab @relation(fields: [gitlabId], references: [id])
+  sprint   Sprint @relation(fields: [sprintId], references: [id])
+
+  @@id([gitlabId, sprintId])
+  @@map("sprint_gitlab")
 }
