@@ -1,5 +1,6 @@
 import { auth } from "@clerk/nextjs/server";
 import { unstable_noStore as noStore } from "next/cache";
+import dynamic from "next/dynamic";
 import { Suspense } from "react";
 
 import {
@@ -11,13 +12,12 @@ import { LineChartSPCodingSkeleton } from "@/components/charts/line-chart-sp-cod
 import { PieChartSkeleton } from "@/components/charts/pie-chart";
 import { PieDonutChartSkeleton } from "@/components/charts/pie-donut-chart";
 import {
-  DynamicBarChartCapacity,
-  DynamicLineChartSPCoding,
-  DynamicPieTaskCategoryChart,
-  DynamicPieDonutTaskChart,
-  DynamicTopPerformers,
-  DynamicLeavePublicHoliday,
-} from "@/components/client-wrappers";
+  LazyBarChartCapacity,
+  LazyLineChartSPCoding,
+  LazyPieTaskCategoryChart,
+  LazyDashboardPieDonutChart,
+} from "@/components/client-charts";
+import { DynamicTopPerformers } from "@/components/client-wrappers";
 import { LeavePublicHolidaySkeleton } from "@/components/leave-public-holiday-form";
 import { TopPerformersSkeleton } from "@/components/top-performers";
 import { authenticateAndRedirect } from "@/lib/utils/auth";
@@ -37,23 +37,50 @@ import {
 import { findRoleIdAndEngineerIdByUserId } from "@/services/users";
 import { ROLE } from "@/types/roles";
 
-// Centralized critical data fetching (auth and role info only)
-async function fetchCriticalData(): Promise<{ roleId: string }> {
+// Dynamic imports for better code splitting and faster initial load
+const DynamicLeavePublicHoliday = dynamic(
+  () =>
+    import("@/components/client-wrappers").then((mod) => ({
+      default: mod.DynamicLeavePublicHoliday,
+    })),
+  { loading: () => <LeavePublicHolidaySkeleton /> }
+);
+
+// Optimize data fetching with preload and parallel execution for dashboard
+async function fetchCriticalData(sprintIds: string[]): Promise<{
+  roleId: string;
+  topPerformersData?: Awaited<ReturnType<typeof findTopPerformersBySprintIds>>;
+}> {
   noStore();
 
-  const authData = await auth();
+  // Parallel fetch critical data
+  const [authData, topPerformersData] = await Promise.all([
+    auth(),
+    // Preload top performers data for faster FCP (most visible above-the-fold content)
+    findTopPerformersBySprintIds(sprintIds).catch(() => undefined),
+  ]);
+
   const { roleId } = await findRoleIdAndEngineerIdByUserId(
     authData.userId || ""
   );
 
   return {
     roleId: roleId || "",
+    topPerformersData,
   };
 }
 
 // Individual async components for progressive loading
-async function AsyncTopPerformers({ sprintIds }: { sprintIds: string[] }) {
-  const topPerformersData = await findTopPerformersBySprintIds(sprintIds);
+async function AsyncTopPerformers({
+  sprintIds,
+  preloadedData,
+}: {
+  sprintIds: string[];
+  preloadedData?: Awaited<ReturnType<typeof findTopPerformersBySprintIds>>;
+}) {
+  // Use preloaded data if available, otherwise fetch
+  const topPerformersData =
+    preloadedData || (await findTopPerformersBySprintIds(sprintIds));
   return (
     <DynamicTopPerformers
       performers={topPerformersData}
@@ -64,12 +91,12 @@ async function AsyncTopPerformers({ sprintIds }: { sprintIds: string[] }) {
 
 async function AsyncBarChartCapacity({ sprintIds }: { sprintIds: string[] }) {
   const sprintsCapacity = await findCapacityVsRealityBySprintIds(sprintIds);
-  return <DynamicBarChartCapacity sprints={sprintsCapacity} />;
+  return <LazyBarChartCapacity sprints={sprintsCapacity} />;
 }
 
 async function AsyncLineChartSPCoding({ sprintIds }: { sprintIds: string[] }) {
   const sprintData = await findEngineerTrendBySprintIds(sprintIds);
-  return <DynamicLineChartSPCoding sprintData={sprintData} />;
+  return <LazyLineChartSPCoding sprintData={sprintData} />;
 }
 
 async function AsyncPieTaskCategoryChart({
@@ -78,7 +105,7 @@ async function AsyncPieTaskCategoryChart({
   sprintIds: string[];
 }) {
   const taskCategoryData = await findCountTasksByCategory(sprintIds);
-  return <DynamicPieTaskCategoryChart taskData={taskCategoryData} />;
+  return <LazyPieTaskCategoryChart taskData={taskCategoryData} />;
 }
 
 async function AsyncPieDonutTaskChart({ sprintIds }: { sprintIds: string[] }) {
@@ -87,7 +114,7 @@ async function AsyncPieDonutTaskChart({ sprintIds }: { sprintIds: string[] }) {
     findDetailedTaskToQACounts(sprintIds),
   ]);
   return (
-    <DynamicPieDonutTaskChart
+    <LazyDashboardPieDonutChart
       data={taskQAData}
       detailedData={detailedTaskQAData}
     />
@@ -136,8 +163,8 @@ export default async function Home({
     sprintIds = currentSprintId ? [currentSprintId] : [];
   }
 
-  // Fetch only critical data (role info) for immediate rendering
-  const { roleId } = await fetchCriticalData();
+  // Fetch critical data with preloading for better performance
+  const { roleId, topPerformersData } = await fetchCriticalData(sprintIds);
 
   return (
     <main>
@@ -149,7 +176,10 @@ export default async function Home({
         </div>
         <div className="min-h-[400px] lg:col-span-1">
           <Suspense fallback={<TopPerformersSkeleton />}>
-            <AsyncTopPerformers sprintIds={sprintIds} />
+            <AsyncTopPerformers
+              sprintIds={sprintIds}
+              preloadedData={topPerformersData}
+            />
           </Suspense>
         </div>
       </div>

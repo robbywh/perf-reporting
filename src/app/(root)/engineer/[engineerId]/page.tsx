@@ -1,5 +1,6 @@
 import { auth } from "@clerk/nextjs/server";
 import { unstable_noStore as noStore } from "next/cache";
+import dynamic from "next/dynamic";
 import { Suspense } from "react";
 
 import { updateCodingHoursAction } from "@/actions/coding-hours";
@@ -8,13 +9,8 @@ import {
   deleteLeaveOrHolidayAction,
 } from "@/actions/leave-holiday";
 import { BackButton } from "@/components/back-button";
-import {
-  DynamicBarChart,
-  DynamicPieDonutTaskChart,
-  DynamicStatsCards,
-  DynamicCodingHoursForm,
-  DynamicLeavePublicHoliday,
-} from "@/components/client-wrappers";
+import { LazyBarChart, LazyPieDonutChart } from "@/components/client-charts";
+import { DynamicStatsCards } from "@/components/client-wrappers";
 import {
   BarChartMultipleSkeleton,
   PieDonutChartSkeleton,
@@ -40,19 +36,44 @@ import {
 } from "@/services/users";
 import { PageProps } from "@/types/engineer-page";
 
-// Centralize data fetching to reduce waterfall requests
+// Dynamic imports for better code splitting and faster initial load
+const DynamicCodingHoursForm = dynamic(
+  () =>
+    import("@/components/client-wrappers").then((mod) => ({
+      default: mod.DynamicCodingHoursForm,
+    })),
+  { loading: () => <CodingHoursFormSkeleton /> }
+);
+
+const DynamicLeavePublicHoliday = dynamic(
+  () =>
+    import("@/components/client-wrappers").then((mod) => ({
+      default: mod.DynamicLeavePublicHoliday,
+    })),
+  { loading: () => <LeavePublicHolidaySkeleton /> }
+);
+
+// Optimize data fetching with preload and parallel execution
 async function fetchCriticalData(
   sprintIds: string[],
   engineerId: number
 ): Promise<{
   engineer: Awaited<ReturnType<typeof findEngineerById>>;
   roleId: string;
+  statsData?: Awaited<
+    ReturnType<typeof findAverageSPAndMergedCountBySprintIds>
+  >;
 }> {
   noStore();
 
-  const [{ userId }, engineer] = await Promise.all([
+  // Parallel fetch critical data
+  const [{ userId }, engineer, statsData] = await Promise.all([
     auth(),
     findEngineerById(engineerId),
+    // Preload stats data for faster FCP
+    findAverageSPAndMergedCountBySprintIds(sprintIds, engineerId).catch(
+      () => undefined
+    ),
   ]);
 
   if (!userId) {
@@ -68,6 +89,7 @@ async function fetchCriticalData(
   return {
     engineer,
     roleId,
+    statsData,
   };
 }
 
@@ -88,12 +110,15 @@ export default async function EngineerPage({
   const engineerId = parseInt(parameters.engineerId || "0");
 
   // Fetch critical data first (user info and engineer details)
-  const { engineer, roleId } = await fetchCriticalData(sprintIds, engineerId);
+  const { engineer, roleId, statsData } = await fetchCriticalData(
+    sprintIds,
+    engineerId
+  );
 
   const isEngineeringManager = roleId === "em";
   const isSoftwareEngineer = roleId === "se";
 
-  // Add loading boundary at the page level
+  // Render header immediately for better FCP
   return (
     <div>
       {!isSoftwareEngineer && (
@@ -107,14 +132,18 @@ export default async function EngineerPage({
         </div>
       )}
 
-      {/* Stats Cards - Load independently */}
+      {/* Critical above-the-fold content - Stats Cards with priority */}
       <div className="mb-6 min-h-[120px]">
         <Suspense fallback={<StatsCardsSkeleton />}>
-          <AsyncStatsCards sprintIds={sprintIds} engineerId={engineerId} />
+          <AsyncStatsCards
+            sprintIds={sprintIds}
+            engineerId={engineerId}
+            preloadedData={statsData}
+          />
         </Suspense>
       </div>
 
-      {/* Charts Section - Load independently */}
+      {/* Charts Section - Lazy load with intersection observer */}
       <div className="flex min-h-[400px] flex-row items-stretch gap-4">
         <div className="min-h-[400px] flex-[6]">
           <Suspense fallback={<BarChartMultipleSkeleton />}>
@@ -128,7 +157,7 @@ export default async function EngineerPage({
         </div>
       </div>
 
-      {/* Coding Hours Form - Load independently */}
+      {/* Below-the-fold content - Lower priority */}
       <div className="mb-6 flex min-h-[200px]">
         <Suspense fallback={<CodingHoursFormSkeleton />}>
           <AsyncCodingHoursForm
@@ -139,7 +168,6 @@ export default async function EngineerPage({
         </Suspense>
       </div>
 
-      {/* Leave & Public Holiday Form - Load independently */}
       {isSoftwareEngineer && (
         <div className="min-h-[300px]">
           <Suspense fallback={<LeavePublicHolidaySkeleton />}>
@@ -159,14 +187,18 @@ export default async function EngineerPage({
 async function AsyncStatsCards({
   sprintIds,
   engineerId,
+  preloadedData,
 }: {
   sprintIds: string[];
   engineerId: number;
+  preloadedData?: Awaited<
+    ReturnType<typeof findAverageSPAndMergedCountBySprintIds>
+  >;
 }) {
-  const statsData = await findAverageSPAndMergedCountBySprintIds(
-    sprintIds,
-    engineerId
-  );
+  // Use preloaded data if available, otherwise fetch
+  const statsData =
+    preloadedData ||
+    (await findAverageSPAndMergedCountBySprintIds(sprintIds, engineerId));
 
   // Map taskDetails to the expected TaskDetailsGroup structure
   const mappedStatsData = {
@@ -196,7 +228,7 @@ async function AsyncBarChart({
     sprintIds,
     engineerId
   );
-  return <DynamicBarChart data={averagesData} />;
+  return <LazyBarChart data={averagesData} />;
 }
 
 async function AsyncPieDonutChart({
@@ -210,9 +242,7 @@ async function AsyncPieDonutChart({
     findTotalTaskToQACounts(sprintIds, engineerId),
     findDetailedTaskToQACounts(sprintIds, engineerId),
   ]);
-  return (
-    <DynamicPieDonutTaskChart data={taskData} detailedData={detailedTaskData} />
-  );
+  return <LazyPieDonutChart data={taskData} detailedData={detailedTaskData} />;
 }
 
 async function AsyncCodingHoursForm({
