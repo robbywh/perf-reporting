@@ -125,6 +125,7 @@ model Engineer {
   jobLevel        JobLevel         @relation(fields: [jobLevelId], references: [id])
   leaves          Leave[]
   sprintEngineers SprintEngineer[]
+  sprintGitlab    SprintGitlab[]
   assignments     TaskAssignee[]
   user            User?
 
@@ -226,11 +227,13 @@ model Gitlab {
 }
 
 model SprintGitlab {
-  gitlabId Int    @map("gitlab_id")
-  sprintId String @map("sprint_id") @db.VarChar(25)
-  gitlab   Gitlab @relation(fields: [gitlabId], references: [id])
-  sprint   Sprint @relation(fields: [sprintId], references: [id])
+  gitlabId   Int      @map("gitlab_id")
+  sprintId   String   @map("sprint_id") @db.VarChar(25)
+  engineerId Int      @map("engineer_id")
+  gitlab     Gitlab   @relation(fields: [gitlabId], references: [id])
+  sprint     Sprint   @relation(fields: [sprintId], references: [id])
+  engineer   Engineer @relation(fields: [engineerId], references: [id])
 
-  @@id([gitlabId, sprintId])
+  @@id([gitlabId, sprintId, engineerId])
   @@map("sprint_gitlab")
 }

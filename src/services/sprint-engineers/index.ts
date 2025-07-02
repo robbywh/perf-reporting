@@ -25,19 +25,7 @@ export async function linkSprintsToEngineers(sprintId: string) {
       sprintEndDate.toISOString()
     );
 
-    // ✅ Count MRs per assignee
-    const mrCountByAssignee = new Map<number, number>();
-    for (const merged of allMergedMRs) {
-      const assigneeId = merged.assignee?.id;
-      if (!assigneeId) continue;
-
-      mrCountByAssignee.set(
-        assigneeId,
-        (mrCountByAssignee.get(assigneeId) || 0) + 1
-      );
-    }
-
-    // ✅ Fetch engineers & job levels
+    // ✅ Fetch engineers & job levels first for optimization
     const engineers = await prisma.engineer.findMany({
       select: {
         id: true,
@@ -58,6 +46,108 @@ export async function linkSprintsToEngineers(sprintId: string) {
         tags: ["allEngineers"],
       },
     });
+
+    // ✅ Create a map for fast engineer lookup by GitLab user ID
+    const engineerByGitlabId = new Map<number, (typeof engineers)[0]>();
+    engineers.forEach((engineer) => {
+      if (engineer.gitlabUserId) {
+        engineerByGitlabId.set(engineer.gitlabUserId, engineer);
+      }
+    });
+
+    // ✅ Upsert GitLab MRs to gitlab table and create sprint_gitlab records
+    const mrCountByAssignee = new Map<number, number>();
+    const sprintGitlabBatch: { gitlabId: number; engineerId: number }[] = [];
+
+    // ✅ First, batch upsert all GitLab MRs
+    for (const merged of allMergedMRs) {
+      await prisma.gitlab.upsert({
+        where: { id: merged.id },
+        update: {
+          title: merged.title,
+        },
+        create: {
+          id: merged.id,
+          title: merged.title,
+        },
+      });
+    }
+
+    // ✅ Process MRs for sprint_gitlab relationships and counting
+    for (const merged of allMergedMRs) {
+      const assigneeId = merged.assignee?.id;
+      if (!assigneeId) continue;
+
+      // ✅ Find the engineer by GitLab user ID using the map
+      const engineer = engineerByGitlabId.get(assigneeId);
+
+      if (engineer) {
+        sprintGitlabBatch.push({
+          gitlabId: merged.id,
+          engineerId: engineer.id,
+        });
+
+        console.log(
+          `✅ GitLab MR queued for linking: MR ${merged.id} -> Sprint ${sprintId}, Engineer ${engineer.id}`
+        );
+      } else {
+        console.log(
+          `⚠️ Engineer not found for GitLab user ID ${assigneeId} for MR ${merged.id}`
+        );
+      }
+
+      mrCountByAssignee.set(
+        assigneeId,
+        (mrCountByAssignee.get(assigneeId) || 0) + 1
+      );
+    }
+
+    // ✅ Batch insert sprint_gitlab records
+    if (sprintGitlabBatch.length > 0) {
+      try {
+        const values = sprintGitlabBatch
+          .map(
+            ({ gitlabId, engineerId }) =>
+              `(${gitlabId}, '${sprintId}', ${engineerId})`
+          )
+          .join(", ");
+
+        await prisma.$executeRawUnsafe(`
+          INSERT INTO sprint_gitlab (gitlab_id, sprint_id, engineer_id)
+          VALUES ${values}
+          ON CONFLICT (gitlab_id, sprint_id, engineer_id) DO NOTHING
+        `);
+
+        console.log(
+          `✅ Batch inserted ${sprintGitlabBatch.length} sprint_gitlab records`
+        );
+      } catch (error: unknown) {
+        const errorMessage =
+          error instanceof Error ? error.message : "Unknown error";
+        console.log(
+          `❌ Error batch inserting sprint_gitlab records: ${errorMessage}`
+        );
+
+        // Fallback to individual inserts
+        for (const { gitlabId, engineerId } of sprintGitlabBatch) {
+          try {
+            await prisma.$executeRaw`
+              INSERT INTO sprint_gitlab (gitlab_id, sprint_id, engineer_id)
+              VALUES (${gitlabId}, ${sprintId}, ${engineerId})
+              ON CONFLICT (gitlab_id, sprint_id, engineer_id) DO NOTHING
+            `;
+          } catch (individualError: unknown) {
+            const individualErrorMessage =
+              individualError instanceof Error
+                ? individualError.message
+                : "Unknown error";
+            console.log(
+              `ℹ️ Sprint GitLab record may already exist: MR ${gitlabId}, Sprint ${sprintId}, Engineer ${engineerId} - ${individualErrorMessage}`
+            );
+          }
+        }
+      }
+    }
 
     // ✅ Process each engineer in parallel using `Promise.all()`
     await Promise.all(
