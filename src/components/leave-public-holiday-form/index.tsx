@@ -393,7 +393,7 @@ export function LeavePublicHoliday({
 
       {/* Swiper for Sprint Data */}
       <Swiper
-        key={`leave-holiday-swiper-${sprintData.length}`}
+        key={`leave-holiday-swiper-${sprintData.map((s) => s.sprintName).join("-")}`}
         modules={[Navigation, Pagination]}
         navigation
         pagination={{ clickable: true }}

@@ -263,7 +263,13 @@ export function CodingHoursForm({
     setMounted(true);
   }, []);
 
-  // Handle saving coding hours data
+  // Update sprints when initialSprints changes
+  useEffect(() => {
+    setSprints(initialSprints);
+    // Reset editing state when sprints change to prevent inconsistency
+    setIsEditing(false);
+  }, [initialSprints]);
+
   const handleSave = async (data: {
     sprintId: string;
     engineerId: number;
@@ -355,7 +361,7 @@ export function CodingHoursForm({
       </CardHeader>
       <div className="relative w-full">
         <Swiper
-          key={`coding-hours-swiper-${sprints.length}`}
+          key={`coding-hours-swiper-${sprints.map((s) => s.id).join("-")}`}
           modules={[Navigation, Pagination]}
           navigation={{
             enabled: true,
