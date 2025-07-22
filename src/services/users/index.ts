@@ -10,8 +10,8 @@ export async function findRoleIdAndEngineerIdByUserId(
       engineerId: true, // Fetch the engineerId if it exists
     },
     cacheStrategy: {
-      swr: 5 * 60,
-      ttl: 8 * 60 * 60,
+      swr: 2 * 60, // 2 minutes
+      ttl: 10 * 60, // 10 minutes
       tags: ["findRoleIdAndEngineerIdByUserId"],
     },
   });
@@ -30,8 +30,8 @@ export async function findEngineerById(engineerId: number) {
       name: true,
     },
     cacheStrategy: {
-      swr: 5 * 60,
-      ttl: 8 * 60 * 60,
+      swr: 2 * 60, // 2 minutes
+      ttl: 10 * 60, // 10 minutes
       tags: ["findEngineerById"],
     },
   });

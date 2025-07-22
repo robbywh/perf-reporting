@@ -149,8 +149,8 @@ export async function findCountTasksByCategory(sprintIds: string[]) {
       },
     },
     cacheStrategy: {
-      swr: 5 * 60,
-      ttl: 8 * 60 * 60,
+      swr: 2 * 60, // 2 minutes
+      ttl: 10 * 60, // 10 minutes
       tags: ["groupedTasks"],
     },
   })) as GroupedTask[];
@@ -169,8 +169,8 @@ export async function findCountTasksByCategory(sprintIds: string[]) {
       name: true,
     },
     cacheStrategy: {
-      swr: 5 * 60,
-      ttl: 8 * 60 * 60,
+      swr: 2 * 60, // 2 minutes
+      ttl: 10 * 60, // 10 minutes
       tags: ["categoryNames"],
     },
   });
@@ -215,8 +215,8 @@ export async function findTotalTaskToQACounts(
       assignees: { select: { engineerId: true } },
     },
     cacheStrategy: {
-      swr: 5 * 60,
-      ttl: 8 * 60 * 60,
+      swr: 2 * 60, // 2 minutes
+      ttl: 10 * 60, // 10 minutes
       tags: ["findTotalTaskToQACounts"],
     },
   })) as TaskWithAssignees[];
@@ -537,8 +537,8 @@ export async function findDetailedTaskToQACounts(
       },
     },
     cacheStrategy: {
-      swr: 5 * 60,
-      ttl: 8 * 60 * 60,
+      swr: 2 * 60, // 2 minutes
+      ttl: 10 * 60, // 10 minutes
       tags: ["findDetailedTaskToQACounts"],
     },
   });

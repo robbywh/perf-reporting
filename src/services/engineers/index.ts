@@ -11,8 +11,8 @@ export async function findAllEngineers() {
         name: "asc",
       },
       cacheStrategy: {
-        swr: 5 * 60,
-        ttl: 8 * 60 * 60,
+        swr: 2 * 60, // 2 minutes
+        ttl: 10 * 60, // 10 minutes
         tags: ["findAllEngineers"],
       },
     });

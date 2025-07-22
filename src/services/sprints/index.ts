@@ -38,8 +38,8 @@ export async function findAllSprints() {
     orderBy: { startDate: "desc" },
     take: 14,
     cacheStrategy: {
-      swr: 5 * 60,
-      ttl: 8 * 60 * 60,
+      swr: 2 * 60, // 2 minutes
+      ttl: 10 * 60, // 10 minutes
       tags: ["findAllSprints"],
     },
   });

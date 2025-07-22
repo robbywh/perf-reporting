@@ -41,8 +41,8 @@ export async function linkSprintsToEngineers(sprintId: string) {
         },
       },
       cacheStrategy: {
-        swr: 5 * 60,
-        ttl: 8 * 60 * 60,
+        swr: 2 * 60, // 2 minutes
+        ttl: 10 * 60, // 10 minutes
         tags: ["allEngineers"],
       },
     });
@@ -245,8 +245,8 @@ export async function findCapacityVsRealityBySprintIds(
     },
     orderBy: { id: "asc" },
     cacheStrategy: {
-      swr: 5 * 60,
-      ttl: 8 * 60 * 60,
+      swr: 2 * 60, // 2 minutes
+      ttl: 10 * 60, // 10 minutes
       tags: ["capacityVsReality"],
     },
   });
@@ -311,8 +311,8 @@ export async function findTopPerformersBySprintIds(sprintIds: string[]) {
       target: true, // Calculate the average target
     },
     cacheStrategy: {
-      swr: 5 * 60,
-      ttl: 8 * 60 * 60,
+      swr: 2 * 60, // 2 minutes
+      ttl: 10 * 60, // 10 minutes
       tags: ["topPerformers"],
     },
   });
@@ -328,8 +328,8 @@ export async function findTopPerformersBySprintIds(sprintIds: string[]) {
       email: true,
     },
     cacheStrategy: {
-      swr: 5 * 60,
-      ttl: 8 * 60 * 60,
+      swr: 2 * 60, // 2 minutes
+      ttl: 10 * 60, // 10 minutes
       tags: ["allPerformers"],
     },
   });
@@ -377,8 +377,8 @@ export async function findEngineerTrendBySprintIds(sprintIds: string[]) {
     },
     orderBy: [{ sprintId: "asc" }, { storyPoints: "desc" }],
     cacheStrategy: {
-      swr: 5 * 60,
-      ttl: 8 * 60 * 60,
+      swr: 2 * 60, // 2 minutes
+      ttl: 10 * 60, // 10 minutes
       tags: ["sprintStoryPoints"],
     },
   });
@@ -442,8 +442,8 @@ export async function findAveragesByEngineerAndSprintIds(
       baselineCh: true,
     },
     cacheStrategy: {
-      swr: 5 * 60,
-      ttl: 8 * 60 * 60,
+      swr: 2 * 60, // 2 minutes
+      ttl: 10 * 60, // 10 minutes
       tags: ["findAveragesByEngineerAndSprintIds"],
     },
   });

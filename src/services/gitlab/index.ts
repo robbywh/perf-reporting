@@ -34,8 +34,8 @@ export async function findMRDetailsBySprintIdsAndEngineerId(
       },
     },
     cacheStrategy: {
-      swr: 5 * 60, // 5 minutes
-      ttl: 8 * 60 * 60, // 8 hours
+      swr: 2 * 60, // 2 minutes
+      ttl: 10 * 60, // 10 minutes
       tags: [`mr_details_eng_${engineerId}`, `sprints_${sprintKey}`],
     },
   });
