@@ -152,6 +152,24 @@ export const BarChartCapacity = memo(function BarChartCapacity({
     ).toFixed(2);
   }, [chartData]);
 
+  // Memoize the average capacity calculation
+  const averageCapacity = useMemo(() => {
+    if (chartData.length === 0) return 0;
+    return (
+      chartData.reduce((acc, sprint) => acc + sprint.capacity, 0) /
+      chartData.length
+    ).toFixed(2);
+  }, [chartData]);
+
+  // Memoize the average percentage calculation
+  const averagePercentage = useMemo(() => {
+    if (chartData.length === 0) return 0;
+    return (
+      chartData.reduce((acc, sprint) => acc + sprint.percentage, 0) /
+      chartData.length
+    ).toFixed(2);
+  }, [chartData]);
+
   useEffect(() => {
     setMounted(true);
     return () => setMounted(false);
@@ -164,7 +182,7 @@ export const BarChartCapacity = memo(function BarChartCapacity({
       <CardHeader>
         <CardTitle>Capacity VS Reality</CardTitle>
         <CardDescription>
-          Your team&apos;s sprint velocity is {averageVelocity}
+          Average capacity: {averageCapacity} SP vs reality: {averageVelocity} SP ({averagePercentage}% from capacity)
         </CardDescription>
       </CardHeader>
       <CardContent>
