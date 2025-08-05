@@ -77,7 +77,7 @@ export async function linkSprintsToEngineers(sprintId: string) {
               })
             )
           ),
-          new Promise((_, reject) =>
+          new Promise((_resolve, reject) =>
             setTimeout(() => reject(new Error(`GitLab MR batch ${i + 1}-${Math.min(i + batchSize, allMergedMRs.length)} timeout`)), 30000)
           )
         ]);
