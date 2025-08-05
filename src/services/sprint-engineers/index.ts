@@ -59,18 +59,34 @@ export async function linkSprintsToEngineers(sprintId: string) {
     const mrCountByAssignee = new Map<number, number>();
     const sprintGitlabBatch: { gitlabId: number; engineerId: number }[] = [];
 
-    // ✅ First, batch upsert all GitLab MRs
-    for (const merged of allMergedMRs) {
-      await prisma.gitlab.upsert({
-        where: { id: merged.id },
-        update: {
-          title: merged.title,
-        },
-        create: {
-          id: merged.id,
-          title: merged.title,
-        },
-      });
+    // ✅ First, batch upsert all GitLab MRs in batches of 50 with timeouts
+    console.log(`🔄 Processing ${allMergedMRs.length} GitLab MRs in batches of 50`);
+    
+    const batchSize = 50;
+    for (let i = 0; i < allMergedMRs.length; i += batchSize) {
+      const batch = allMergedMRs.slice(i, i + batchSize);
+      
+      try {
+        await Promise.race([
+          Promise.all(
+            batch.map(merged =>
+              prisma.gitlab.upsert({
+                where: { id: merged.id },
+                update: { title: merged.title },
+                create: { id: merged.id, title: merged.title },
+              })
+            )
+          ),
+          new Promise((_, reject) =>
+            setTimeout(() => reject(new Error(`GitLab MR batch ${i + 1}-${Math.min(i + batchSize, allMergedMRs.length)} timeout`)), 30000)
+          )
+        ]);
+        
+        console.log(`✅ Processed GitLab MR batch ${i + 1}-${Math.min(i + batchSize, allMergedMRs.length)}/${allMergedMRs.length}`);
+      } catch (error) {
+        console.error(`❌ Error processing GitLab MR batch ${i + 1}-${Math.min(i + batchSize, allMergedMRs.length)}:`, error);
+        // Continue with next batch instead of failing completely
+      }
     }
 
     // ✅ Process MRs for sprint_gitlab relationships and counting
