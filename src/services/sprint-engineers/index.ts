@@ -60,16 +60,18 @@ export async function linkSprintsToEngineers(sprintId: string) {
     const sprintGitlabBatch: { gitlabId: number; engineerId: number }[] = [];
 
     // ✅ First, batch upsert all GitLab MRs in batches of 50 with timeouts
-    console.log(`🔄 Processing ${allMergedMRs.length} GitLab MRs in batches of 50`);
-    
+    console.log(
+      `🔄 Processing ${allMergedMRs.length} GitLab MRs in batches of 50`
+    );
+
     const batchSize = 50;
     for (let i = 0; i < allMergedMRs.length; i += batchSize) {
       const batch = allMergedMRs.slice(i, i + batchSize);
-      
+
       try {
         await Promise.race([
           Promise.all(
-            batch.map(merged =>
+            batch.map((merged) =>
               prisma.gitlab.upsert({
                 where: { id: merged.id },
                 update: { title: merged.title },
@@ -78,13 +80,26 @@ export async function linkSprintsToEngineers(sprintId: string) {
             )
           ),
           new Promise((_resolve, reject) =>
-            setTimeout(() => reject(new Error(`GitLab MR batch ${i + 1}-${Math.min(i + batchSize, allMergedMRs.length)} timeout`)), 30000)
-          )
+            setTimeout(
+              () =>
+                reject(
+                  new Error(
+                    `GitLab MR batch ${i + 1}-${Math.min(i + batchSize, allMergedMRs.length)} timeout`
+                  )
+                ),
+              30000
+            )
+          ),
         ]);
-        
-        console.log(`✅ Processed GitLab MR batch ${i + 1}-${Math.min(i + batchSize, allMergedMRs.length)}/${allMergedMRs.length}`);
+
+        console.log(
+          `✅ Processed GitLab MR batch ${i + 1}-${Math.min(i + batchSize, allMergedMRs.length)}/${allMergedMRs.length}`
+        );
       } catch (error) {
-        console.error(`❌ Error processing GitLab MR batch ${i + 1}-${Math.min(i + batchSize, allMergedMRs.length)}:`, error);
+        console.error(
+          `❌ Error processing GitLab MR batch ${i + 1}-${Math.min(i + batchSize, allMergedMRs.length)}:`,
+          error
+        );
         // Continue with next batch instead of failing completely
       }
     }
