@@ -12,7 +12,7 @@ import {
 
 export interface PageProps {
   params: Promise<{ engineerId?: string }>;
-  searchParams: Promise<{ sprintIds?: string }>;
+  searchParams: Promise<{ sprintIds?: string; org?: string }>;
 }
 
 export interface StatsCardsProps {

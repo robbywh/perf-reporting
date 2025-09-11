@@ -37,9 +37,9 @@ export function SprintComponentsClient() {
         setLoading(true);
         console.log('⏳ Fetching sprints for org:', organizationId);
         const result = await getSprintsForOrganization(organizationId);
-        console.log('📊 Sprint fetch result:', { success: result.success, dataLength: result.success ? result.data.length : 0 });
+        console.log('📊 Sprint fetch result:', { success: result.success, dataLength: result.success && result.data ? result.data.length : 0 });
         
-        if (result.success) {
+        if (result.success && result.data) {
           setSprints(result.data);
         } else {
           console.error("Failed to fetch sprints:", result.error);

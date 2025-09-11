@@ -36,7 +36,7 @@ export function SprintDataWrapper({ children, organizations }: SprintDataWrapper
       try {
         setLoading(true);
         const result = await getSprintsForOrganization(organizationId);
-        setHasSprintData(result.success && result.data.length > 0);
+        setHasSprintData(result.success && result.data ? result.data.length > 0 : false);
       } catch (error) {
         console.error("Error checking sprint data:", error);
         setHasSprintData(false);

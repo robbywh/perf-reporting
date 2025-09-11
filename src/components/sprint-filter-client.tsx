@@ -50,9 +50,9 @@ export function SprintFilterClient() {
         setLoading(true);
         console.log('⏳ Fetching sprints for filter org:', organizationId);
         const result = await getSprintsForOrganization(organizationId);
-        console.log('📊 Filter sprint fetch result:', { success: result.success, dataLength: result.success ? result.data.length : 0 });
+        console.log('📊 Filter sprint fetch result:', { success: result.success, dataLength: result.success && result.data ? result.data.length : 0 });
         
-        if (result.success) {
+        if (result.success && result.data) {
           setSprints(result.data);
         } else {
           console.error("Failed to fetch sprints for filter:", result.error);
