@@ -22,16 +22,16 @@ model Role {
 }
 
 model Organization {
-  id                String              @id @db.VarChar(25)
-  name              String              @db.VarChar(100)
-  userOrganizations UserOrganization[]
-  sprints           Sprint[]
-  engineers         Engineer[]
-  categories        Category[]
-  statuses          Status[]
-  tags              Tag[]
-  reviewers         Reviewer[]
-  settings          Setting[]
+  id                      String                    @id @db.VarChar(25)
+  name                    String                    @db.VarChar(100)
+  userOrganizations       UserOrganization[]
+  sprints                 Sprint[]
+  engineerOrganizations   EngineerOrganization[]
+  reviewerOrganizations   ReviewerOrganization[]
+  categories              Category[]
+  statuses                Status[]
+  tags                    Tag[]
+  settings                Setting[]
 
   @@map("organization")
 }
@@ -164,19 +164,18 @@ model Tag {
 }
 
 model Engineer {
-  id              Int              @id
-  name            String           @db.VarChar(50)
-  jobLevelId      String           @map("job_level_id") @db.VarChar(25)
-  gitlabUserId    Int?             @map("gitlab_user_id")
-  email           String?          @db.VarChar(50)
-  organizationId  String           @map("organization_id") @db.VarChar(25)
-  organization    Organization     @relation(fields: [organizationId], references: [id])
-  jobLevel        JobLevel         @relation(fields: [jobLevelId], references: [id])
-  leaves          Leave[]
-  sprintEngineers SprintEngineer[]
-  sprintGitlab    SprintGitlab[]
-  assignments     TaskAssignee[]
-  user            User?
+  id                      Int                       @id
+  name                    String                    @db.VarChar(50)
+  jobLevelId              String                    @map("job_level_id") @db.VarChar(25)
+  gitlabUserId            Int?                      @map("gitlab_user_id")
+  email                   String?                   @db.VarChar(50)
+  jobLevel                JobLevel                  @relation(fields: [jobLevelId], references: [id])
+  engineerOrganizations   EngineerOrganization[]
+  leaves                  Leave[]
+  sprintEngineers         SprintEngineer[]
+  sprintGitlab            SprintGitlab[]
+  assignments             TaskAssignee[]
+  user                    User?
 
   @@map("engineer")
 }
@@ -232,13 +231,12 @@ model PublicHoliday {
 }
 
 model Reviewer {
-  id              Int              @id
-  name            String           @db.VarChar(50)
-  email           String?          @db.VarChar(50)
-  organizationId  String           @map("organization_id") @db.VarChar(25)
-  organization    Organization     @relation(fields: [organizationId], references: [id])
-  taskReviewers   TaskReviewer[]
-  sprintReviewers SprintReviewer[]
+  id                      Int                       @id
+  name                    String                    @db.VarChar(50)
+  email                   String?                   @db.VarChar(50)
+  reviewerOrganizations   ReviewerOrganization[]
+  taskReviewers           TaskReviewer[]
+  sprintReviewers         SprintReviewer[]
 
   @@map("reviewer")
 }
@@ -274,6 +272,26 @@ model Gitlab {
   sprintGitlab SprintGitlab[]
 
   @@map("gitlab")
+}
+
+model EngineerOrganization {
+  engineerId       Int          @map("engineer_id")
+  organizationId   String       @map("organization_id") @db.VarChar(25)
+  engineer         Engineer     @relation(fields: [engineerId], references: [id])
+  organization     Organization @relation(fields: [organizationId], references: [id])
+
+  @@id([engineerId, organizationId])
+  @@map("engineer_organization")
+}
+
+model ReviewerOrganization {
+  reviewerId       Int          @map("reviewer_id")
+  organizationId   String       @map("organization_id") @db.VarChar(25)
+  reviewer         Reviewer     @relation(fields: [reviewerId], references: [id])
+  organization     Organization @relation(fields: [organizationId], references: [id])
+
+  @@id([reviewerId, organizationId])
+  @@map("reviewer_organization")
 }
 
 model SprintGitlab {

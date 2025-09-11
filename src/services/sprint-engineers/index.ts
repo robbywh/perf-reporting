@@ -5,7 +5,7 @@ import { getApiConfig } from "@/constants/server";
 import { getMergedMRsBySprintPeriod } from "@/lib/gitlab/mr"; // Ensure this function is defined
 import { prisma } from "@/services/db";
 
-export async function linkSprintsToEngineers(sprintId: string, organizationId: string = 'ksi') {
+export async function linkSprintsToEngineers(sprintId: string, organizationId: string) {
   try {
     // ✅ Fetch Sprint start_date and end_date
     const sprint = await prisma.sprint.findUnique({
@@ -37,8 +37,15 @@ export async function linkSprintsToEngineers(sprintId: string, organizationId: s
       apiConfig.GITLAB_GROUP_ID
     );
 
-    // ✅ Fetch engineers & job levels first for optimization
+    // ✅ Fetch engineers & job levels filtered by organization using many-to-many relationship
     const engineers = await prisma.engineer.findMany({
+      where: {
+        engineerOrganizations: {
+          some: {
+            organizationId
+          }
+        }
+      },
       select: {
         id: true,
         gitlabUserId: true, // Ensure engineer has a GitLab user ID
@@ -55,7 +62,7 @@ export async function linkSprintsToEngineers(sprintId: string, organizationId: s
       cacheStrategy: {
         swr: 2 * 60, // 2 minutes
         ttl: 10 * 60, // 10 minutes
-        tags: ["allEngineers"],
+        tags: [`allEngineers_${organizationId}`],
       },
     });
 

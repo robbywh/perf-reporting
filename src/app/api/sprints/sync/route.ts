@@ -25,12 +25,15 @@ type PrismaTransaction = {
   [key: string]: unknown;
 };
 
-async function syncSprintsFromClickUp(organizationId: string = 'ksi') {
+async function syncSprintsFromClickUp(organizationId: string) {
+  console.log(`🔄 Starting sprint sync for organization: ${organizationId}`);
+  
   // Get API configuration from database
   const apiConfig = await getApiConfig(organizationId);
   
   if (!apiConfig.CLICKUP_API_TOKEN || !apiConfig.CLICKUP_FOLDER_ID) {
-    throw new Error("Missing ClickUp API configuration");
+    console.log(`⚠️ Missing ClickUp API configuration for organization ${organizationId}, skipping...`);
+    return;
   }
 
   // Call the external API library to fetch sprint lists from ClickUp.
@@ -197,13 +200,16 @@ async function processBatch(
   );
 }
 
-async function syncTodayTasksFromClickUp(organizationId: string = 'ksi') {
+async function syncTodayTasksFromClickUp(organizationId: string) {
   try {
+    console.log(`🔄 Starting task sync for organization: ${organizationId}`);
+    
     // Get API configuration from database
     const apiConfig = await getApiConfig(organizationId);
     
     if (!apiConfig.CLICKUP_API_TOKEN) {
-      throw new Error("Missing ClickUp API configuration");
+      console.log(`⚠️ Missing ClickUp API configuration for organization ${organizationId}, skipping...`);
+      return;
     }
 
     // Get current and future sprints for engineer/reviewer linking
@@ -212,7 +218,7 @@ async function syncTodayTasksFromClickUp(organizationId: string = 'ksi') {
     // Link engineers and reviewers for current and future sprints
     for (const sprint of currentAndFutureSprints) {
       await linkSprintsToEngineers(sprint.id, organizationId);
-      await linkSprintsToReviewers(sprint.id);
+      await linkSprintsToReviewers(sprint.id, organizationId);
     }
 
     // Get today's sprints for task syncing
@@ -344,23 +350,13 @@ async function syncTodayTasksFromClickUp(organizationId: string = 'ksi') {
       }
     }
 
-    return NextResponse.json({
-      success: true,
-      message: "Successfully synchronized today's tasks",
-    });
+    console.log(`✅ Successfully synchronized tasks for organization: ${organizationId}`);
+    
   } catch (error) {
-    console.error("Error synchronizing tasks:", error);
-    const errorMessage =
-      error instanceof Error ? error.message : "Internal Server Error";
-    return NextResponse.json(
-      {
-        success: false,
-        error: errorMessage,
-      },
-      { status: 500 }
-    );
+    console.error(`❌ Error synchronizing tasks for organization ${organizationId}:`, error);
+    throw error;
   }
-}
+  }
 
 // GET /api/sprints/sync - Synchronize all sprints from ClickUp
 export async function GET(request: Request) {
@@ -371,8 +367,45 @@ export async function GET(request: Request) {
         status: 401,
       });
     }
-    await syncSprintsFromClickUp();
-    await syncTodayTasksFromClickUp();
+    // Get all organizations that have API configuration
+    const organizations = await prisma.organization.findMany({
+      select: {
+        id: true,
+        name: true,
+        settings: {
+          where: {
+            param: { in: ['CLICKUP_API_TOKEN', 'CLICKUP_FOLDER_ID'] }
+          },
+          select: {
+            param: true,
+            value: true
+          }
+        }
+      }
+    });
+
+    // Filter organizations that have both required settings
+    const validOrganizations = organizations.filter(org => {
+      const settings = org.settings;
+      const hasToken = settings.some(s => s.param === 'CLICKUP_API_TOKEN' && s.value);
+      const hasFolder = settings.some(s => s.param === 'CLICKUP_FOLDER_ID' && s.value);
+      return hasToken && hasFolder;
+    });
+
+    console.log(`🔍 Found ${validOrganizations.length} organizations with ClickUp configuration`);
+
+    // Process each organization sequentially to avoid overwhelming external APIs
+    for (const org of validOrganizations) {
+      try {
+        console.log(`\n📋 Processing organization: ${org.name} (${org.id})`);
+        await syncSprintsFromClickUp(org.id);
+        await syncTodayTasksFromClickUp(org.id);
+        console.log(`✅ Completed sync for organization: ${org.name}`);
+      } catch (error) {
+        console.error(`❌ Error syncing organization ${org.name} (${org.id}):`, error);
+        // Continue with next organization instead of failing completely
+      }
+    }
 
     return NextResponse.json({
       success: true,

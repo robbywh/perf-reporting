@@ -58,9 +58,9 @@ export function SprintDataWrapper({ children, organizations }: SprintDataWrapper
             Please select an organization
           </div>
         </div>
-        <div className="flex-1 flex items-center justify-center py-20">
+        <div className="flex flex-1 items-center justify-center py-20">
           <div className="text-center">
-            <div className="text-lg font-medium text-gray-900 mb-2">
+            <div className="mb-2 text-lg font-medium text-gray-900">
               Select Organization
             </div>
             <div className="text-sm text-gray-500">
@@ -101,9 +101,9 @@ export function SprintDataWrapper({ children, organizations }: SprintDataWrapper
             No sprint data available
           </div>
         </div>
-        <div className="flex-1 flex items-center justify-center py-20">
+        <div className="flex flex-1 items-center justify-center py-20">
           <div className="text-center">
-            <div className="text-lg font-medium text-gray-900 mb-2">
+            <div className="mb-2 text-lg font-medium text-gray-900">
               No Sprint Data Available
             </div>
             <div className="text-sm text-gray-500">

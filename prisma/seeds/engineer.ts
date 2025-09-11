@@ -49,6 +49,7 @@ export async function seedEngineers() {
   ];
 
   for (const engineer of engineers) {
+    // First, upsert the engineer without organization relationship
     await prisma.engineer.upsert({
       where: { id: engineer.id },
       update: {
@@ -59,6 +60,20 @@ export async function seedEngineers() {
       },
       create: {
         ...engineer,
+      },
+    });
+
+    // Then, create the engineer-organization relationship
+    await prisma.engineerOrganization.upsert({
+      where: {
+        engineerId_organizationId: {
+          engineerId: engineer.id,
+          organizationId: 'ksi',
+        },
+      },
+      update: {},
+      create: {
+        engineerId: engineer.id,
         organizationId: 'ksi',
       },
     });

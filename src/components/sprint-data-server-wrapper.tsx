@@ -14,9 +14,9 @@ const SprintDataContent = async ({ children }: SprintDataServerWrapperProps) => 
   
   if (!user?.id) {
     return (
-      <div className="flex-1 flex items-center justify-center py-20">
+      <div className="flex flex-1 items-center justify-center py-20">
         <div className="text-center">
-          <div className="text-lg font-medium text-gray-900 mb-2">
+          <div className="mb-2 text-lg font-medium text-gray-900">
             Authentication Required
           </div>
           <div className="text-sm text-gray-500">
@@ -32,9 +32,9 @@ const SprintDataContent = async ({ children }: SprintDataServerWrapperProps) => 
     
     if (organizations.length === 0) {
       return (
-        <div className="flex-1 flex items-center justify-center py-20">
+        <div className="flex flex-1 items-center justify-center py-20">
           <div className="text-center">
-            <div className="text-lg font-medium text-gray-900 mb-2">
+            <div className="mb-2 text-lg font-medium text-gray-900">
               No Organization Access
             </div>
             <div className="text-sm text-gray-500">
@@ -53,9 +53,9 @@ const SprintDataContent = async ({ children }: SprintDataServerWrapperProps) => 
   } catch (error) {
     console.error("Error loading organizations:", error);
     return (
-      <div className="flex-1 flex items-center justify-center py-20">
+      <div className="flex flex-1 items-center justify-center py-20">
         <div className="text-center">
-          <div className="text-lg font-medium text-gray-900 mb-2">
+          <div className="mb-2 text-lg font-medium text-gray-900">
             Error Loading Organizations
           </div>
           <div className="text-sm text-gray-500">

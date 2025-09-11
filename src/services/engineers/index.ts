@@ -3,7 +3,13 @@ import { prisma } from "@/services/db";
 export async function findAllEngineers(organizationId?: string) {
   try {
     const engineers = await prisma.engineer.findMany({
-      where: organizationId ? { organizationId } : undefined,
+      where: organizationId ? {
+        engineerOrganizations: {
+          some: {
+            organizationId
+          }
+        }
+      } : undefined,
       select: {
         id: true,
         name: true,

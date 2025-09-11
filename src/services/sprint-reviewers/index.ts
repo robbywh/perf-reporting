@@ -1,6 +1,6 @@
 import { prisma } from "@/services/db";
 
-export async function linkSprintsToReviewers(sprintId: string) {
+export async function linkSprintsToReviewers(sprintId: string, organizationId: string) {
   try {
     if (!sprintId) {
       console.log(`❌ Sprint ID ${sprintId} not found.`);
@@ -8,6 +8,13 @@ export async function linkSprintsToReviewers(sprintId: string) {
     }
 
     const reviewers = await prisma.reviewer.findMany({
+      where: {
+        reviewerOrganizations: {
+          some: {
+            organizationId
+          }
+        }
+      },
       select: {
         id: true,
       },

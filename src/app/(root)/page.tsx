@@ -47,7 +47,7 @@ const DynamicLeavePublicHoliday = dynamic(
 );
 
 // Optimize data fetching with preload and parallel execution for dashboard
-async function fetchCriticalData(sprintIds: string[], organizationId?: string): Promise<{
+async function fetchCriticalData(sprintIds: string[]): Promise<{
   roleId: string;
   topPerformersData?: Awaited<ReturnType<typeof findTopPerformersBySprintIds>>;
 }> {
@@ -169,7 +169,7 @@ export default async function Home({
   }
 
   // Fetch critical data with preloading for better performance
-  const { roleId, topPerformersData } = await fetchCriticalData(sprintIds, organizationId);
+  const { roleId, topPerformersData } = await fetchCriticalData(sprintIds);
 
   return (
     <main>

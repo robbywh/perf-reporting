@@ -26,7 +26,7 @@ export const OrganizationSelector = memo(function OrganizationSelector({ organiz
   const [selectedOrganization, setSelectedOrganization] = useState<string>("");
 
   // Memoize organizations to prevent unnecessary effect runs
-  const memoizedOrganizations = useMemo(() => organizations, [organizations.length]);
+  const memoizedOrganizations = useMemo(() => organizations, [organizations]);
 
   useEffect(() => {
     // Only proceed if we have organizations

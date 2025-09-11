@@ -25,7 +25,7 @@ export async function uploadFile({
   try {
     // Sanitize fileName by removing special characters and replacing spaces with hyphens
     const sanitizedFileName = fileName
-      .replace(/[^a-zA-Z0-9-_\.]/g, '-')  // Replace special chars with hyphens
+      .replace(/[^a-zA-Z0-9-_.]/g, '-')  // Replace special chars with hyphens
       .replace(/\s+/g, '-')               // Replace spaces with hyphens
       .replace(/-+/g, '-')                // Replace multiple hyphens with single hyphen
       .toLowerCase();                      // Convert to lowercase

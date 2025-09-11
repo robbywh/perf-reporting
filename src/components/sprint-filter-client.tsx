@@ -36,7 +36,7 @@ export function SprintFilterClient() {
 
   useEffect(() => {
     async function fetchSprints() {
-      console.log('🔍 SprintFilter Debug:', { organizationId, loading });
+      console.log('🔍 SprintFilter Debug:', { organizationId });
       
       if (!organizationId) {
         console.log('❌ No organization ID for filter');

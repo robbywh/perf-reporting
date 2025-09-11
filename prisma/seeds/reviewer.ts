@@ -17,6 +17,7 @@ export async function seedReviewers() {
   ];
 
   for (const reviewer of reviewers) {
+    // First, upsert the reviewer without organization relationship
     await prisma.reviewer.upsert({
       where: { id: reviewer.id },
       update: {
@@ -24,6 +25,20 @@ export async function seedReviewers() {
       },
       create: {
         ...reviewer,
+      },
+    });
+
+    // Then, create the reviewer-organization relationship
+    await prisma.reviewerOrganization.upsert({
+      where: {
+        reviewerId_organizationId: {
+          reviewerId: reviewer.id,
+          organizationId: 'ksi',
+        },
+      },
+      update: {},
+      create: {
+        reviewerId: reviewer.id,
         organizationId: 'ksi',
       },
     });

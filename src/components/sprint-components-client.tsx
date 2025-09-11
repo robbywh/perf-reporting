@@ -14,18 +14,6 @@ type Sprint = {
   endDate: string | Date;
 };
 
-type SprintOption = {
-  value: string;
-  label: string;
-  startDate: Date;
-  endDate: Date;
-};
-
-const getDateMonthsAgo = (months: number): Date => {
-  const date = new Date();
-  date.setMonth(date.getMonth() - months);
-  return date;
-};
 
 export function SprintComponentsClient() {
   const searchParams = useSearchParams();
@@ -35,7 +23,7 @@ export function SprintComponentsClient() {
 
   useEffect(() => {
     async function fetchSprints() {
-      console.log('🔍 SprintComponents Debug:', { organizationId, loading });
+      console.log('🔍 SprintComponents Debug:', { organizationId });
       
       if (!organizationId) {
         console.log('❌ No organization ID');
