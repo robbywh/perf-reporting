@@ -1,10 +1,10 @@
 # PerfReporting
 
-Aplikasi untuk melacak dan memvisualisasikan kinerja tim engineering selama sprint development.
+Multi-organization performance tracking system untuk melacak dan memvisualisasikan kinerja tim engineering selama sprint development.
 
 ## Deskripsi
 
-Performance Reporting adalah aplikasi berbasis web untuk memantau dan menganalisis performa engineer selama sprint development. Aplikasi ini memungkinkan pengguna untuk:
+Performance Reporting adalah aplikasi berbasis web multi-tenant untuk memantau dan menganalisis performa engineer selama sprint development. Aplikasi ini mendukung multiple organisasi dengan isolasi data yang ketat dan memungkinkan pengguna untuk:
 
 - Melacak story point dan jam coding
 - Melihat statistik tugas berdasarkan kategori
@@ -12,18 +12,29 @@ Performance Reporting adalah aplikasi berbasis web untuk memantau dan menganalis
 - Mengelola cuti dan hari libur
 - Menghasilkan laporan performa
 - Sinkronisasi otomatis data dari ClickUp dan GitLab
+- **Multi-Organization Support**: Isolasi data per organisasi dengan konfigurasi API terpisah
+- **Organization Selector**: Interface untuk beralih antar organisasi
 
 Aplikasi ini dibangun menggunakan Next.js, Prisma ORM, dan Clerk untuk otentikasi.
 
 ## Fitur Utama
 
-- **Dashboard**: Menampilkan visual analitik kinerja tim selama sprint
-- **Top Performers**: Menampilkan engineer dengan performa terbaik
-- **Manajemen Sprint**: Membuat dan mengelola sprint
-- **Manajemen Tugas**: Melacak tugas, status, dan kategori
-- **Jam Coding**: Mencatat dan memantau jam coding engineer
+### Core Features
+
+- **Dashboard**: Visual analitik kinerja tim selama sprint dengan filtering per organisasi
+- **Top Performers**: Ranking engineer dengan performa terbaik per organisasi
+- **Manajemen Sprint**: Membuat dan mengelola sprint dengan sinkronisasi ClickUp
+- **Manajemen Tugas**: Melacak tugas, status, dan kategori dengan isolasi organisasi
+- **Jam Coding**: Mencatat dan memantau jam coding engineer dengan upload file
 - **Manajemen Cuti**: Mencatat cuti engineer dan hari libur
 - **Ekspor Data**: Mengunduh data dalam format Excel
+
+### Multi-Organization Features
+
+- **Organization Isolation**: Data sepenuhnya terisolasi per organisasi
+- **Organization Selector**: Dropdown untuk beralih antar organisasi
+- **Separate API Configuration**: Setiap organisasi memiliki konfigurasi ClickUp/GitLab terpisah
+- **Role-based Access**: Akses engineer dibatasi berdasarkan organisasi mereka
 
 ## Teknologi
 
@@ -84,15 +95,35 @@ Aplikasi ini dibangun menggunakan Next.js, Prisma ORM, dan Clerk untuk otentikas
 
 ## Struktur Database
 
-Aplikasi menggunakan model data berikut:
+Aplikasi menggunakan model data multi-tenant berikut:
 
-- **Sprint**: Periode waktu development
-- **Engineer**: Anggota tim engineering
+### Core Models
+
+- **Organization**: Entitas organisasi utama untuk isolasi data
+- **Sprint**: Periode waktu development dengan `organizationId`
+- **Engineer**: Anggota tim engineering dengan relasi many-to-many ke organisasi
+- **Reviewer**: Reviewer dengan relasi many-to-many ke organisasi
 - **Task**: Tugas yang dikerjakan selama sprint
-- **Status**: Status tugas (e.g., In Progress, Done)
-- **Category**: Kategori tugas
-- **Tag**: Tag untuk mengklasifikasikan tugas
+- **User**: Authentication users linked ke engineers via Clerk
+
+### Configuration Models
+
+- **Status**: Status tugas per organisasi (e.g., In Progress, Done)
+- **Category**: Kategori tugas per organisasi
+- **Tag**: Tag untuk mengklasifikasikan tugas per organisasi
+- **Setting**: Konfigurasi API (ClickUp, GitLab) per organisasi
+
+### Activity Models
+
 - **Leave**: Catatan cuti engineer
+- **PublicHoliday**: Hari libur nasional
+- **SprintGitlab**: Relasi GitLab MR dengan sprint dan engineer
+
+### Junction Tables
+
+- **EngineerOrganization**: Many-to-many engineer-organization
+- **ReviewerOrganization**: Many-to-many reviewer-organization
+- **UserOrganization**: Many-to-many user-organization
 
 ## Integrasi API dan Cron Jobs
 
@@ -149,31 +180,65 @@ Endpoint `/api/sprints/sync` berjalan setiap hari pukul 17:00 untuk:
 
 ### Variabel Lingkungan untuk API
 
+**Penting**: Konfigurasi API sekarang disimpan dalam database per organisasi, bukan environment variables.
+
 Tambahkan variabel berikut ke file `.env`:
 
 ```
-CRON_SECRET=
-BLOB_READ_WRITE_TOKEN=
-CLERK_SECRET_KEY=
-CLICKUP_API_TOKEN=
-CLICKUP_FOLDER_ID=
+# System Configuration
+CRON_SECRET=your-cron-secret
+NODE_ENV=development
+
+# Database
+DATABASE_URL=postgresql://user:password@localhost:5432/perf_reporting
+
+# Authentication (Clerk)
+CLERK_SECRET_KEY=sk_live_xxx
+NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_live_xxx
+NEXT_PUBLIC_CLERK_SIGN_IN_URL=/sign-in
+
+# File Storage (Vercel Blob)
+BLOB_READ_WRITE_TOKEN=vercel_blob_xxx
+
 CLICKUP_BASE_URL=
-DATABASE_URL=
 GITLAB_BASE_URL=
-GITLAB_GROUP_ID=
-GITLAB_PERSONAL_ACCESS_TOKEN=
-NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=
-NEXT_PUBLIC_CLERK_SIGN_IN_URL=
-NODE_ENV=
 ```
+
+### Konfigurasi API Per Organization
+
+Setiap organisasi memiliki setting terpisah yang disimpan dalam tabel `Setting`:
+
+- `CLICKUP_API_TOKEN`: Token API ClickUp untuk organisasi
+- `CLICKUP_FOLDER_ID`: ID folder ClickUp untuk sprint
+- `CLICKUP_BASE_URL`: Base URL ClickUp API
+- `GITLAB_PERSONAL_ACCESS_TOKEN`: Token GitLab untuk organisasi
+- `GITLAB_GROUP_ID`: ID group GitLab
+- `GITLAB_BASE_URL`: Base URL GitLab instance
 
 ## Penggunaan
 
-1. Login menggunakan akun Clerk
-2. Pilih sprint dari dropdown untuk melihat data
-3. Gunakan panel navigasi untuk mengakses fitur berbeda:
-   - Dashboard: Tampilan utama dengan chart dan statistik
-   - Engineer: Lihat detail performa per engineer
+### Setup Multi-Organization
+
+1. Setup organisasi dan user mappings melalui database seeding
+2. Konfigurasi API tokens untuk setiap organisasi melalui tabel `Setting`
+3. Assign engineers dan reviewers ke organisasi yang sesuai
+
+### Daily Usage
+
+1. **Login**: Gunakan akun Clerk yang telah dikaitkan dengan engineer
+2. **Pilih Organisasi**: Gunakan organization selector di header untuk memilih organisasi
+3. **Filter Sprint**: Pilih sprint dari dropdown untuk melihat data spesifik
+4. **Navigasi**:
+   - **Dashboard**: Tampilan utama dengan chart dan statistik per organisasi
+   - **Engineer Detail**: Lihat detail performa individual per engineer
+   - **Data Export**: Download laporan dalam format Excel
+
+### Data Isolation
+
+- Semua data terisolasi per organisasi
+- User hanya dapat melihat data organisasi yang mereka assigned
+- API sync berjalan terpisah untuk setiap organisasi
+- GitLab dan task data tidak tercampur antar organisasi
 
 ## Kontribusi
 
