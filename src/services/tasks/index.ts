@@ -90,8 +90,11 @@ export async function upsertTask(task: Task) {
     }
 
     // ✅ Fetch status in one query
-    const existingStatus = await prisma.status.findUnique({
-      where: { name: task.statusName },
+    const existingStatus = await prisma.status.findFirst({
+      where: { 
+        name: task.statusName,
+        organizationId: 'ksi' // Default to ksi for now
+      },
       select: { id: true },
     });
 

@@ -2,33 +2,36 @@ import { Decimal } from "@prisma/client/runtime/library";
 
 import { prisma } from "../db";
 
-export async function findTodaySprints() {
+export async function findTodaySprints(organizationId?: string) {
   const today = new Date();
 
   const sprints = await prisma.sprint.findMany({
     where: {
       startDate: { lte: today }, // startDate should be less than or equal to today
       endDate: { gte: today }, // endDate should be greater than or equal to today
+      ...(organizationId && { organizationId }),
     },
   });
 
   return sprints;
 }
 
-export async function findCurrentAndFutureSprints() {
+export async function findCurrentAndFutureSprints(organizationId?: string) {
   const today = new Date();
 
   const sprints = await prisma.sprint.findMany({
     where: {
       endDate: { gte: today }, // endDate should be greater than or equal to today
+      ...(organizationId && { organizationId }),
     },
   });
 
   return sprints;
 }
 
-export async function findAllSprints() {
+export async function findAllSprints(organizationId?: string) {
   const sprints = await prisma.sprint.findMany({
+    where: organizationId ? { organizationId } : undefined,
     select: {
       id: true,
       name: true,

@@ -1,5 +1,3 @@
-import { CLICKUP_API_TOKEN, CLICKUP_BASE_URL } from "@/constants/server";
-
 export interface ClickUpTask {
   id: string;
   name: string;
@@ -12,14 +10,19 @@ export interface ClickUpTask {
   assignees?: { id: number; username: string }[];
 }
 
-export async function getListTasks(sprintId: string, page: number = 0) {
-  const url = `${CLICKUP_BASE_URL}/list/${sprintId}/task?page=${page}&subtasks=true&include_closed=true`;
+export async function getListTasks(
+  sprintId: string, 
+  apiToken: string, 
+  baseUrl: string,
+  page: number = 0
+) {
+  const url = `${baseUrl}/list/${sprintId}/task?page=${page}&subtasks=true&include_closed=true`;
 
   try {
     const response = await fetch(url, {
       method: "GET",
       headers: {
-        Authorization: CLICKUP_API_TOKEN || "",
+        Authorization: apiToken,
         "Content-Type": "application/json",
       },
     });

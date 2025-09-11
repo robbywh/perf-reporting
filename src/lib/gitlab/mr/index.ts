@@ -1,9 +1,3 @@
-import {
-  GITLAB_BASE_URL,
-  GITLAB_PERSONAL_ACCESS_TOKEN,
-  GITLAB_GROUP_ID,
-} from "@/constants/server";
-
 interface GitLabMergeRequest {
   id: number;
   title: string;
@@ -14,7 +8,10 @@ interface GitLabMergeRequest {
 
 export async function getMergedMRsBySprintPeriod(
   startDate: string,
-  endDate: string
+  endDate: string,
+  baseUrl: string,
+  accessToken: string,
+  groupId: string
 ): Promise<GitLabMergeRequest[]> {
   let page = 1;
   const allMRs: GitLabMergeRequest[] = [];
@@ -22,7 +19,7 @@ export async function getMergedMRsBySprintPeriod(
   try {
     while (true) {
       const url = new URL(
-        `${GITLAB_BASE_URL}/groups/${GITLAB_GROUP_ID}/merge_requests`
+        `${baseUrl}/groups/${groupId}/merge_requests`
       );
       url.searchParams.append("state", "merged");
       url.searchParams.append("updated_after", startDate);
@@ -33,7 +30,7 @@ export async function getMergedMRsBySprintPeriod(
       const response = await fetch(url.toString(), {
         method: "GET",
         headers: {
-          Authorization: `Bearer ${GITLAB_PERSONAL_ACCESS_TOKEN}`,
+          Authorization: `Bearer ${accessToken}`,
           "Content-Type": "application/json",
         },
       });

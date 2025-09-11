@@ -57,7 +57,10 @@ export async function seedEngineers() {
         gitlabUserId: engineer.gitlabUserId,
         email: engineer.email,
       },
-      create: engineer,
+      create: {
+        ...engineer,
+        organizationId: 'ksi',
+      },
     });
   }
 

@@ -22,7 +22,10 @@ export async function seedReviewers() {
       update: {
         name: reviewer.name,
       },
-      create: reviewer,
+      create: {
+        ...reviewer,
+        organizationId: 'ksi',
+      },
     });
   }
 

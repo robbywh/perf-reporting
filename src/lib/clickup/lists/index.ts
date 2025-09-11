@@ -1,18 +1,16 @@
-import {
-  CLICKUP_API_TOKEN,
-  CLICKUP_BASE_URL,
-  CLICKUP_FOLDER_ID,
-} from "@/constants/server";
-
-export async function getFolderList() {
-  const url = `${CLICKUP_BASE_URL}/folder/${CLICKUP_FOLDER_ID}/list`;
+export async function getFolderList(
+  apiToken: string,
+  baseUrl: string,
+  folderId: string
+) {
+  const url = `${baseUrl}/folder/${folderId}/list`;
   console.log("Fetching folder list from ClickUp:", url);
 
   try {
     const response = await fetch(url, {
       method: "GET",
       headers: {
-        Authorization: CLICKUP_API_TOKEN || "",
+        Authorization: apiToken,
       },
     });
 

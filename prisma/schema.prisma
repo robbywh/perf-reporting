@@ -21,30 +21,72 @@ model Role {
   @@map("role")
 }
 
+model Organization {
+  id                String              @id @db.VarChar(25)
+  name              String              @db.VarChar(100)
+  userOrganizations UserOrganization[]
+  sprints           Sprint[]
+  engineers         Engineer[]
+  categories        Category[]
+  statuses          Status[]
+  tags              Tag[]
+  reviewers         Reviewer[]
+  settings          Setting[]
+
+  @@map("organization")
+}
+
 model User {
-  id         String    @id @db.VarChar(36)
-  username   String    @db.VarChar(36)
-  roleId     String    @map("role_id") @db.VarChar(25)
-  engineerId Int?      @unique @map("engineer_id")
-  engineer   Engineer? @relation(fields: [engineerId], references: [id])
-  role       Role      @relation(fields: [roleId], references: [id])
+  id                String              @id @db.VarChar(36)
+  username          String              @db.VarChar(36)
+  roleId            String              @map("role_id") @db.VarChar(25)
+  engineerId        Int?                @unique @map("engineer_id")
+  engineer          Engineer?           @relation(fields: [engineerId], references: [id])
+  role              Role                @relation(fields: [roleId], references: [id])
+  userOrganizations UserOrganization[]
 
   @@map("user")
 }
 
+model UserOrganization {
+  userId         String       @map("user_id") @db.VarChar(36)
+  organizationId String       @map("organization_id") @db.VarChar(25)
+  user           User         @relation(fields: [userId], references: [id])
+  organization   Organization @relation(fields: [organizationId], references: [id])
+
+  @@id([userId, organizationId])
+  @@map("user_organization")
+}
+
+model Setting {
+  id             Int          @id @default(autoincrement())
+  param          String       @db.VarChar(100)
+  value          String       @db.Text
+  organizationId String       @map("organization_id") @db.VarChar(25)
+  organization   Organization @relation(fields: [organizationId], references: [id])
+
+  @@unique([param, organizationId])
+  @@map("setting")
+}
+
 model Category {
-  id    String @id @db.Char(36)
-  name  String @db.VarChar(25)
-  tasks Task[]
+  id             String       @id @db.Char(36)
+  name           String       @db.VarChar(25)
+  organizationId String       @map("organization_id") @db.VarChar(25)
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  tasks          Task[]
 
   @@map("category")
 }
 
 model Status {
-  id    String @id @db.VarChar(25)
-  name  String @unique @db.VarChar(25)
-  tasks Task[]
+  id             String       @id @db.VarChar(25)
+  name           String       @db.VarChar(25)
+  organizationId String       @map("organization_id") @db.VarChar(25)
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  tasks          Task[]
 
+  @@unique([name, organizationId])
   @@map("status")
 }
 
@@ -53,6 +95,8 @@ model Sprint {
   name            String           @db.VarChar(36)
   startDate       DateTime         @map("start_date")
   endDate         DateTime         @map("end_date")
+  organizationId  String           @map("organization_id") @db.VarChar(25)
+  organization    Organization     @relation(fields: [organizationId], references: [id])
   sprintEngineers SprintEngineer[]
   sprintReviewers SprintReviewer[]
   sprintGitlab    SprintGitlab[]
@@ -109,10 +153,13 @@ model TaskAssignee {
 }
 
 model Tag {
-  id       String    @id @db.VarChar(25)
-  name     String    @unique @db.VarChar(25)
-  taskTags TaskTag[]
+  id             String       @id @db.VarChar(25)
+  name           String       @db.VarChar(25)
+  organizationId String       @map("organization_id") @db.VarChar(25)
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  taskTags       TaskTag[]
 
+  @@unique([name, organizationId])
   @@map("tag")
 }
 
@@ -122,6 +169,8 @@ model Engineer {
   jobLevelId      String           @map("job_level_id") @db.VarChar(25)
   gitlabUserId    Int?             @map("gitlab_user_id")
   email           String?          @db.VarChar(50)
+  organizationId  String           @map("organization_id") @db.VarChar(25)
+  organization    Organization     @relation(fields: [organizationId], references: [id])
   jobLevel        JobLevel         @relation(fields: [jobLevelId], references: [id])
   leaves          Leave[]
   sprintEngineers SprintEngineer[]
@@ -183,11 +232,12 @@ model PublicHoliday {
 }
 
 model Reviewer {
-  id            Int              @id
-  name          String           @db.VarChar(50)
+  id              Int              @id
+  name            String           @db.VarChar(50)
   email           String?          @db.VarChar(50)
-
-  taskReviewers TaskReviewer[]
+  organizationId  String           @map("organization_id") @db.VarChar(25)
+  organization    Organization     @relation(fields: [organizationId], references: [id])
+  taskReviewers   TaskReviewer[]
   sprintReviewers SprintReviewer[]
 
   @@map("reviewer")

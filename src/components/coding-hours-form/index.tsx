@@ -99,13 +99,21 @@ function CodingHoursEditor({
     }
 
     setIsUploading(true);
-    const uploadedUrl = await uploadFile({
-      file,
-      fileName: `${sprint.name}-${engineerId}`,
-      filePath: "/coding-hours/",
-    });
-    setScreenshot(uploadedUrl);
-    setIsUploading(false);
+    try {
+      console.log("Starting file upload:", file.name, file.size, file.type);
+      const uploadedUrl = await uploadFile({
+        file,
+        fileName: `${sprint.name}-${engineerId}`,
+        filePath: "/coding-hours/",
+      });
+      console.log("File uploaded successfully:", uploadedUrl);
+      setScreenshot(uploadedUrl);
+    } catch (error) {
+      console.error("File upload failed:", error);
+      alert("Failed to upload screenshot. Please try again.");
+    } finally {
+      setIsUploading(false);
+    }
   };
 
   const handleSave = async () => {

@@ -56,7 +56,8 @@ const DynamicLeavePublicHoliday = dynamic(
 // Optimize data fetching with preload and parallel execution
 async function fetchCriticalData(
   sprintIds: string[],
-  engineerId: number
+  engineerId: number,
+  organizationId: string
 ): Promise<{
   engineer: Awaited<ReturnType<typeof findEngineerById>>;
   roleId: string;
@@ -99,11 +100,29 @@ export default async function EngineerPage({
 }: PageProps) {
   const searchParameters = await searchParams;
   const parameters = await params;
+  
+  // Extract organization from URL parameters
+  const organizationId = searchParameters?.org;
+  if (!organizationId) {
+    return (
+      <div className="flex-1 flex items-center justify-center py-20">
+        <div className="text-center">
+          <div className="text-lg font-medium text-gray-900 mb-2">
+            Organization Required
+          </div>
+          <div className="text-sm text-gray-500">
+            Please select an organization to view engineer details.
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   let sprintIds: string[];
   if (searchParameters?.sprintIds) {
     sprintIds = searchParameters.sprintIds.split(",").filter(Boolean);
   } else {
-    const currentSprintId = await getCurrentSprintId();
+    const currentSprintId = await getCurrentSprintId(organizationId);
     sprintIds = currentSprintId ? [currentSprintId] : [];
   }
 
@@ -112,7 +131,8 @@ export default async function EngineerPage({
   // Fetch critical data first (user info and engineer details)
   const { engineer, roleId, statsData } = await fetchCriticalData(
     sprintIds,
-    engineerId
+    engineerId,
+    organizationId
   );
 
   const isEngineeringManager = roleId === "em";
@@ -138,6 +158,7 @@ export default async function EngineerPage({
           <AsyncStatsCards
             sprintIds={sprintIds}
             engineerId={engineerId}
+            organizationId={organizationId}
             preloadedData={statsData}
           />
         </Suspense>
@@ -147,12 +168,12 @@ export default async function EngineerPage({
       <div className="flex min-h-[400px] flex-row items-stretch gap-4">
         <div className="min-h-[400px] flex-[6]">
           <Suspense fallback={<BarChartMultipleSkeleton />}>
-            <AsyncBarChart sprintIds={sprintIds} engineerId={engineerId} />
+            <AsyncBarChart sprintIds={sprintIds} engineerId={engineerId} organizationId={organizationId} />
           </Suspense>
         </div>
         <div className="min-h-[400px] flex-[4]">
           <Suspense fallback={<PieDonutChartSkeleton title="Tasks to QA" />}>
-            <AsyncPieDonutChart sprintIds={sprintIds} engineerId={engineerId} />
+            <AsyncPieDonutChart sprintIds={sprintIds} engineerId={engineerId} organizationId={organizationId} />
           </Suspense>
         </div>
       </div>
@@ -163,6 +184,7 @@ export default async function EngineerPage({
           <AsyncCodingHoursForm
             sprintIds={sprintIds}
             engineerId={engineerId}
+            organizationId={organizationId}
             roleId={roleId}
           />
         </Suspense>
@@ -173,6 +195,7 @@ export default async function EngineerPage({
           <Suspense fallback={<LeavePublicHolidaySkeleton />}>
             <AsyncLeavePublicHoliday
               sprintIds={sprintIds}
+              organizationId={organizationId}
               roleId={roleId}
               isEngineeringManager={isEngineeringManager}
             />
@@ -187,10 +210,12 @@ export default async function EngineerPage({
 async function AsyncStatsCards({
   sprintIds,
   engineerId,
+  organizationId,
   preloadedData,
 }: {
   sprintIds: string[];
   engineerId: number;
+  organizationId: string;
   preloadedData?: Awaited<
     ReturnType<typeof findAverageSPAndMergedCountBySprintIds>
   >;
@@ -220,9 +245,11 @@ async function AsyncStatsCards({
 async function AsyncBarChart({
   sprintIds,
   engineerId,
+  organizationId,
 }: {
   sprintIds: string[];
   engineerId: number;
+  organizationId: string;
 }) {
   const averagesData = await findAveragesByEngineerAndSprintIds(
     sprintIds,
@@ -234,9 +261,11 @@ async function AsyncBarChart({
 async function AsyncPieDonutChart({
   sprintIds,
   engineerId,
+  organizationId,
 }: {
   sprintIds: string[];
   engineerId: number;
+  organizationId: string;
 }) {
   const [taskData, detailedTaskData] = await Promise.all([
     findTotalTaskToQACounts(sprintIds, engineerId),
@@ -248,10 +277,12 @@ async function AsyncPieDonutChart({
 async function AsyncCodingHoursForm({
   sprintIds,
   engineerId,
+  organizationId,
   roleId,
 }: {
   sprintIds: string[];
   engineerId: number;
+  organizationId: string;
   roleId: string;
 }) {
   const sprintsForCodingHours = await findSprintsBySprintIds(
@@ -270,16 +301,18 @@ async function AsyncCodingHoursForm({
 
 async function AsyncLeavePublicHoliday({
   sprintIds,
+  organizationId,
   roleId,
   isEngineeringManager,
 }: {
   sprintIds: string[];
+  organizationId: string;
   roleId: string;
   isEngineeringManager: boolean;
 }) {
   const [sprintsWithLeaves, engineers] = await Promise.all([
     findSprintsWithLeavesAndHolidays(sprintIds),
-    findAllEngineers(),
+    findAllEngineers(organizationId),
   ]);
   return (
     <DynamicLeavePublicHoliday

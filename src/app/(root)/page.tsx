@@ -47,7 +47,7 @@ const DynamicLeavePublicHoliday = dynamic(
 );
 
 // Optimize data fetching with preload and parallel execution for dashboard
-async function fetchCriticalData(sprintIds: string[]): Promise<{
+async function fetchCriticalData(sprintIds: string[], organizationId?: string): Promise<{
   roleId: string;
   topPerformersData?: Awaited<ReturnType<typeof findTopPerformersBySprintIds>>;
 }> {
@@ -125,14 +125,16 @@ async function AsyncLeavePublicHoliday({
   sprintIds,
   roleId,
   showActionButton,
+  organizationId,
 }: {
   sprintIds: string[];
   roleId: string;
   showActionButton: boolean;
+  organizationId?: string;
 }) {
   const [leavesAndHolidays, engineers] = await Promise.all([
     findSprintsWithLeavesAndHolidays(sprintIds),
-    findAllEngineers(),
+    findAllEngineers(organizationId),
   ]);
   return (
     <DynamicLeavePublicHoliday
@@ -149,22 +151,25 @@ async function AsyncLeavePublicHoliday({
 export default async function Home({
   searchParams,
 }: {
-  searchParams: Promise<{ sprintIds?: string }>;
+  searchParams: Promise<{ sprintIds?: string; org?: string }>;
 }) {
   noStore();
   await authenticateAndRedirect();
   const parameters = await searchParams;
 
+  // Get organizationId from URL parameters 
+  const organizationId = parameters?.org;
+
   let sprintIds: string[];
   if (parameters?.sprintIds) {
     sprintIds = parameters.sprintIds.split(",").filter(Boolean);
   } else {
-    const currentSprintId = await getCurrentSprintId();
+    const currentSprintId = await getCurrentSprintId(organizationId);
     sprintIds = currentSprintId ? [currentSprintId] : [];
   }
 
   // Fetch critical data with preloading for better performance
-  const { roleId, topPerformersData } = await fetchCriticalData(sprintIds);
+  const { roleId, topPerformersData } = await fetchCriticalData(sprintIds, organizationId);
 
   return (
     <main>
@@ -209,6 +214,7 @@ export default async function Home({
             sprintIds={sprintIds}
             roleId={roleId}
             showActionButton={roleId === ROLE.ENGINEERING_MANAGER}
+            organizationId={organizationId}
           />
         </Suspense>
       </div>

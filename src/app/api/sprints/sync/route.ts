@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 
-import { CRON_SECRET } from "@/constants/server";
+import { CRON_SECRET, getApiConfig } from "@/constants/server";
 import { getFolderList } from "@/lib/clickup/lists";
 import { ClickUpTask, getListTasks } from "@/lib/clickup/tasks";
 import { prisma } from "@/services/db";
@@ -25,9 +25,20 @@ type PrismaTransaction = {
   [key: string]: unknown;
 };
 
-async function syncSprintsFromClickUp() {
+async function syncSprintsFromClickUp(organizationId: string = 'ksi') {
+  // Get API configuration from database
+  const apiConfig = await getApiConfig(organizationId);
+  
+  if (!apiConfig.CLICKUP_API_TOKEN || !apiConfig.CLICKUP_FOLDER_ID) {
+    throw new Error("Missing ClickUp API configuration");
+  }
+
   // Call the external API library to fetch sprint lists from ClickUp.
-  const folderListResponse = await getFolderList();
+  const folderListResponse = await getFolderList(
+    apiConfig.CLICKUP_API_TOKEN,
+    apiConfig.CLICKUP_BASE_URL!,
+    apiConfig.CLICKUP_FOLDER_ID
+  );
 
   // Ensure the response contains a "lists" array.
   const lists = folderListResponse.lists;
@@ -53,6 +64,7 @@ async function syncSprintsFromClickUp() {
       name: name.substring(0, 10),
       startDate: startDateUTC,
       endDate: endDateUTC,
+      organizationId,
     };
   });
 
@@ -185,22 +197,31 @@ async function processBatch(
   );
 }
 
-async function syncTodayTasksFromClickUp() {
+async function syncTodayTasksFromClickUp(organizationId: string = 'ksi') {
   try {
+    // Get API configuration from database
+    const apiConfig = await getApiConfig(organizationId);
+    
+    if (!apiConfig.CLICKUP_API_TOKEN) {
+      throw new Error("Missing ClickUp API configuration");
+    }
+
     // Get current and future sprints for engineer/reviewer linking
-    const currentAndFutureSprints = await findCurrentAndFutureSprints();
+    const currentAndFutureSprints = await findCurrentAndFutureSprints(organizationId);
 
     // Link engineers and reviewers for current and future sprints
     for (const sprint of currentAndFutureSprints) {
-      await linkSprintsToEngineers(sprint.id);
+      await linkSprintsToEngineers(sprint.id, organizationId);
       await linkSprintsToReviewers(sprint.id);
     }
 
     // Get today's sprints for task syncing
-    const todaySprints = await findTodaySprints();
+    const todaySprints = await findTodaySprints(organizationId);
 
     // First, fetch all statuses to create a name-to-id mapping
-    const statuses = await prisma.status.findMany();
+    const statuses = await prisma.status.findMany({
+      where: { organizationId }
+    });
     const statusMap = new Map<string, string>(
       statuses.map((s: { name: string; id: string }) => [s.name, s.id])
     );
@@ -213,7 +234,12 @@ async function syncTodayTasksFromClickUp() {
 
       // First, collect all tasks for this sprint
       while (!lastPage) {
-        const response = await getListTasks(sprint.id, page);
+        const response = await getListTasks(
+          sprint.id, 
+          apiConfig.CLICKUP_API_TOKEN,
+          apiConfig.CLICKUP_BASE_URL!,
+          page
+        );
         allTasks.push(...response.tasks);
         lastPage = response.last_page;
         page++;

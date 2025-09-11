@@ -19,7 +19,10 @@ export async function seedCategories() {
       update: {
         name: category.name,
       },
-      create: category,
+      create: {
+        ...category,
+        organizationId: 'ksi',
+      },
     });
   }
 

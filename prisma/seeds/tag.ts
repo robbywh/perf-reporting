@@ -17,7 +17,10 @@ export async function seedTags() {
       update: {
         name: tag.name,
       },
-      create: tag,
+      create: {
+        ...tag,
+        organizationId: 'ksi',
+      },
     });
   }
 

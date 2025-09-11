@@ -1,6 +1,6 @@
 "use client";
 import { ChevronRight } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { memo, useMemo, useCallback } from "react";
 
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -84,6 +84,7 @@ const PerformerItem = memo(function PerformerItem({
   sprintIds?: string;
 }) {
   const router = useRouter();
+  const searchParams = useSearchParams();
 
   // Memoize the avatar fallback text
   const avatarFallback = useMemo(() => {
@@ -98,22 +99,31 @@ const PerformerItem = memo(function PerformerItem({
 
   // Prefetch the engineer page on hover with debounce
   const handleMouseEnter = useCallback(() => {
-    // Prefetch critical data only, not the full page
-    router.prefetch(
-      `/engineer/${performer.id}${sprintIds ? `?sprintIds=${sprintIds}` : ""}`
-    );
-  }, [router, performer.id, sprintIds]);
+    const currentOrg = searchParams.get("org");
+    const params = new URLSearchParams();
+    
+    if (currentOrg) params.set("org", currentOrg);
+    if (sprintIds) params.set("sprintIds", sprintIds);
+    
+    const queryString = params.toString();
+    router.prefetch(`/engineer/${performer.id}${queryString ? `?${queryString}` : ""}`);
+  }, [router, performer.id, sprintIds, searchParams]);
 
   // Add optimistic navigation to make the click feel more responsive
   const handleClick = useCallback(
     (e: React.MouseEvent) => {
       e.preventDefault();
-      // Show immediate loading state while navigating
-      router.push(
-        `/engineer/${performer.id}${sprintIds ? `?sprintIds=${sprintIds}` : ""}`
-      );
+      
+      const currentOrg = searchParams.get("org");
+      const params = new URLSearchParams();
+      
+      if (currentOrg) params.set("org", currentOrg);
+      if (sprintIds) params.set("sprintIds", sprintIds);
+      
+      const queryString = params.toString();
+      router.push(`/engineer/${performer.id}${queryString ? `?${queryString}` : ""}`);
     },
-    [router, performer.id, sprintIds]
+    [router, performer.id, sprintIds, searchParams]
   );
 
   return (

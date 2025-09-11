@@ -19,7 +19,10 @@ export async function seedStatuses() {
       update: {
         name: status.name,
       },
-      create: status,
+      create: {
+        ...status,
+        organizationId: 'ksi',
+      },
     });
   }
 
