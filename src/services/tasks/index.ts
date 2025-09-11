@@ -5,16 +5,6 @@ import { APPROVED_STATUS_IDS } from "@/constants/client";
 import { prisma } from "../db";
 import { findMRDetailsBySprintIdsAndEngineerId } from "../gitlab";
 
-interface Task {
-  id: string;
-  name: string;
-  sprintId: string;
-  statusName?: string | null;
-  categoryId?: string | null;
-  parentTaskId?: string | null;
-  storyPoint?: number | null;
-}
-
 // Define types for task group result
 type GroupedTask = {
   categoryId: string | null;
@@ -82,60 +72,6 @@ export type QATasksBreakdown = {
   rejectedTasks: DetailedTask[];
 };
 
-export async function upsertTask(task: Task) {
-  try {
-    if (!task.statusName) {
-      console.warn(`🟡 Task ${task.id} has no statusName, skipping.`);
-      return;
-    }
-
-    // ✅ Fetch status in one query
-    const existingStatus = await prisma.status.findFirst({
-      where: { 
-        name: task.statusName,
-        organizationId: 'ksi' // Default to ksi for now
-      },
-      select: { id: true },
-    });
-
-    if (!existingStatus) {
-      console.warn(
-        `🟡 Status '${task.statusName}' not found, skipping Task ID ${task.id}.`
-      );
-      return;
-    }
-
-    // ✅ Prepare task data
-    const taskData = {
-      name: task.name,
-      sprintId: task.sprintId,
-      statusId: existingStatus.id,
-      categoryId: task.categoryId || null,
-      parentTaskId: task.parentTaskId || null,
-      storyPoint: task.storyPoint || null,
-    };
-
-    // ✅ Upsert task (insert if missing, update otherwise)
-    await prisma.task.upsert({
-      where: {
-        id_sprintId: {
-          id: task.id,
-          sprintId: task.sprintId,
-        },
-      },
-      update: taskData,
-      create: { id: task.id, ...taskData },
-    });
-
-    console.log(
-      `✅ Task '${task.name}' (ID: ${task.id}, Sprint: ${task.sprintId}) upserted successfully.`
-    );
-  } catch (error) {
-    console.error(`❌ Error processing Task ID ${task.id}:`, error);
-    throw new Error("Failed to upsert task");
-  }
-}
-
 export async function findCountTasksByCategory(sprintIds: string[]) {
   const groupedTasks = (await prisma.task.groupBy({
     by: ["categoryId"],
@@ -158,7 +94,17 @@ export async function findCountTasksByCategory(sprintIds: string[]) {
     },
   })) as GroupedTask[];
 
-  // Fetch category names in the same query
+  // First get organization ID from sprint
+  const sprint = await prisma.sprint.findFirst({
+    where: { id: { in: sprintIds } },
+    select: { organizationId: true },
+  });
+
+  if (!sprint) {
+    return [];
+  }
+
+  // Fetch category names filtered by organization
   const result = await prisma.category.findMany({
     where: {
       id: {
@@ -166,6 +112,7 @@ export async function findCountTasksByCategory(sprintIds: string[]) {
           .map((task: GroupedTask) => task.categoryId)
           .filter((id: string | null): id is string => id !== null),
       },
+      organizationId: sprint.organizationId,
     },
     select: {
       id: true,
