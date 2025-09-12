@@ -27,12 +27,14 @@ type PrismaTransaction = {
 
 async function syncSprintsFromClickUp(organizationId: string) {
   console.log(`🔄 Starting sprint sync for organization: ${organizationId}`);
-  
+
   // Get API configuration from database
   const apiConfig = await getApiConfig(organizationId);
-  
+
   if (!apiConfig.CLICKUP_API_TOKEN || !apiConfig.CLICKUP_FOLDER_ID) {
-    console.log(`⚠️ Missing ClickUp API configuration for organization ${organizationId}, skipping...`);
+    console.log(
+      `⚠️ Missing ClickUp API configuration for organization ${organizationId}, skipping...`
+    );
     return;
   }
 
@@ -122,7 +124,7 @@ async function processBatch(
   // Use a transaction with a longer timeout for this batch
   await prisma.$transaction(
     async (tx: PrismaTransaction) => {
-      // First, bulk upsert all tasks
+      // First, bulk upsert all tasks and wait for completion
       await Promise.all(
         validTasks.map((taskData) =>
           tx.task.upsert({
@@ -152,50 +154,54 @@ async function processBatch(
         )
       );
 
-      // Then, link tags for all tasks
-      await Promise.all(
-        validTasks.map((taskData) =>
-          linkTagsToTask({
-            id: taskData.id,
-            sprintId: taskData.sprintId,
-            tags: taskData.tags,
-          })
-        )
-      );
-
-      await Promise.all(
-        validTasks.map((taskData) =>
-          linkAssigneesToTask({
-            id: taskData.id,
-            assignees: taskData.assignees,
-            sprintId: taskData.sprintId,
-            storyPoint: taskData.storyPoint,
-            statusName: taskData.statusId
-              ? statuses.find((s) => s.id === taskData.statusId)?.name || ""
-              : "",
-          })
-        )
-      );
-
-      await Promise.all(
-        validTasks.map((taskData) =>
-          linkReviewersToTask({
-            id: taskData.id,
-            assignees: taskData.assignees,
-            sprintId: taskData.sprintId,
-            storyPoint: taskData.storyPoint,
-            statusName: taskData.statusId
-              ? statuses.find((s) => s.id === taskData.statusId)?.name || ""
-              : "",
-            name: taskData.name,
-            taskTags: taskData.tags?.map((tag) => ({ tagId: tag.name })),
-          })
-        )
-      );
+      // After all tasks are inserted/updated, then link relationships in parallel
+      // Now it's safe to run in parallel since tasks are guaranteed to exist
+      await Promise.all([
+        // Link tags for all tasks
+        Promise.all(
+          validTasks.map((taskData) =>
+            linkTagsToTask({
+              id: taskData.id,
+              sprintId: taskData.sprintId,
+              tags: taskData.tags,
+            })
+          )
+        ),
+        // Link assignees for all tasks
+        Promise.all(
+          validTasks.map((taskData) =>
+            linkAssigneesToTask({
+              id: taskData.id,
+              assignees: taskData.assignees,
+              sprintId: taskData.sprintId,
+              storyPoint: taskData.storyPoint,
+              statusName: taskData.statusId
+                ? statuses.find((s) => s.id === taskData.statusId)?.name || ""
+                : "",
+            })
+          )
+        ),
+        // Link reviewers for all tasks
+        Promise.all(
+          validTasks.map((taskData) =>
+            linkReviewersToTask({
+              id: taskData.id,
+              assignees: taskData.assignees,
+              sprintId: taskData.sprintId,
+              storyPoint: taskData.storyPoint,
+              statusName: taskData.statusId
+                ? statuses.find((s) => s.id === taskData.statusId)?.name || ""
+                : "",
+              name: taskData.name,
+              taskTags: taskData.tags?.map((tag) => ({ tagId: tag.name })),
+            })
+          )
+        ),
+      ]);
     },
     {
-      timeout: 10000, // 10 seconds timeout for each batch
-      maxWait: 5000, // 5 seconds maximum wait time
+      timeout: 15000, // 20 seconds timeout for each batch
+      maxWait: 10000, // 10 seconds maximum wait time
     }
   );
 }
@@ -203,17 +209,20 @@ async function processBatch(
 async function syncTodayTasksFromClickUp(organizationId: string) {
   try {
     console.log(`🔄 Starting task sync for organization: ${organizationId}`);
-    
+
     // Get API configuration from database
     const apiConfig = await getApiConfig(organizationId);
-    
+
     if (!apiConfig.CLICKUP_API_TOKEN) {
-      console.log(`⚠️ Missing ClickUp API configuration for organization ${organizationId}, skipping...`);
+      console.log(
+        `⚠️ Missing ClickUp API configuration for organization ${organizationId}, skipping...`
+      );
       return;
     }
 
     // Get current and future sprints for engineer/reviewer linking
-    const currentAndFutureSprints = await findCurrentAndFutureSprints(organizationId);
+    const currentAndFutureSprints =
+      await findCurrentAndFutureSprints(organizationId);
 
     // Link engineers and reviewers for current and future sprints
     for (const sprint of currentAndFutureSprints) {
@@ -226,7 +235,7 @@ async function syncTodayTasksFromClickUp(organizationId: string) {
 
     // First, fetch all statuses to create a name-to-id mapping
     const statuses = await prisma.status.findMany({
-      where: { organizationId }
+      where: { organizationId },
     });
     const statusMap = new Map<string, string>(
       statuses.map((s: { name: string; id: string }) => [s.name, s.id])
@@ -241,7 +250,7 @@ async function syncTodayTasksFromClickUp(organizationId: string) {
       // First, collect all tasks for this sprint
       while (!lastPage) {
         const response = await getListTasks(
-          sprint.id, 
+          sprint.id,
           apiConfig.CLICKUP_API_TOKEN,
           apiConfig.CLICKUP_BASE_URL!,
           page
@@ -350,13 +359,17 @@ async function syncTodayTasksFromClickUp(organizationId: string) {
       }
     }
 
-    console.log(`✅ Successfully synchronized tasks for organization: ${organizationId}`);
-    
+    console.log(
+      `✅ Successfully synchronized tasks for organization: ${organizationId}`
+    );
   } catch (error) {
-    console.error(`❌ Error synchronizing tasks for organization ${organizationId}:`, error);
+    console.error(
+      `❌ Error synchronizing tasks for organization ${organizationId}:`,
+      error
+    );
     throw error;
   }
-  }
+}
 
 // GET /api/sprints/sync - Synchronize all sprints from ClickUp
 export async function GET(request: Request) {
@@ -374,25 +387,31 @@ export async function GET(request: Request) {
         name: true,
         settings: {
           where: {
-            param: { in: ['CLICKUP_API_TOKEN', 'CLICKUP_FOLDER_ID'] }
+            param: { in: ["CLICKUP_API_TOKEN", "CLICKUP_FOLDER_ID"] },
           },
           select: {
             param: true,
-            value: true
-          }
-        }
-      }
+            value: true,
+          },
+        },
+      },
     });
 
     // Filter organizations that have both required settings
-    const validOrganizations = organizations.filter(org => {
+    const validOrganizations = organizations.filter((org) => {
       const settings = org.settings;
-      const hasToken = settings.some(s => s.param === 'CLICKUP_API_TOKEN' && s.value);
-      const hasFolder = settings.some(s => s.param === 'CLICKUP_FOLDER_ID' && s.value);
+      const hasToken = settings.some(
+        (s) => s.param === "CLICKUP_API_TOKEN" && s.value
+      );
+      const hasFolder = settings.some(
+        (s) => s.param === "CLICKUP_FOLDER_ID" && s.value
+      );
       return hasToken && hasFolder;
     });
 
-    console.log(`🔍 Found ${validOrganizations.length} organizations with ClickUp configuration`);
+    console.log(
+      `🔍 Found ${validOrganizations.length} organizations with ClickUp configuration`
+    );
 
     // Process each organization sequentially to avoid overwhelming external APIs
     for (const org of validOrganizations) {
@@ -402,7 +421,10 @@ export async function GET(request: Request) {
         await syncTodayTasksFromClickUp(org.id);
         console.log(`✅ Completed sync for organization: ${org.name}`);
       } catch (error) {
-        console.error(`❌ Error syncing organization ${org.name} (${org.id}):`, error);
+        console.error(
+          `❌ Error syncing organization ${org.name} (${org.id}):`,
+          error
+        );
         // Continue with next organization instead of failing completely
       }
     }
