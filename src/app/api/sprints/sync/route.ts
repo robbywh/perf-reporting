@@ -200,7 +200,7 @@ async function processBatch(
       ]);
     },
     {
-      timeout: 15000, // 20 seconds timeout for each batch
+      timeout: 15000, // 15 seconds timeout for each batch
       maxWait: 10000, // 10 seconds maximum wait time
     }
   );
