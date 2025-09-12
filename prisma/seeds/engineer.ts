@@ -8,7 +8,7 @@ export async function seedEngineers() {
       id: 60769508,
       name: "Aaron Christopher Tanhar",
       email: "aaron.christopher@komunal.co.id",
-      jobLevelId: "junior",
+      jobLevelId: "associate",
       gitlabUserId: 4137283,
     },
     {
@@ -29,14 +29,14 @@ export async function seedEngineers() {
       id: 37686742,
       name: "Adiwinoto Saptorenggo",
       email: "adiwinoto.saptorenggo@komunal.co.id",
-      jobLevelId: "sa",
+      jobLevelId: "tl",
       gitlabUserId: 14688406,
     },
     {
       id: 5753351,
       name: "Brian Wahyu Anggriawan",
       email: "brian.anggriawan@komunal.co.id",
-      jobLevelId: "sa",
+      jobLevelId: "tl",
       gitlabUserId: 7740557,
     },
     {
@@ -68,13 +68,13 @@ export async function seedEngineers() {
       where: {
         engineerId_organizationId: {
           engineerId: engineer.id,
-          organizationId: 'ksi',
+          organizationId: "ksi",
         },
       },
       update: {},
       create: {
         engineerId: engineer.id,
-        organizationId: 'ksi',
+        organizationId: "ksi",
       },
     });
   }
