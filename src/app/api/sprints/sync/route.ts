@@ -25,8 +25,9 @@ type PrismaTransaction = {
   [key: string]: unknown;
 };
 
-async function syncSprintsFromClickUp(organizationId: string) {
-  console.log(`🔄 Starting sprint sync for organization: ${organizationId}`);
+async function syncSprintsFromClickUp(organizationId: string, targetSprintId?: string) {
+  const sprintInfo = targetSprintId ? ` for sprint ${targetSprintId}` : '';
+  console.log(`🔄 Starting sprint sync for organization: ${organizationId}${sprintInfo}`);
 
   try {
     // Get API configuration from database
@@ -37,6 +38,21 @@ async function syncSprintsFromClickUp(organizationId: string) {
         `⚠️ Missing ClickUp API configuration for organization ${organizationId}, skipping...`
       );
       return;
+    }
+
+    // If targeting a specific sprint, validate it exists and belongs to this organization
+    if (targetSprintId) {
+      const existingSprint = await prisma.sprint.findFirst({
+        where: {
+          id: targetSprintId,
+          organizationId
+        }
+      });
+
+      if (!existingSprint) {
+        console.log(`❌ Sprint ${targetSprintId} not found in organization ${organizationId}`);
+        return;
+      }
     }
 
     // Call the external API library to fetch sprint lists from ClickUp.
@@ -52,8 +68,18 @@ async function syncSprintsFromClickUp(organizationId: string) {
       throw new Error("Invalid API response structure");
     }
 
+    // Filter lists if targeting a specific sprint
+    const filteredLists = targetSprintId
+      ? lists.filter(list => list.id === targetSprintId)
+      : lists;
+
+    if (targetSprintId && filteredLists.length === 0) {
+      console.log(`⚠️ Sprint ${targetSprintId} not found in ClickUp folder`);
+      return;
+    }
+
     // Process all sprints in a single transaction
-    const sprintData = lists.map((list) => {
+    const sprintData = filteredLists.map((list) => {
       const { id, name, start_date: startDate, due_date: dueDate } = list;
 
       // Create dates with +1 day adjustment in a single step
@@ -223,9 +249,10 @@ async function processBatch(
   ]);
 }
 
-async function syncTodayTasksFromClickUp(organizationId: string) {
+async function syncTodayTasksFromClickUp(organizationId: string, targetSprintId?: string) {
   try {
-    console.log(`🔄 Starting task sync for organization: ${organizationId}`);
+    const sprintInfo = targetSprintId ? ` for sprint ${targetSprintId}` : '';
+    console.log(`🔄 Starting task sync for organization: ${organizationId}${sprintInfo}`);
 
     // Get API configuration from database
     const apiConfig = await getApiConfig(organizationId);
@@ -237,18 +264,37 @@ async function syncTodayTasksFromClickUp(organizationId: string) {
       return;
     }
 
-    // Get current and future sprints for engineer/reviewer linking
-    const currentAndFutureSprints =
-      await findCurrentAndFutureSprints(organizationId);
+    // Get sprints to sync - either specific sprint or current/future sprints
+    let sprintsToSync;
+    if (targetSprintId) {
+      // For specific sprint, get just that sprint
+      const specificSprint = await prisma.sprint.findFirst({
+        where: {
+          id: targetSprintId,
+          organizationId
+        }
+      });
 
-    // Link engineers and reviewers for current and future sprints
-    for (const sprint of currentAndFutureSprints) {
-      await linkSprintsToEngineers(sprint.id, organizationId);
-      await linkSprintsToReviewers(sprint.id, organizationId);
+      if (!specificSprint) {
+        console.log(`❌ Sprint ${targetSprintId} not found in organization ${organizationId}`);
+        return;
+      }
+
+      sprintsToSync = [specificSprint];
+      console.log(`🎯 Syncing specific sprint: ${specificSprint.name}`);
+    } else {
+      // Get current and future sprints for engineer/reviewer linking
+      const currentAndFutureSprints = await findCurrentAndFutureSprints(organizationId);
+
+      // Link engineers and reviewers for current and future sprints
+      for (const sprint of currentAndFutureSprints) {
+        await linkSprintsToEngineers(sprint.id, organizationId);
+        await linkSprintsToReviewers(sprint.id, organizationId);
+      }
+
+      // Get today's sprints for task syncing
+      sprintsToSync = await findTodaySprints(organizationId);
     }
-
-    // Get today's sprints for task syncing
-    const todaySprints = await findTodaySprints(organizationId);
 
     // First, fetch all statuses to create a name-to-id mapping
     const statuses = await prisma.status.findMany({
@@ -264,8 +310,8 @@ async function syncTodayTasksFromClickUp(organizationId: string) {
     });
     const categoryIds = new Set(categories.map((c) => c.id));
 
-    // Only sync tasks for today's sprints
-    for (const sprint of todaySprints) {
+    // Only sync tasks for the determined sprints
+    for (const sprint of sprintsToSync) {
       let page = 0;
       let lastPage = false;
       const allTasks: ClickUpTask[] = [];
@@ -406,7 +452,9 @@ async function syncTodayTasksFromClickUp(organizationId: string) {
 }
 
 // GET /api/sprints/sync - Synchronize sprints from ClickUp
-// Optional query parameter: organization_id - if provided, sync only that organization
+// Optional query parameters:
+// - organization_id: if provided with value, sync only that organization; if empty, sync all organizations
+// - sprint_id: if provided with value, sync only that specific sprint; if empty, sync all sprints
 export async function GET(request: Request) {
   try {
     const authHeader = request.headers.get("authorization");
@@ -416,13 +464,38 @@ export async function GET(request: Request) {
       });
     }
 
-    // Parse URL to get optional organization_id parameter
+    // Parse URL to get optional parameters
     const url = new URL(request.url);
-    const targetOrganizationId = url.searchParams.get("organization_id");
+    const rawOrganizationId = url.searchParams.get("organization_id");
+    const rawSprintId = url.searchParams.get("sprint_id");
+
+    // Treat empty strings as null (sync all)
+    const targetOrganizationId = rawOrganizationId && rawOrganizationId.trim() !== '' ? rawOrganizationId : null;
+    const targetSprintId = rawSprintId && rawSprintId.trim() !== '' ? rawSprintId : null;
+
+    // If sprint_id is provided, get its organization
+    let sprintOrganizationId = targetOrganizationId;
+    if (targetSprintId) {
+      const sprint = await prisma.sprint.findUnique({
+        where: { id: targetSprintId },
+        select: { organizationId: true, name: true },
+      });
+
+      if (!sprint) {
+        console.log(`❌ Sprint ${targetSprintId} not found`);
+        return NextResponse.json({
+          success: false,
+          error: `Sprint ${targetSprintId} not found`,
+        }, { status: 400 });
+      }
+
+      sprintOrganizationId = sprint.organizationId;
+      console.log(`🎯 Targeting specific sprint: ${targetSprintId} (${sprint.name}) in organization: ${sprintOrganizationId}`);
+    }
 
     // Build the where clause for organization filtering
-    const organizationWhere = targetOrganizationId
-      ? { id: targetOrganizationId }
+    const organizationWhere = sprintOrganizationId
+      ? { id: sprintOrganizationId }
       : {};
 
     // Get organizations that have API configuration (all or specific one)
@@ -455,6 +528,14 @@ export async function GET(request: Request) {
       return hasToken && hasFolder;
     });
 
+    // Log parameter interpretation
+    if (rawOrganizationId !== null && rawOrganizationId.trim() === '') {
+      console.log(`📝 Empty organization_id parameter detected - syncing all organizations`);
+    }
+    if (rawSprintId !== null && rawSprintId.trim() === '') {
+      console.log(`📝 Empty sprint_id parameter detected - syncing all sprints`);
+    }
+
     if (targetOrganizationId) {
       console.log(
         `🎯 Targeting specific organization: ${targetOrganizationId}`
@@ -485,8 +566,8 @@ export async function GET(request: Request) {
     for (const org of validOrganizations) {
       try {
         console.log(`\n📋 Processing organization: ${org.name} (${org.id})`);
-        await syncSprintsFromClickUp(org.id);
-        await syncTodayTasksFromClickUp(org.id);
+        await syncSprintsFromClickUp(org.id, targetSprintId || undefined);
+        await syncTodayTasksFromClickUp(org.id, targetSprintId || undefined);
         console.log(`✅ Completed sync for organization: ${org.name}`);
       } catch (error) {
         console.error(
@@ -497,15 +578,21 @@ export async function GET(request: Request) {
       }
     }
 
-    const message = targetOrganizationId
-      ? `Successfully synchronized sprints for organization ${targetOrganizationId}`
-      : `Successfully synchronized sprints for ${validOrganizations.length} organizations`;
+    let message = '';
+    if (targetSprintId) {
+      message = `Successfully synchronized sprint ${targetSprintId}`;
+    } else if (targetOrganizationId) {
+      message = `Successfully synchronized sprints for organization ${targetOrganizationId}`;
+    } else {
+      message = `Successfully synchronized sprints for ${validOrganizations.length} organizations`;
+    }
 
     return NextResponse.json({
       success: true,
       message,
       organizationsProcessed: validOrganizations.length,
       targetOrganization: targetOrganizationId || null,
+      targetSprint: targetSprintId || null,
     });
   } catch (error) {
     console.error("Error synchronizing sprints:", error);
