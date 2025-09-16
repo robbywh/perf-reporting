@@ -1,3 +1,4 @@
+import { CACHE_STRATEGY } from "@/constants/server";
 import { prisma } from "@/services/db";
 
 export async function findAllEngineers(organizationId?: string) {
@@ -18,8 +19,7 @@ export async function findAllEngineers(organizationId?: string) {
         name: "asc",
       },
       cacheStrategy: {
-        swr: 2 * 60, // 2 minutes
-        ttl: 10 * 60, // 10 minutes
+        ...CACHE_STRATEGY.DEFAULT,
         tags: ["findAllEngineers"],
       },
     });

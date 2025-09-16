@@ -1,3 +1,4 @@
+import { CACHE_STRATEGY } from "@/constants/server";
 import { prisma } from "@/services/db";
 
 export interface MRDetail {
@@ -34,8 +35,7 @@ export async function findMRDetailsBySprintIdsAndEngineerId(
       },
     },
     cacheStrategy: {
-      swr: 2 * 60, // 2 minutes
-      ttl: 10 * 60, // 10 minutes
+      ...CACHE_STRATEGY.DEFAULT,
       tags: [`mr_details_eng_${engineerId}`, `sprints_${sprintKey}`],
     },
   });

@@ -1,5 +1,7 @@
 import { Decimal } from "@prisma/client/runtime/library";
 
+import { CACHE_STRATEGY } from "@/constants/server";
+
 import { prisma } from "../db";
 
 export async function findTodaySprints(organizationId?: string) {
@@ -41,8 +43,7 @@ export async function findAllSprints(organizationId?: string) {
     orderBy: { startDate: "desc" },
     take: 24,
     cacheStrategy: {
-      swr: 2 * 60, // 2 minutes
-      ttl: 10 * 60, // 10 minutes
+      ...CACHE_STRATEGY.DEFAULT,
       tags: ["findAllSprints"],
     },
   });

@@ -1,7 +1,7 @@
 import { Decimal } from "@prisma/client/runtime/library";
 
 import { adjustBaselineTarget } from "@/actions/leave-holiday";
-import { getApiConfig } from "@/constants/server";
+import { getApiConfig, CACHE_STRATEGY } from "@/constants/server";
 import { getMergedMRsBySprintPeriod } from "@/lib/gitlab/mr"; // Ensure this function is defined
 import { prisma } from "@/services/db";
 
@@ -65,8 +65,7 @@ export async function linkSprintsToEngineers(
         },
       },
       cacheStrategy: {
-        swr: 2 * 60, // 2 minutes
-        ttl: 10 * 60, // 10 minutes
+        ...CACHE_STRATEGY.DEFAULT,
         tags: [`allEngineers_${organizationId}`],
       },
     });
@@ -300,8 +299,7 @@ export async function findCapacityVsRealityBySprintIds(
     },
     orderBy: { id: "asc" },
     cacheStrategy: {
-      swr: 2 * 60, // 2 minutes
-      ttl: 10 * 60, // 10 minutes
+      ...CACHE_STRATEGY.DEFAULT,
       tags: ["capacityVsReality"],
     },
   });
@@ -366,8 +364,7 @@ export async function findTopPerformersBySprintIds(sprintIds: string[]) {
       target: true, // Calculate the average target
     },
     cacheStrategy: {
-      swr: 2 * 60, // 2 minutes
-      ttl: 10 * 60, // 10 minutes
+      ...CACHE_STRATEGY.DEFAULT,
       tags: ["topPerformers"],
     },
   });
@@ -383,8 +380,7 @@ export async function findTopPerformersBySprintIds(sprintIds: string[]) {
       email: true,
     },
     cacheStrategy: {
-      swr: 2 * 60, // 2 minutes
-      ttl: 10 * 60, // 10 minutes
+      ...CACHE_STRATEGY.DEFAULT,
       tags: ["allPerformers"],
     },
   });
@@ -432,8 +428,7 @@ export async function findEngineerTrendBySprintIds(sprintIds: string[]) {
     },
     orderBy: [{ sprintId: "asc" }, { storyPoints: "desc" }],
     cacheStrategy: {
-      swr: 2 * 60, // 2 minutes
-      ttl: 10 * 60, // 10 minutes
+      ...CACHE_STRATEGY.DEFAULT,
       tags: ["sprintStoryPoints"],
     },
   });
@@ -497,8 +492,7 @@ export async function findAveragesByEngineerAndSprintIds(
       baselineCh: true,
     },
     cacheStrategy: {
-      swr: 2 * 60, // 2 minutes
-      ttl: 10 * 60, // 10 minutes
+      ...CACHE_STRATEGY.DEFAULT,
       tags: ["findAveragesByEngineerAndSprintIds"],
     },
   });

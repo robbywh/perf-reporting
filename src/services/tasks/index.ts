@@ -1,6 +1,7 @@
 import type { Decimal } from "@prisma/client/runtime/library";
 
 import { APPROVED_STATUS_IDS } from "@/constants/client";
+import { CACHE_STRATEGY } from "@/constants/server";
 
 import { prisma } from "../db";
 import { findMRDetailsBySprintIdsAndEngineerId } from "../gitlab";
@@ -88,8 +89,7 @@ export async function findCountTasksByCategory(sprintIds: string[]) {
       },
     },
     cacheStrategy: {
-      swr: 2 * 60, // 2 minutes
-      ttl: 10 * 60, // 10 minutes
+      ...CACHE_STRATEGY.DEFAULT,
       tags: ["groupedTasks"],
     },
   })) as GroupedTask[];
@@ -119,8 +119,7 @@ export async function findCountTasksByCategory(sprintIds: string[]) {
       name: true,
     },
     cacheStrategy: {
-      swr: 2 * 60, // 2 minutes
-      ttl: 10 * 60, // 10 minutes
+      ...CACHE_STRATEGY.DEFAULT,
       tags: ["categoryNames"],
     },
   });
@@ -165,8 +164,7 @@ export async function findTotalTaskToQACounts(
       assignees: { select: { engineerId: true } },
     },
     cacheStrategy: {
-      swr: 2 * 60, // 2 minutes
-      ttl: 10 * 60, // 10 minutes
+      ...CACHE_STRATEGY.DEFAULT,
       tags: ["findTotalTaskToQACounts"],
     },
   })) as TaskWithAssignees[];
@@ -259,8 +257,7 @@ export async function findAverageSPAndMergedCountBySprintIds(
         },
       },
       cacheStrategy: {
-        swr: 2 * 60, // 2 minutes
-        ttl: 10 * 60, // 10 minutes
+        ...CACHE_STRATEGY.DEFAULT,
         tags: [`tasks_eng_${engineerId}`, `sprints_${sprintKey}`],
       },
     })) as (TaskWithTags & {
@@ -275,8 +272,7 @@ export async function findAverageSPAndMergedCountBySprintIds(
       where: { sprintId: { in: sprintIds }, engineerId },
       select: { sprintId: true },
       cacheStrategy: {
-        swr: 2 * 60, // 2 minutes
-        ttl: 10 * 60, // 10 minutes
+        ...CACHE_STRATEGY.DEFAULT,
         tags: [`gitlab_eng_${engineerId}`, `sprints_${sprintKey}`],
       },
     }),
@@ -487,8 +483,7 @@ export async function findDetailedTaskToQACounts(
       },
     },
     cacheStrategy: {
-      swr: 2 * 60, // 2 minutes
-      ttl: 10 * 60, // 10 minutes
+      ...CACHE_STRATEGY.DEFAULT,
       tags: ["findDetailedTaskToQACounts"],
     },
   });

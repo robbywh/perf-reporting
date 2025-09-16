@@ -1,3 +1,5 @@
+import { CACHE_STRATEGY } from "@/constants/server";
+
 import { prisma } from "../db";
 
 export async function findRoleIdAndEngineerIdByUserId(
@@ -10,8 +12,7 @@ export async function findRoleIdAndEngineerIdByUserId(
       engineerId: true, // Fetch the engineerId if it exists
     },
     cacheStrategy: {
-      swr: 2 * 60, // 2 minutes
-      ttl: 10 * 60, // 10 minutes
+      ...CACHE_STRATEGY.DEFAULT,
       tags: ["findRoleIdAndEngineerIdByUserId"],
     },
   });
@@ -30,8 +31,7 @@ export async function findEngineerById(engineerId: number) {
       name: true,
     },
     cacheStrategy: {
-      swr: 2 * 60, // 2 minutes
-      ttl: 10 * 60, // 10 minutes
+      ...CACHE_STRATEGY.DEFAULT,
       tags: ["findEngineerById"],
     },
   });
