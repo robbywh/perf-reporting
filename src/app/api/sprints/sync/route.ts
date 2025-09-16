@@ -28,76 +28,96 @@ type PrismaTransaction = {
 async function syncSprintsFromClickUp(organizationId: string) {
   console.log(`🔄 Starting sprint sync for organization: ${organizationId}`);
 
-  // Get API configuration from database
-  const apiConfig = await getApiConfig(organizationId);
+  try {
+    // Get API configuration from database
+    const apiConfig = await getApiConfig(organizationId);
 
-  if (!apiConfig.CLICKUP_API_TOKEN || !apiConfig.CLICKUP_FOLDER_ID) {
-    console.log(
-      `⚠️ Missing ClickUp API configuration for organization ${organizationId}, skipping...`
+    if (!apiConfig.CLICKUP_API_TOKEN || !apiConfig.CLICKUP_FOLDER_ID) {
+      console.log(
+        `⚠️ Missing ClickUp API configuration for organization ${organizationId}, skipping...`
+      );
+      return;
+    }
+
+    // Call the external API library to fetch sprint lists from ClickUp.
+    const folderListResponse = await getFolderList(
+      apiConfig.CLICKUP_API_TOKEN,
+      apiConfig.CLICKUP_BASE_URL!,
+      apiConfig.CLICKUP_FOLDER_ID
     );
-    return;
-  }
 
-  // Call the external API library to fetch sprint lists from ClickUp.
-  const folderListResponse = await getFolderList(
-    apiConfig.CLICKUP_API_TOKEN,
-    apiConfig.CLICKUP_BASE_URL!,
-    apiConfig.CLICKUP_FOLDER_ID
-  );
+    // Ensure the response contains a "lists" array.
+    const lists = folderListResponse.lists;
+    if (!lists || !Array.isArray(lists)) {
+      throw new Error("Invalid API response structure");
+    }
 
-  // Ensure the response contains a "lists" array.
-  const lists = folderListResponse.lists;
-  if (!lists || !Array.isArray(lists)) {
-    throw new Error("Invalid API response structure");
-  }
+    // Process all sprints in a single transaction
+    const sprintData = lists.map((list) => {
+      const { id, name, start_date: startDate, due_date: dueDate } = list;
 
-  // Process all sprints in a single transaction
-  const sprintData = lists.map((list) => {
-    const { id, name, start_date: startDate, due_date: dueDate } = list;
+      // Create dates with +1 day adjustment in a single step
+      const startTimestamp = Number(startDate) + 24 * 60 * 60 * 1000; // Add 1 day in milliseconds
+      const startDateUTC = new Date(startTimestamp);
+      startDateUTC.setUTCHours(0, 0, 0, 0);
 
-    // Create dates with +1 day adjustment in a single step
-    const startTimestamp = Number(startDate) + 24 * 60 * 60 * 1000; // Add 1 day in milliseconds
-    const startDateUTC = new Date(startTimestamp);
-    startDateUTC.setUTCHours(0, 0, 0, 0);
+      const endTimestamp = Number(dueDate) + 24 * 60 * 60 * 1000; // Add 1 day in milliseconds
+      const endDateUTC = new Date(endTimestamp);
+      endDateUTC.setUTCHours(23, 59, 59, 999);
 
-    const endTimestamp = Number(dueDate) + 24 * 60 * 60 * 1000; // Add 1 day in milliseconds
-    const endDateUTC = new Date(endTimestamp);
-    endDateUTC.setUTCHours(23, 59, 59, 999);
+      return {
+        id,
+        name: name.substring(0, 10),
+        startDate: startDateUTC,
+        endDate: endDateUTC,
+        organizationId,
+      };
+    });
 
-    return {
-      id,
-      name: name.substring(0, 10),
-      startDate: startDateUTC,
-      endDate: endDateUTC,
-      organizationId,
-    };
-  });
+    await prisma.$transaction(async (tx: PrismaTransaction) => {
+      // Bulk upsert all sprints
+      await Promise.all(
+        sprintData.map((sprint) =>
+          tx.sprint.upsert({
+            where: { id: sprint.id },
+            create: sprint,
+            update: sprint,
+          })
+        )
+      );
+    });
 
-  await prisma.$transaction(async (tx: PrismaTransaction) => {
-    // Bulk upsert all sprints
-    await Promise.all(
-      sprintData.map((sprint) =>
-        tx.sprint.upsert({
-          where: { id: sprint.id },
-          create: sprint,
-          update: sprint,
-        })
-      )
+    console.log(`✅ Successfully synchronized sprints for organization: ${organizationId}`);
+  } catch (error) {
+    console.error(
+      `❌ Error synchronizing sprints for organization ${organizationId}:`,
+      error
     );
-  });
+    // Don't throw - let the main sync continue with next organization
+  }
 }
 
 async function processBatch(
   tasks: ClickUpTask[],
   sprint: { id: string },
   statusMap: Map<string, string>,
-  statuses: { id: string; name: string }[]
+  statuses: { id: string; name: string }[],
+  categoryIds: Set<string>
 ) {
   const taskDataBatch = tasks.map((task) => {
     const categoryField = task.custom_fields?.find(
       (field) => field.name === "Kategori"
     );
-    const categoryId = categoryField?.value?.[0] ?? null;
+    const rawCategoryId = categoryField?.value?.[0] ?? null;
+    // Only use categoryId if it exists in the organization
+    const categoryId = rawCategoryId && categoryIds.has(rawCategoryId) ? rawCategoryId : null;
+
+    if (rawCategoryId && !categoryIds.has(rawCategoryId)) {
+      console.warn(
+        `🟡 Task ${task.id} (${task.name}) has invalid category: ${rawCategoryId}, setting to null`
+      );
+    }
+
     const storyPoint = task.time_estimate ? task.time_estimate / 3600000 : 0;
     const statusId = statusMap.get(task.status.status);
     if (!statusId) {
@@ -121,89 +141,86 @@ async function processBatch(
   // Filter out tasks with invalid status
   const validTasks = taskDataBatch.filter((task) => task.statusId);
 
-  // Use a transaction with a longer timeout for this batch
+  // First, ensure all tasks are migrated/created before any linking
   await prisma.$transaction(
     async (tx: PrismaTransaction) => {
-      // First, bulk upsert all tasks and wait for completion
-      await Promise.all(
-        validTasks.map((taskData) =>
-          tx.task.upsert({
-            where: {
-              id_sprintId: {
-                id: taskData.id,
-                sprintId: taskData.sprintId,
-              },
+      // Step 1: Sequentially upsert all tasks to ensure they exist
+      for (const taskData of validTasks) {
+        await tx.task.upsert({
+          where: {
+            id_sprintId: {
+              id: taskData.id,
+              sprintId: taskData.sprintId,
             },
-            create: {
-              id: taskData.id,
-              name: taskData.name,
-              sprintId: taskData.sprintId,
-              statusId: taskData.statusId,
-              categoryId: taskData.categoryId,
-              parentTaskId: taskData.parentTaskId,
-              storyPoint: taskData.storyPoint,
-            },
-            update: {
-              name: taskData.name,
-              statusId: taskData.statusId,
-              categoryId: taskData.categoryId,
-              parentTaskId: taskData.parentTaskId,
-              storyPoint: taskData.storyPoint,
-            },
-          })
-        )
-      );
-
-      // After all tasks are inserted/updated, then link relationships in parallel
-      // Now it's safe to run in parallel since tasks are guaranteed to exist
-      await Promise.all([
-        // Link tags for all tasks
-        Promise.all(
-          validTasks.map((taskData) =>
-            linkTagsToTask({
-              id: taskData.id,
-              sprintId: taskData.sprintId,
-              tags: taskData.tags,
-            })
-          )
-        ),
-        // Link assignees for all tasks
-        Promise.all(
-          validTasks.map((taskData) =>
-            linkAssigneesToTask({
-              id: taskData.id,
-              assignees: taskData.assignees,
-              sprintId: taskData.sprintId,
-              storyPoint: taskData.storyPoint,
-              statusName: taskData.statusId
-                ? statuses.find((s) => s.id === taskData.statusId)?.name || ""
-                : "",
-            })
-          )
-        ),
-        // Link reviewers for all tasks
-        Promise.all(
-          validTasks.map((taskData) =>
-            linkReviewersToTask({
-              id: taskData.id,
-              assignees: taskData.assignees,
-              sprintId: taskData.sprintId,
-              storyPoint: taskData.storyPoint,
-              statusName: taskData.statusId
-                ? statuses.find((s) => s.id === taskData.statusId)?.name || ""
-                : "",
-              name: taskData.name,
-              taskTags: taskData.tags?.map((tag) => ({ tagId: tag.name })),
-            })
-          )
-        ),
-      ]);
+          },
+          create: {
+            id: taskData.id,
+            name: taskData.name,
+            sprintId: taskData.sprintId,
+            statusId: taskData.statusId,
+            categoryId: taskData.categoryId,
+            parentTaskId: taskData.parentTaskId,
+            storyPoint: taskData.storyPoint,
+          },
+          update: {
+            name: taskData.name,
+            statusId: taskData.statusId,
+            categoryId: taskData.categoryId,
+            parentTaskId: taskData.parentTaskId,
+            storyPoint: taskData.storyPoint,
+          },
+        });
+      }
     },
     {
-      timeout: 15000, // 15 seconds timeout for each batch
+      timeout: 15000, // 15 seconds timeout for task creation
       maxWait: 10000, // 10 seconds maximum wait time
     }
   );
+
+  // Step 2: After all tasks are guaranteed to exist, create relationships
+  await Promise.all([
+    // Link tags for all tasks
+    Promise.all(
+      validTasks.map((taskData) =>
+        linkTagsToTask({
+          id: taskData.id,
+          sprintId: taskData.sprintId,
+          tags: taskData.tags,
+        })
+      )
+    ),
+    // Link assignees for all tasks
+    Promise.all(
+      validTasks.map((taskData) =>
+        linkAssigneesToTask({
+          id: taskData.id,
+          assignees: taskData.assignees,
+          sprintId: taskData.sprintId,
+          storyPoint: taskData.storyPoint,
+          statusName: taskData.statusId
+            ? statuses.find((s) => s.id === taskData.statusId)?.name || ""
+            : "",
+        })
+      )
+    ),
+    // Link reviewers for all tasks
+    Promise.all(
+      validTasks.map((taskData) =>
+        linkReviewersToTask({
+          id: taskData.id,
+          assignees: taskData.assignees,
+          sprintId: taskData.sprintId,
+          storyPoint: taskData.storyPoint,
+          statusName: taskData.statusId
+            ? statuses.find((s) => s.id === taskData.statusId)?.name || ""
+            : "",
+          name: taskData.name,
+          taskTags: taskData.tags?.map((tag) => ({ tagId: tag.name })),
+        })
+      )
+    ),
+  ]);
 }
 
 async function syncTodayTasksFromClickUp(organizationId: string) {
@@ -241,6 +258,12 @@ async function syncTodayTasksFromClickUp(organizationId: string) {
       statuses.map((s: { name: string; id: string }) => [s.name, s.id])
     );
 
+    // Fetch all categories for this organization to validate categoryId
+    const categories = await prisma.category.findMany({
+      where: { organizationId },
+    });
+    const categoryIds = new Set(categories.map((c) => c.id));
+
     // Only sync tasks for today's sprints
     for (const sprint of todaySprints) {
       let page = 0;
@@ -248,16 +271,25 @@ async function syncTodayTasksFromClickUp(organizationId: string) {
       const allTasks: ClickUpTask[] = [];
 
       // First, collect all tasks for this sprint
-      while (!lastPage) {
-        const response = await getListTasks(
-          sprint.id,
-          apiConfig.CLICKUP_API_TOKEN,
-          apiConfig.CLICKUP_BASE_URL!,
-          page
+      try {
+        while (!lastPage) {
+          const response = await getListTasks(
+            sprint.id,
+            apiConfig.CLICKUP_API_TOKEN,
+            apiConfig.CLICKUP_BASE_URL!,
+            page
+          );
+          allTasks.push(...response.tasks);
+          lastPage = response.last_page;
+          page++;
+        }
+      } catch (error) {
+        console.error(
+          `❌ Error fetching tasks for sprint ${sprint.id} in organization ${organizationId}:`,
+          error
         );
-        allTasks.push(...response.tasks);
-        lastPage = response.last_page;
-        page++;
+        // Skip this sprint and continue with next sprint
+        continue;
       }
 
       // Get all existing tasks in this sprint
@@ -328,7 +360,8 @@ async function syncTodayTasksFromClickUp(organizationId: string) {
             taskBatch,
             sprint,
             statusMap as Map<string, string>,
-            statuses
+            statuses,
+            categoryIds
           );
         } catch (error: unknown) {
           if (
@@ -349,7 +382,8 @@ async function syncTodayTasksFromClickUp(organizationId: string) {
                 smallerBatch,
                 sprint,
                 statusMap as Map<string, string>,
-                statuses
+                statuses,
+                categoryIds
               );
             }
           } else {

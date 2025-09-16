@@ -15,7 +15,10 @@ export async function getFolderList(
     });
 
     if (!response.ok) {
-      throw new Error(`Error: ${response.status} ${response.statusText}`);
+      const errorText = await response.text();
+      throw new Error(
+        `ClickUp API Error: ${response.status} ${response.statusText}. Response: ${errorText}`
+      );
     }
 
     const data = await response.json();

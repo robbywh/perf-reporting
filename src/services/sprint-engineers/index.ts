@@ -5,7 +5,10 @@ import { getApiConfig } from "@/constants/server";
 import { getMergedMRsBySprintPeriod } from "@/lib/gitlab/mr"; // Ensure this function is defined
 import { prisma } from "@/services/db";
 
-export async function linkSprintsToEngineers(sprintId: string, organizationId: string) {
+export async function linkSprintsToEngineers(
+  sprintId: string,
+  organizationId: string
+) {
   try {
     // ✅ Fetch Sprint start_date and end_date
     const sprint = await prisma.sprint.findUnique({
@@ -22,9 +25,11 @@ export async function linkSprintsToEngineers(sprintId: string, organizationId: s
 
     // Get API configuration from database
     const apiConfig = await getApiConfig(organizationId);
-    
+
     if (!apiConfig.GITLAB_PERSONAL_ACCESS_TOKEN || !apiConfig.GITLAB_GROUP_ID) {
-      console.log("❌ Missing GitLab API configuration, skipping GitLab integration");
+      console.log(
+        "❌ Missing GitLab API configuration, skipping GitLab integration"
+      );
       return;
     }
 
@@ -42,9 +47,9 @@ export async function linkSprintsToEngineers(sprintId: string, organizationId: s
       where: {
         engineerOrganizations: {
           some: {
-            organizationId
-          }
-        }
+            organizationId,
+          },
+        },
       },
       select: {
         id: true,

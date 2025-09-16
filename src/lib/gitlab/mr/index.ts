@@ -36,7 +36,10 @@ export async function getMergedMRsBySprintPeriod(
       });
 
       if (!response.ok) {
-        throw new Error(`GitLab API error: ${response.statusText}`);
+        const errorText = await response.text();
+        throw new Error(
+          `GitLab API Error: ${response.status} ${response.statusText}. Response: ${errorText}`
+        );
       }
 
       const data: GitLabMergeRequest[] = await response.json();
