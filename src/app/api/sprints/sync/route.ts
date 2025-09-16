@@ -405,7 +405,8 @@ async function syncTodayTasksFromClickUp(organizationId: string) {
   }
 }
 
-// GET /api/sprints/sync - Synchronize all sprints from ClickUp
+// GET /api/sprints/sync - Synchronize sprints from ClickUp
+// Optional query parameter: organization_id - if provided, sync only that organization
 export async function GET(request: Request) {
   try {
     const authHeader = request.headers.get("authorization");
@@ -414,8 +415,19 @@ export async function GET(request: Request) {
         status: 401,
       });
     }
-    // Get all organizations that have API configuration
+
+    // Parse URL to get optional organization_id parameter
+    const url = new URL(request.url);
+    const targetOrganizationId = url.searchParams.get("organization_id");
+
+    // Build the where clause for organization filtering
+    const organizationWhere = targetOrganizationId
+      ? { id: targetOrganizationId }
+      : {};
+
+    // Get organizations that have API configuration (all or specific one)
     const organizations = await prisma.organization.findMany({
+      where: organizationWhere,
       select: {
         id: true,
         name: true,
@@ -443,9 +455,31 @@ export async function GET(request: Request) {
       return hasToken && hasFolder;
     });
 
-    console.log(
-      `🔍 Found ${validOrganizations.length} organizations with ClickUp configuration`
-    );
+    if (targetOrganizationId) {
+      console.log(
+        `🎯 Targeting specific organization: ${targetOrganizationId}`
+      );
+
+      if (validOrganizations.length === 0) {
+        const message = organizations.length === 0
+          ? `Organization ${targetOrganizationId} not found`
+          : `Organization ${targetOrganizationId} found but missing ClickUp API configuration`;
+
+        console.log(`❌ ${message}`);
+        return NextResponse.json({
+          success: false,
+          error: message,
+        }, { status: 400 });
+      }
+
+      console.log(
+        `🔍 Found organization with ClickUp configuration: ${validOrganizations[0].name}`
+      );
+    } else {
+      console.log(
+        `🔍 Found ${validOrganizations.length} organizations with ClickUp configuration`
+      );
+    }
 
     // Process each organization sequentially to avoid overwhelming external APIs
     for (const org of validOrganizations) {
@@ -463,9 +497,15 @@ export async function GET(request: Request) {
       }
     }
 
+    const message = targetOrganizationId
+      ? `Successfully synchronized sprints for organization ${targetOrganizationId}`
+      : `Successfully synchronized sprints for ${validOrganizations.length} organizations`;
+
     return NextResponse.json({
       success: true,
-      message: "Successfully synchronized sprints from ClickUp",
+      message,
+      organizationsProcessed: validOrganizations.length,
+      targetOrganization: targetOrganizationId || null,
     });
   } catch (error) {
     console.error("Error synchronizing sprints:", error);
