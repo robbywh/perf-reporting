@@ -100,28 +100,37 @@ const PerformerItem = memo(function PerformerItem({
   // Prefetch the engineer page on hover with debounce
   const handleMouseEnter = useCallback(() => {
     const currentOrg = searchParams.get("org");
+
+    // Only prefetch if we have organization context
+    if (!currentOrg) return;
+
     const params = new URLSearchParams();
-    
-    if (currentOrg) params.set("org", currentOrg);
+    params.set("org", currentOrg);
     if (sprintIds) params.set("sprintIds", sprintIds);
-    
+
     const queryString = params.toString();
-    router.prefetch(`/engineer/${performer.id}${queryString ? `?${queryString}` : ""}`);
+    router.prefetch(`/engineer/${performer.id}?${queryString}`);
   }, [router, performer.id, sprintIds, searchParams]);
 
   // Add optimistic navigation to make the click feel more responsive
   const handleClick = useCallback(
     (e: React.MouseEvent) => {
       e.preventDefault();
-      
+
       const currentOrg = searchParams.get("org");
+
+      // If no organization is in the URL, we can't navigate to engineer page
+      if (!currentOrg) {
+        console.error("No organization parameter found. Unable to navigate to engineer page.");
+        return;
+      }
+
       const params = new URLSearchParams();
-      
-      if (currentOrg) params.set("org", currentOrg);
+      params.set("org", currentOrg);
       if (sprintIds) params.set("sprintIds", sprintIds);
-      
+
       const queryString = params.toString();
-      router.push(`/engineer/${performer.id}${queryString ? `?${queryString}` : ""}`);
+      router.push(`/engineer/${performer.id}?${queryString}`);
     },
     [router, performer.id, sprintIds, searchParams]
   );
