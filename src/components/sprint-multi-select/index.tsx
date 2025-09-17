@@ -146,24 +146,20 @@ export function SprintMultiSelect({
     setSelectedOptions(options);
   };
 
-  if (!mounted) {
-    return (
-      <div className="flex-1">
-        <div className="h-10 w-full animate-pulse rounded bg-gray-200" />
-      </div>
-    );
-  }
-
   return (
     <div className="flex-1">
-      <Select<Option, true>
-        isMulti
-        options={getAllOptions()}
-        value={selectedOptions}
-        onChange={handleChange}
-        placeholder="Select sprints..."
-        aria-label="Select sprints"
-      />
+      {!mounted ? (
+        <div className="h-10 w-full animate-pulse rounded bg-gray-200" />
+      ) : (
+        <Select<Option, true>
+          isMulti
+          options={getAllOptions()}
+          value={selectedOptions}
+          onChange={handleChange}
+          placeholder="Select sprints..."
+          aria-label="Select sprints"
+        />
+      )}
     </div>
   );
 }

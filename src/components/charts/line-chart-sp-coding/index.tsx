@@ -51,15 +51,15 @@ export function LineChartSPCoding({ sprintData }: LineChartSPCodingProps) {
     setMounted(true);
   }, []);
 
-  if (!mounted) return null;
-
   return (
     <Card>
       <CardHeader>
         <CardTitle>Engineers&apos; Story Points Trends</CardTitle>
       </CardHeader>
       <CardContent>
-        {transformedData.length === 0 ? (
+        {!mounted ? (
+          <div className="h-[500px] w-full animate-pulse rounded-lg bg-gray-200" />
+        ) : transformedData.length === 0 ? (
           <div className="text-center text-sm text-gray-500">
             No data available
           </div>

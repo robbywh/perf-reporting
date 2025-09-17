@@ -26,34 +26,37 @@ export function PieChart({ title, config, data }: ChartProps) {
     setMounted(true); // Ensures it only runs on client
   }, []);
 
-  if (!mounted) return null;
   return (
     <Card className="flex flex-col">
       <CardHeader className="items-center pb-0">
         <CardTitle>{title}</CardTitle>
       </CardHeader>
       <CardContent className="flex-1 pb-0">
-        <ChartContainer config={config} className="mx-auto max-h-[400px]">
-          <PieRechart
-            width={500} // Increased chart width
-            height={500} // Increased chart height
-            margin={{ top: 40, bottom: 40, left: 40, right: 40 }} // Added margin
-          >
-            <Pie
-              data={data}
-              dataKey="value"
-              nameKey="type"
-              outerRadius={100} // Increased outer radius
-              label={({ index, value, percent }) =>
-                `${config[data[index].type].label}: ${value} (${(percent * 100).toFixed(2)}%)`
-              }
+        {!mounted ? (
+          <div className="mx-auto h-[400px] w-full animate-pulse rounded-lg bg-gray-200" />
+        ) : (
+          <ChartContainer config={config} className="mx-auto max-h-[400px]">
+            <PieRechart
+              width={500} // Increased chart width
+              height={500} // Increased chart height
+              margin={{ top: 40, bottom: 40, left: 40, right: 40 }} // Added margin
             >
-              {data.map((entry, index) => (
-                <Cell key={`cell-${index}`} fill={entry.fill} />
-              ))}
-            </Pie>
-          </PieRechart>
-        </ChartContainer>
+              <Pie
+                data={data}
+                dataKey="value"
+                nameKey="type"
+                outerRadius={100} // Increased outer radius
+                label={({ index, value, percent }) =>
+                  `${config[data[index].type].label}: ${value} (${(percent * 100).toFixed(2)}%)`
+                }
+              >
+                {data.map((entry, index) => (
+                  <Cell key={`cell-${index}`} fill={entry.fill} />
+                ))}
+              </Pie>
+            </PieRechart>
+          </ChartContainer>
+        )}
       </CardContent>
     </Card>
   );

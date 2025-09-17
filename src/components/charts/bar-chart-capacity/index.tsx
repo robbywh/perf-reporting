@@ -175,8 +175,6 @@ export const BarChartCapacity = memo(function BarChartCapacity({
     return () => setMounted(false);
   }, []);
 
-  if (!mounted) return null;
-
   return (
     <Card>
       <CardHeader>
@@ -186,7 +184,9 @@ export const BarChartCapacity = memo(function BarChartCapacity({
         </CardDescription>
       </CardHeader>
       <CardContent>
-        {chartData.length === 0 ? (
+        {!mounted ? (
+          <div className="h-[300px] w-full animate-pulse rounded-md bg-gray-200" />
+        ) : chartData.length === 0 ? (
           <div className="text-center text-sm text-gray-500">
             No data available
           </div>
