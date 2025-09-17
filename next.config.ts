@@ -12,7 +12,7 @@ const nextConfig: NextConfig = {
   },
   compress: true,
   poweredByHeader: false,
-  reactStrictMode: false,
+  reactStrictMode: true,
 
   // Performance optimizations
   experimental: {
