@@ -88,9 +88,9 @@ export function PerformanceMonitor({
       );
     };
 
-    if (document.readyState === "complete") {
+    if (typeof document !== "undefined" && document.readyState === "complete") {
       loadHandler();
-    } else {
+    } else if (typeof window !== "undefined") {
       window.addEventListener("load", loadHandler);
       cleanup.push(() => window.removeEventListener("load", loadHandler));
     }

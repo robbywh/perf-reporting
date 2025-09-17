@@ -112,7 +112,7 @@ export function SprintMultiSelect({
 
   useEffect(() => {
     if (!mounted) return;
-    const params = new URLSearchParams(window.location.search);
+    const params = new URLSearchParams(searchParams.toString());
 
     if (selectedOptions.length > 0) {
       params.set("sprintIds", selectedOptions.map((s) => s.value).join(","));
@@ -125,10 +125,10 @@ export function SprintMultiSelect({
       }
     }
 
-    router.replace(`${window.location.pathname}?${params.toString()}`, {
+    router.replace(`?${params.toString()}`, {
       scroll: false,
     });
-  }, [selectedOptions, router, mounted, getCurrentSprint]);
+  }, [selectedOptions, router, mounted, getCurrentSprint, searchParams]);
 
   const handleChange = (options: MultiValue<Option>) => {
     const lastSelected = options[options.length - 1];
