@@ -88,7 +88,7 @@ export async function GET(
           };
         }[];
       }) => {
-        const taskName = task.name.toLowerCase();
+        const taskName = task.name?.toLowerCase() || '';
 
         // Process each reviewer for this task
         task.reviewers.forEach(

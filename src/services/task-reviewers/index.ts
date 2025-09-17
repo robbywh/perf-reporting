@@ -7,7 +7,7 @@ interface TaskReviewer {
   sprintId: string;
   storyPoint: number;
   statusName: string;
-  name: string;
+  name?: string;
   taskTags?: { tagId: string }[];
 }
 
@@ -17,6 +17,10 @@ export async function linkReviewersToTask(task: TaskReviewer) {
       "❌ Task ID is null or undefined, skipping reviewer linking."
     );
     return;
+  }
+
+  if (!task.name) {
+    console.warn(`⚠️ Task name is null or undefined for Task ID ${task.id}, using empty string.`);
   }
 
   if (!task.assignees || task.assignees.length === 0) {
@@ -54,18 +58,19 @@ export async function linkReviewersToTask(task: TaskReviewer) {
   );
   const taskReviewerData = [];
 
-  // Check task name patterns
+  // Check task name patterns (with null/undefined safety)
+  const taskNameLower = task.name?.toLowerCase() || '';
   const isQATask =
-    (task.name.toLowerCase().includes("[qa]") ||
-      task.name.toLowerCase().includes("qa:")) &&
-    !task.name.toLowerCase().includes("[scenario]");
-  const isScenarioTask = task.name.toLowerCase().includes("[scenario]");
+    (taskNameLower.includes("[qa]") ||
+      taskNameLower.includes("qa:")) &&
+    !taskNameLower.includes("[scenario]");
+  const isScenarioTask = taskNameLower.includes("[scenario]");
   const scenarioCount =
-    task.name.toLowerCase().includes("[scenario]") && task?.storyPoint
+    taskNameLower.includes("[scenario]") && task?.storyPoint
       ? task.storyPoint
       : 1;
-  const isRejectedTask = task.name.toLowerCase().includes("[rejected]");
-  const isSupportedTask = task.name.toLowerCase().includes("[support]");
+  const isRejectedTask = taskNameLower.includes("[rejected]");
+  const isSupportedTask = taskNameLower.includes("[support]");
 
   for (const assignee of task.assignees) {
     // Only process if the assignee is also a reviewer

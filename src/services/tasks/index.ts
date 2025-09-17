@@ -210,11 +210,11 @@ export async function findTotalTaskToQACounts(
     : tasks;
 
   const approvedTasks = filteredTasks.filter(
-    (task: TaskWithAssignees) => !task.name.toLowerCase().includes("[rejected]")
+    (task: TaskWithAssignees) => !(task.name?.toLowerCase() || '').includes("[rejected]")
   ).length;
 
   const rejectedTasks = filteredTasks.filter((task: TaskWithAssignees) =>
-    task.name.toLowerCase().includes("[rejected]")
+    (task.name?.toLowerCase() || '').includes("[rejected]")
   ).length;
 
   return {
@@ -575,11 +575,11 @@ export async function findDetailedTaskToQACounts(
   });
 
   const approvedTasks = filteredTasks
-    .filter((task) => !task.name.toLowerCase().includes("[rejected]"))
+    .filter((task) => !(task.name?.toLowerCase() || '').includes("[rejected]"))
     .map(mapTaskWithParentAssignees);
 
   const rejectedTasks = filteredTasks
-    .filter((task) => task.name.toLowerCase().includes("[rejected]"))
+    .filter((task) => (task.name?.toLowerCase() || '').includes("[rejected]"))
     .map(mapTaskWithParentAssignees);
 
   return {
