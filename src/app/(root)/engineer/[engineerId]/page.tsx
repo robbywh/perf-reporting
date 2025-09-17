@@ -86,6 +86,10 @@ async function fetchCriticalData(
     throw new Error("User role not found");
   }
 
+  if (!engineer) {
+    throw new Error("Engineer not found");
+  }
+
   return {
     engineer,
     roleId: userRole.roleId,
@@ -152,11 +156,39 @@ export default async function EngineerPage({
 
   const engineerId = parseInt(parameters.engineerId || "0");
 
+  // Validate engineerId
+  if (!engineerId || isNaN(engineerId)) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold text-gray-900">Invalid Engineer ID</h1>
+          <p className="mt-2 text-gray-600">Please check the URL and try again.</p>
+        </div>
+      </div>
+    );
+  }
+
   // Fetch critical data first (user info and engineer details)
-  const { engineer, roleId, statsData } = await fetchCriticalData(
-    sprintIds,
-    engineerId
-  );
+  let engineer, roleId, statsData;
+  try {
+    const result = await fetchCriticalData(sprintIds, engineerId);
+    engineer = result.engineer;
+    roleId = result.roleId;
+    statsData = result.statsData;
+  } catch (error) {
+    console.error("Error loading engineer page:", error);
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold text-gray-900">Error Loading Engineer Data</h1>
+          <p className="mt-2 text-gray-600">
+            {error instanceof Error ? error.message : "An unexpected error occurred"}
+          </p>
+          <p className="mt-1 text-sm text-gray-500">Please try refreshing the page or contact support.</p>
+        </div>
+      </div>
+    );
+  }
 
   const isEngineeringManager = roleId === "em";
   const isSoftwareEngineer = roleId === "se";
@@ -239,26 +271,31 @@ async function AsyncStatsCards({
     ReturnType<typeof findAverageSPAndMergedCountBySprintIds>
   >;
 }) {
-  // Use preloaded data if available, otherwise fetch
-  const statsData =
-    preloadedData ||
-    (await findAverageSPAndMergedCountBySprintIds(sprintIds, engineerId));
+  try {
+    // Use preloaded data if available, otherwise fetch
+    const statsData =
+      preloadedData ||
+      (await findAverageSPAndMergedCountBySprintIds(sprintIds, engineerId));
 
-  // Map taskDetails to the expected TaskDetailsGroup structure
-  const mappedStatsData = {
-    ...statsData,
-    taskDetails: {
-      ongoingDev: statsData.taskDetails?.ongoingDev ?? [],
-      ongoingSupport: statsData.taskDetails?.ongoingSupport ?? [],
-      nonDevelopment: statsData.taskDetails?.nonDevelopment ?? [],
-      supportApproved: statsData.taskDetails?.supportApproved ?? [],
-      devApproved: statsData.taskDetails?.devApproved ?? [],
-    },
-  };
+    // Map taskDetails to the expected TaskDetailsGroup structure
+    const mappedStatsData = {
+      ...statsData,
+      taskDetails: {
+        ongoingDev: statsData.taskDetails?.ongoingDev ?? [],
+        ongoingSupport: statsData.taskDetails?.ongoingSupport ?? [],
+        nonDevelopment: statsData.taskDetails?.nonDevelopment ?? [],
+        supportApproved: statsData.taskDetails?.supportApproved ?? [],
+        devApproved: statsData.taskDetails?.devApproved ?? [],
+      },
+    };
 
-  return (
-    <DynamicStatsCards data={mappedStatsData} sprintCount={sprintIds.length} />
-  );
+    return (
+      <DynamicStatsCards data={mappedStatsData} sprintCount={sprintIds.length} />
+    );
+  } catch (error) {
+    console.error("Error loading stats cards:", error);
+    return <StatsCardsSkeleton />;
+  }
 }
 
 async function AsyncBarChart({
@@ -268,11 +305,16 @@ async function AsyncBarChart({
   sprintIds: string[];
   engineerId: number;
 }) {
-  const averagesData = await findAveragesByEngineerAndSprintIds(
-    sprintIds,
-    engineerId
-  );
-  return <LazyBarChart data={averagesData} />;
+  try {
+    const averagesData = await findAveragesByEngineerAndSprintIds(
+      sprintIds,
+      engineerId
+    );
+    return <LazyBarChart data={averagesData} />;
+  } catch (error) {
+    console.error("Error loading bar chart:", error);
+    return <BarChartMultipleSkeleton />;
+  }
 }
 
 async function AsyncPieDonutChart({
@@ -282,11 +324,16 @@ async function AsyncPieDonutChart({
   sprintIds: string[];
   engineerId: number;
 }) {
-  const [taskData, detailedTaskData] = await Promise.all([
-    findTotalTaskToQACounts(sprintIds, engineerId),
-    findDetailedTaskToQACounts(sprintIds, engineerId),
-  ]);
-  return <LazyPieDonutChart data={taskData} detailedData={detailedTaskData} />;
+  try {
+    const [taskData, detailedTaskData] = await Promise.all([
+      findTotalTaskToQACounts(sprintIds, engineerId),
+      findDetailedTaskToQACounts(sprintIds, engineerId),
+    ]);
+    return <LazyPieDonutChart data={taskData} detailedData={detailedTaskData} />;
+  } catch (error) {
+    console.error("Error loading pie donut chart:", error);
+    return <PieDonutChartSkeleton title="Tasks to QA" />;
+  }
 }
 
 async function AsyncCodingHoursForm({
@@ -298,18 +345,23 @@ async function AsyncCodingHoursForm({
   engineerId: number;
   roleId: string;
 }) {
-  const sprintsForCodingHours = await findSprintsBySprintIds(
-    sprintIds,
-    engineerId
-  );
-  return (
-    <DynamicCodingHoursForm
-      sprints={sprintsForCodingHours}
-      engineerId={engineerId}
-      roleId={roleId}
-      onSave={updateCodingHoursAction}
-    />
-  );
+  try {
+    const sprintsForCodingHours = await findSprintsBySprintIds(
+      sprintIds,
+      engineerId
+    );
+    return (
+      <DynamicCodingHoursForm
+        sprints={sprintsForCodingHours}
+        engineerId={engineerId}
+        roleId={roleId}
+        onSave={updateCodingHoursAction}
+      />
+    );
+  } catch (error) {
+    console.error("Error loading coding hours form:", error);
+    return <CodingHoursFormSkeleton />;
+  }
 }
 
 async function AsyncLeavePublicHoliday({
@@ -323,18 +375,23 @@ async function AsyncLeavePublicHoliday({
   roleId: string;
   isEngineeringManager: boolean;
 }) {
-  const [sprintsWithLeaves, engineers] = await Promise.all([
-    findSprintsWithLeavesAndHolidays(sprintIds),
-    findAllEngineers(organizationId),
-  ]);
-  return (
-    <DynamicLeavePublicHoliday
-      sprints={sprintsWithLeaves}
-      roleId={roleId}
-      engineers={engineers}
-      addLeaveOrHolidayAction={addLeaveOrHolidayAction}
-      deleteLeaveOrHolidayAction={deleteLeaveOrHolidayAction}
-      showActionButton={isEngineeringManager}
-    />
-  );
+  try {
+    const [sprintsWithLeaves, engineers] = await Promise.all([
+      findSprintsWithLeavesAndHolidays(sprintIds),
+      findAllEngineers(organizationId),
+    ]);
+    return (
+      <DynamicLeavePublicHoliday
+        sprints={sprintsWithLeaves}
+        roleId={roleId}
+        engineers={engineers}
+        addLeaveOrHolidayAction={addLeaveOrHolidayAction}
+        deleteLeaveOrHolidayAction={deleteLeaveOrHolidayAction}
+        showActionButton={isEngineeringManager}
+      />
+    );
+  } catch (error) {
+    console.error("Error loading leave public holiday:", error);
+    return <LeavePublicHolidaySkeleton />;
+  }
 }
