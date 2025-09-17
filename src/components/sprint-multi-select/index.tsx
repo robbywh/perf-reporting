@@ -146,7 +146,13 @@ export function SprintMultiSelect({
     setSelectedOptions(options);
   };
 
-  if (!mounted) return null;
+  if (!mounted) {
+    return (
+      <div className="flex-1">
+        <div className="h-10 w-full animate-pulse rounded bg-gray-200" />
+      </div>
+    );
+  }
 
   return (
     <div className="flex-1">

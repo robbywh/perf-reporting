@@ -80,15 +80,15 @@ async function fetchCriticalData(
     throw new Error("User not authenticated");
   }
 
-  const { roleId } = await findRoleIdAndEngineerIdByUserId(userId);
+  const userRole = await findRoleIdAndEngineerIdByUserId(userId);
 
-  if (!roleId) {
+  if (!userRole?.roleId) {
     throw new Error("User role not found");
   }
 
   return {
     engineer,
-    roleId,
+    roleId: userRole.roleId,
     statsData,
   };
 }

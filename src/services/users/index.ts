@@ -39,7 +39,7 @@ export async function findEngineerById(engineerId: number) {
   if (!engineer) return null;
 
   // Extract first name from the full name
-  const firstName = engineer.name.split(" ")[0];
+  const firstName = engineer.name ? engineer.name.split(" ")[0] : "Unknown";
 
   return {
     ...engineer,

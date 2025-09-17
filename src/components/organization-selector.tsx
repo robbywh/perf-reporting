@@ -73,7 +73,7 @@ export const OrganizationSelector = memo(function OrganizationSelector({ organiz
 
   // Only show selector if user has access to at least one organization
   if (organizations.length === 0) {
-    return null;
+    return <div className="hidden" />;
   }
 
   return (
