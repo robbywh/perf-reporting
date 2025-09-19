@@ -4,6 +4,7 @@ interface TaskTag {
   id: string;
   sprintId: string;
   tags?: { name: string }[];
+  organizationId?: string;
 }
 
 export async function linkTagsToTask(task: TaskTag) {
@@ -18,6 +19,16 @@ export async function linkTagsToTask(task: TaskTag) {
   }
 
   // ✅ Fetch task and existing tags in one query batch
+  const tagQuery: {
+    name: { in: string[] };
+    organizationId?: string;
+  } = { name: { in: task.tags.map((tag) => tag.name) } };
+
+  // If organizationId is provided, filter tags by organization
+  if (task.organizationId) {
+    tagQuery.organizationId = task.organizationId;
+  }
+
   const [existingTask, existingTags] = await Promise.all([
     prisma.task.findUnique({
       where: {
@@ -29,7 +40,7 @@ export async function linkTagsToTask(task: TaskTag) {
       select: { id: true, sprintId: true },
     }),
     prisma.tag.findMany({
-      where: { name: { in: task.tags.map((tag) => tag.name) } },
+      where: tagQuery,
       select: { id: true, name: true },
     }),
   ]);

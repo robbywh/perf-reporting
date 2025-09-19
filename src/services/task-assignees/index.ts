@@ -7,6 +7,7 @@ interface TaskAssignee {
   sprintId: string;
   storyPoint: number;
   statusName: string;
+  organizationId?: string;
 }
 
 export async function linkAssigneesToTask(task: TaskAssignee) {
@@ -40,10 +41,24 @@ export async function linkAssigneesToTask(task: TaskAssignee) {
     return;
   }
 
-  // ✅ Fetch all engineers in one query for performance
+  // ✅ Fetch all engineers in one query for performance, filtered by organization
   const engineerIds = task.assignees.map((a) => a.id);
+  const engineerQuery: {
+    id: { in: number[] };
+    engineerOrganizations?: { some: { organizationId: string } };
+  } = { id: { in: engineerIds } };
+
+  // If organizationId is provided, filter engineers by organization
+  if (task.organizationId) {
+    engineerQuery.engineerOrganizations = {
+      some: {
+        organizationId: task.organizationId
+      }
+    };
+  }
+
   const existingEngineers = await prisma.engineer.findMany({
-    where: { id: { in: engineerIds } },
+    where: engineerQuery,
     select: { id: true },
   });
 

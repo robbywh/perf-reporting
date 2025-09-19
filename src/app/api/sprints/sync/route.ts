@@ -128,7 +128,8 @@ async function processBatch(
   sprint: { id: string },
   statusMap: Map<string, string>,
   statuses: { id: string; name: string }[],
-  categoryIds: Set<string>
+  categoryIds: Set<string>,
+  organizationId: string
 ) {
   const taskDataBatch = tasks.map((task) => {
     const categoryField = task.custom_fields?.find(
@@ -213,6 +214,7 @@ async function processBatch(
           id: taskData.id,
           sprintId: taskData.sprintId,
           tags: taskData.tags,
+          organizationId,
         })
       )
     ),
@@ -227,6 +229,7 @@ async function processBatch(
           statusName: taskData.statusId
             ? statuses.find((s) => s.id === taskData.statusId)?.name || ""
             : "",
+          organizationId,
         })
       )
     ),
@@ -243,6 +246,7 @@ async function processBatch(
             : "",
           name: taskData.name,
           taskTags: taskData.tags?.map((tag) => ({ tagId: tag.name })),
+          organizationId,
         })
       )
     ),
@@ -407,7 +411,8 @@ async function syncTodayTasksFromClickUp(organizationId: string, targetSprintId?
             sprint,
             statusMap as Map<string, string>,
             statuses,
-            categoryIds
+            categoryIds,
+            organizationId
           );
         } catch (error: unknown) {
           if (
@@ -429,7 +434,8 @@ async function syncTodayTasksFromClickUp(organizationId: string, targetSprintId?
                 sprint,
                 statusMap as Map<string, string>,
                 statuses,
-                categoryIds
+                categoryIds,
+                organizationId
               );
             }
           } else {

@@ -9,6 +9,7 @@ interface TaskReviewer {
   statusName: string;
   name?: string;
   taskTags?: { tagId: string }[];
+  organizationId?: string;
 }
 
 export async function linkReviewersToTask(task: TaskReviewer) {
@@ -46,10 +47,24 @@ export async function linkReviewersToTask(task: TaskReviewer) {
     return;
   }
 
-  // ✅ Fetch all reviewers in one query for performance
+  // ✅ Fetch all reviewers in one query for performance, filtered by organization
   const reviewerIds = task.assignees.map((a) => a.id);
+  const reviewerQuery: {
+    id: { in: number[] };
+    reviewerOrganizations?: { some: { organizationId: string } };
+  } = { id: { in: reviewerIds } };
+
+  // If organizationId is provided, filter reviewers by organization
+  if (task.organizationId) {
+    reviewerQuery.reviewerOrganizations = {
+      some: {
+        organizationId: task.organizationId
+      }
+    };
+  }
+
   const existingReviewers = await prisma.reviewer.findMany({
-    where: { id: { in: reviewerIds } },
+    where: reviewerQuery,
     select: { id: true },
   });
 
