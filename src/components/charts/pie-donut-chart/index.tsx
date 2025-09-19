@@ -57,7 +57,7 @@ export function PieDonutChart({
   }, []);
 
   return (
-    <Card className="flex flex-col">
+    <Card className="flex w-full flex-col">
       <CardHeader className="items-center pb-0">
         <CardTitle>{title}</CardTitle>
       </CardHeader>
@@ -67,7 +67,7 @@ export function PieDonutChart({
         ) : (
           <ChartContainer
             config={config}
-            className="mx-auto aspect-square max-h-[250px]"
+            className="mx-auto aspect-square w-full max-h-[250px]"
           >
             <PieChart>
               <ChartTooltip
@@ -132,12 +132,12 @@ export function PieDonutChart({
 
 export function PieDonutChartSkeleton({ title }: { title: string }) {
   return (
-    <Card className="h-[350px]">
-      <CardHeader>
+    <Card className="flex w-full flex-col">
+      <CardHeader className="items-center pb-0">
         <CardTitle>{title}</CardTitle>
       </CardHeader>
-      <CardContent className="flex items-center justify-center">
-        <Skeleton className="size-[200px] rounded-full" />
+      <CardContent className="flex-1 pb-0">
+        <div className="mx-auto aspect-square max-h-[250px] animate-pulse rounded-full bg-gray-200" />
       </CardContent>
       <CardFooter className="flex-col gap-2 text-sm">
         <Skeleton className="h-4 w-40" />

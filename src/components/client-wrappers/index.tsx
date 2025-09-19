@@ -7,6 +7,7 @@ import { BarChartMultipleSkeleton } from "@/components/charts/bar-chart-multiple
 import { LineChartSPCodingSkeleton } from "@/components/charts/line-chart-sp-coding";
 import { PieChartSkeleton } from "@/components/charts/pie-chart";
 import { PieDonutChartSkeleton } from "@/components/charts/pie-donut-chart";
+import { QAPerformancePieChartSkeleton } from "@/components/charts/pie-qa-performance";
 import { CodingHoursFormSkeleton } from "@/components/coding-hours-form";
 import { LeavePublicHolidaySkeleton } from "@/components/leave-public-holiday-form";
 import { StatsCardsSkeleton } from "@/components/stats-cards";
@@ -100,6 +101,17 @@ export const DynamicLeavePublicHoliday = dynamic(
     ),
   {
     loading: () => <LeavePublicHolidaySkeleton />,
+    ssr: false,
+  }
+);
+
+export const DynamicQAPerformancePieChart = dynamic(
+  () =>
+    import("@/components/charts/pie-qa-performance").then(
+      (mod) => mod.QAPerformancePieChart
+    ),
+  {
+    loading: () => <QAPerformancePieChartSkeleton />,
     ssr: false,
   }
 );

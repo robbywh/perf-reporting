@@ -72,6 +72,7 @@ export function TaskDetailsModal({
     // Check if parent task contains [Rejected] or [rejected]
     if (
       task.parentTask &&
+      task.parentTask.name &&
       (task.parentTask.name.includes("[Rejected]") ||
         task.parentTask.name.includes("[rejected]"))
     ) {
@@ -79,7 +80,7 @@ export function TaskDetailsModal({
     }
 
     // Check if task name contains [Rejected] or [rejected]
-    if (task.name.includes("[Rejected]") || task.name.includes("[rejected]")) {
+    if (task.name && (task.name.includes("[Rejected]") || task.name.includes("[rejected]"))) {
       return { text: "Rejected", variant: "destructive" as const };
     }
 

@@ -5,6 +5,7 @@ import dynamic from "next/dynamic";
 import { BarChartCapacitySkeleton } from "@/components/charts/bar-chart-capacity";
 import { LineChartSPCodingSkeleton } from "@/components/charts/line-chart-sp-coding";
 import { PieChartSkeleton } from "@/components/charts/pie-chart";
+import { QAPerformancePieChartSkeleton } from "@/components/charts/pie-qa-performance";
 import {
   BarChartMultipleSkeleton,
   PieDonutChartSkeleton,
@@ -74,6 +75,17 @@ export const LazyDashboardPieDonutChart = dynamic(
     })),
   {
     loading: () => <PieDonutChartSkeleton title="Tasks to QA" />,
+    ssr: false, // Client-side only for better performance
+  }
+);
+
+export const LazyQAPerformancePieChart = dynamic(
+  () =>
+    import("@/components/client-wrappers").then((mod) => ({
+      default: mod.DynamicQAPerformancePieChart,
+    })),
+  {
+    loading: () => <QAPerformancePieChartSkeleton />,
     ssr: false, // Client-side only for better performance
   }
 );

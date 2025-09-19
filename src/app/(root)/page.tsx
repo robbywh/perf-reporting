@@ -11,11 +11,13 @@ import { BarChartCapacitySkeleton } from "@/components/charts/bar-chart-capacity
 import { LineChartSPCodingSkeleton } from "@/components/charts/line-chart-sp-coding";
 import { PieChartSkeleton } from "@/components/charts/pie-chart";
 import { PieDonutChartSkeleton } from "@/components/charts/pie-donut-chart";
+import { QAPerformancePieChartSkeleton } from "@/components/charts/pie-qa-performance";
 import {
   LazyBarChartCapacity,
   LazyLineChartSPCoding,
   LazyPieTaskCategoryChart,
   LazyDashboardPieDonutChart,
+  LazyQAPerformancePieChart,
 } from "@/components/client-charts";
 import { DynamicTopPerformers } from "@/components/client-wrappers";
 import { LeavePublicHolidaySkeleton } from "@/components/leave-public-holiday-form";
@@ -27,6 +29,7 @@ import {
   findEngineerTrendBySprintIds,
   findTopPerformersBySprintIds,
 } from "@/services/sprint-engineers";
+import { findQAPerformanceBySprintIds } from "@/services/sprint-reviewers";
 import { findSprintsWithLeavesAndHolidays } from "@/services/sprints";
 import { getCurrentSprintId } from "@/services/sprints/getCurrentSprintId";
 import {
@@ -121,6 +124,15 @@ async function AsyncPieDonutTaskChart({ sprintIds }: { sprintIds: string[] }) {
   );
 }
 
+async function AsyncQAPerformancePieChart({
+  sprintIds,
+}: {
+  sprintIds: string[];
+}) {
+  const qaPerformanceData = await findQAPerformanceBySprintIds(sprintIds);
+  return <LazyQAPerformancePieChart qaData={qaPerformanceData} />;
+}
+
 async function AsyncLeavePublicHoliday({
   sprintIds,
   roleId,
@@ -157,7 +169,7 @@ export default async function Home({
   await authenticateAndRedirect();
   const parameters = await searchParams;
 
-  // Get organizationId from URL parameters 
+  // Get organizationId from URL parameters
   const organizationId = parameters?.org;
 
   let sprintIds: string[];
@@ -172,14 +184,15 @@ export default async function Home({
   const { roleId, topPerformersData } = await fetchCriticalData(sprintIds);
 
   return (
-    <main>
-      <div className="mb-6 grid grid-cols-1 gap-4 lg:grid-cols-3">
-        <div className="min-h-[400px] lg:col-span-2">
+    <main className="space-y-6">
+      {/* First Section: Capacity vs Reality + Top Performers */}
+      <section className="grid gap-6 lg:grid-cols-3">
+        <div className="lg:col-span-2">
           <Suspense fallback={<BarChartCapacitySkeleton />}>
             <AsyncBarChartCapacity sprintIds={sprintIds} />
           </Suspense>
         </div>
-        <div className="min-h-[400px] lg:col-span-1">
+        <div className="lg:col-span-1">
           <Suspense fallback={<TopPerformersSkeleton />}>
             <AsyncTopPerformers
               sprintIds={sprintIds}
@@ -187,28 +200,36 @@ export default async function Home({
             />
           </Suspense>
         </div>
-      </div>
+      </section>
 
-      <div className="mb-6 min-h-[500px]">
-        <Suspense fallback={<LineChartSPCodingSkeleton />}>
-          <AsyncLineChartSPCoding sprintIds={sprintIds} />
-        </Suspense>
-      </div>
-
-      <div className="mb-6 grid grid-cols-1 gap-4 lg:grid-cols-3">
-        <div className="min-h-[400px] lg:col-span-2">
+      {/* Second Section: Task Category + Tasks to QA + QA Performances */}
+      <section className="grid gap-6 lg:grid-cols-5">
+        <div className="lg:col-span-2">
           <Suspense fallback={<PieChartSkeleton title="Task Category" />}>
             <AsyncPieTaskCategoryChart sprintIds={sprintIds} />
           </Suspense>
         </div>
-        <div className="min-h-[400px]">
+        <div className="flex justify-center lg:col-span-1">
           <Suspense fallback={<PieDonutChartSkeleton title="Tasks to QA" />}>
             <AsyncPieDonutTaskChart sprintIds={sprintIds} />
           </Suspense>
         </div>
-      </div>
+        <div className="lg:col-span-2">
+          <Suspense fallback={<QAPerformancePieChartSkeleton />}>
+            <AsyncQAPerformancePieChart sprintIds={sprintIds} />
+          </Suspense>
+        </div>
+      </section>
 
-      <div className="min-h-[300px]">
+      {/* Third Section: Engineer Trends - Full Width */}
+      <section className="w-full">
+        <Suspense fallback={<LineChartSPCodingSkeleton />}>
+          <AsyncLineChartSPCoding sprintIds={sprintIds} />
+        </Suspense>
+      </section>
+
+      {/* Fourth Section: Leave & Holiday Management */}
+      <section className="w-full">
         <Suspense fallback={<LeavePublicHolidaySkeleton />}>
           <AsyncLeavePublicHoliday
             sprintIds={sprintIds}
@@ -217,7 +238,7 @@ export default async function Home({
             organizationId={organizationId}
           />
         </Suspense>
-      </div>
+      </section>
     </main>
   );
 }
