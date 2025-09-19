@@ -1,6 +1,6 @@
 import type { Decimal } from "@prisma/client/runtime/library";
 
-import { APPROVED_STATUS_IDS } from "@/constants/client";
+import { APPROVED_STATUS_IDS, NODEV_TAGS } from "@/constants/client";
 import { CACHE_STRATEGY } from "@/constants/server";
 
 import { prisma } from "../db";
@@ -210,11 +210,12 @@ export async function findTotalTaskToQACounts(
     : tasks;
 
   const approvedTasks = filteredTasks.filter(
-    (task: TaskWithAssignees) => !(task.name?.toLowerCase() || '').includes("[rejected]")
+    (task: TaskWithAssignees) =>
+      !(task.name?.toLowerCase() || "").includes("[rejected]")
   ).length;
 
   const rejectedTasks = filteredTasks.filter((task: TaskWithAssignees) =>
-    (task.name?.toLowerCase() || '').includes("[rejected]")
+    (task.name?.toLowerCase() || "").includes("[rejected]")
   ).length;
 
   return {
@@ -326,7 +327,7 @@ export async function findAverageSPAndMergedCountBySprintIds(
       ({ tag }: { tag: { id: string } }) => tag.id
     );
     const isSupport = tags.includes("support");
-    const isNonDev = tags.includes("nodev");
+    const isNonDev = tags.some((tag) => NODEV_TAGS.includes(tag));
     const isApproved = APPROVED_STATUS_IDS.includes(task.statusId || "");
 
     // Determine the task category
@@ -575,11 +576,11 @@ export async function findDetailedTaskToQACounts(
   });
 
   const approvedTasks = filteredTasks
-    .filter((task) => !(task.name?.toLowerCase() || '').includes("[rejected]"))
+    .filter((task) => !(task.name?.toLowerCase() || "").includes("[rejected]"))
     .map(mapTaskWithParentAssignees);
 
   const rejectedTasks = filteredTasks
-    .filter((task) => (task.name?.toLowerCase() || '').includes("[rejected]"))
+    .filter((task) => (task.name?.toLowerCase() || "").includes("[rejected]"))
     .map(mapTaskWithParentAssignees);
 
   return {

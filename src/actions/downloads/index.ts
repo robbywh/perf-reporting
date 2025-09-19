@@ -1,6 +1,6 @@
 "use server";
 
-import { APPROVED_STATUS_IDS } from "@/constants/client";
+import { APPROVED_STATUS_IDS, NODEV_TAGS } from "@/constants/client";
 import { prisma } from "@/services/db";
 import { findTotalTaskToQACounts } from "@/services/tasks";
 
@@ -139,7 +139,7 @@ export async function getSprintDetailsForDownload(
         const sp = Number(task.storyPoint) || 0;
         const tags = taskTagsMap[task.id] || [];
         const isSupport = tags.includes("support");
-        const isNonDev = tags.includes("nodev");
+        const isNonDev = tags.some(tag => NODEV_TAGS.includes(tag));
         const isApproved = APPROVED_STATUS_IDS.includes(task.statusId || "");
 
         const category = isApproved

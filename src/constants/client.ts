@@ -9,3 +9,5 @@ export const APPROVED_STATUS_NAMES = [
   "product approval",
   "product approved",
 ];
+
+export const NODEV_TAGS = ["nodev", "non_dev", "non_development"];
