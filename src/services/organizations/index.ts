@@ -10,7 +10,7 @@ export async function findUserOrganizations(userId: string) {
         organization: true,
       },
       orderBy: {
-        organizationId: "asc", // First assigned organization (alphabetical by ID for consistency)
+        organizationId: "desc", // First assigned organization (alphabetical by ID for consistency)
       },
     });
 
@@ -49,7 +49,7 @@ export async function findAllOrganizations() {
 
 export async function getOrganizationSetting(
   organizationId: string,
-  param: string,
+  param: string
 ) {
   try {
     const setting = await prisma.setting.findUnique({
