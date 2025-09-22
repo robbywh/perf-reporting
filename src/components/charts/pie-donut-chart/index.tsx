@@ -67,7 +67,7 @@ export function PieDonutChart({
         ) : (
           <ChartContainer
             config={config}
-            className="mx-auto aspect-square w-full max-h-[250px]"
+            className="mx-auto aspect-square max-h-[250px] w-full"
           >
             <PieChart>
               <ChartTooltip

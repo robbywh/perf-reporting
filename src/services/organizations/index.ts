@@ -10,7 +10,7 @@ export async function findUserOrganizations(userId: string) {
         organization: true,
       },
       orderBy: {
-        organizationId: 'asc', // First assigned organization (alphabetical by ID for consistency)
+        organizationId: "asc", // First assigned organization (alphabetical by ID for consistency)
       },
     });
 
@@ -38,7 +38,7 @@ export async function findAllOrganizations() {
   try {
     return await prisma.organization.findMany({
       orderBy: {
-        name: 'asc',
+        name: "asc",
       },
     });
   } catch (error) {
@@ -47,7 +47,10 @@ export async function findAllOrganizations() {
   }
 }
 
-export async function getOrganizationSetting(organizationId: string, param: string) {
+export async function getOrganizationSetting(
+  organizationId: string,
+  param: string,
+) {
   try {
     const setting = await prisma.setting.findUnique({
       where: {
@@ -57,7 +60,7 @@ export async function getOrganizationSetting(organizationId: string, param: stri
         },
       },
     });
-    
+
     return setting?.value || null;
   } catch (error) {
     console.error("Error getting organization setting:", error);
@@ -72,17 +75,17 @@ export async function getApiTokens(organizationId: string) {
         organizationId,
         param: {
           in: [
-            'CLICKUP_API_TOKEN',
-            'CLICKUP_FOLDER_ID', 
-            'GITLAB_GROUP_ID',
-            'GITLAB_PERSONAL_ACCESS_TOKEN'
-          ]
-        }
-      }
+            "CLICKUP_API_TOKEN",
+            "CLICKUP_FOLDER_ID",
+            "GITLAB_GROUP_ID",
+            "GITLAB_PERSONAL_ACCESS_TOKEN",
+          ],
+        },
+      },
     });
 
     const tokens: Record<string, string> = {};
-    settings.forEach(setting => {
+    settings.forEach((setting) => {
       tokens[setting.param] = setting.value;
     });
 

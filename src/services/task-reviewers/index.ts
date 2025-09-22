@@ -15,13 +15,15 @@ interface TaskReviewer {
 export async function linkReviewersToTask(task: TaskReviewer) {
   if (!task.id) {
     console.error(
-      "❌ Task ID is null or undefined, skipping reviewer linking."
+      "❌ Task ID is null or undefined, skipping reviewer linking.",
     );
     return;
   }
 
   if (!task.name) {
-    console.warn(`⚠️ Task name is null or undefined for Task ID ${task.id}, using empty string.`);
+    console.warn(
+      `⚠️ Task name is null or undefined for Task ID ${task.id}, using empty string.`,
+    );
   }
 
   if (!task.assignees || task.assignees.length === 0) {
@@ -42,7 +44,7 @@ export async function linkReviewersToTask(task: TaskReviewer) {
 
   if (!existingTask) {
     console.error(
-      `❌ Task ID ${task.id} in Sprint ${task.sprintId} does not exist in the database, skipping.`
+      `❌ Task ID ${task.id} in Sprint ${task.sprintId} does not exist in the database, skipping.`,
     );
     return;
   }
@@ -58,8 +60,8 @@ export async function linkReviewersToTask(task: TaskReviewer) {
   if (task.organizationId) {
     reviewerQuery.reviewerOrganizations = {
       some: {
-        organizationId: task.organizationId
-      }
+        organizationId: task.organizationId,
+      },
     };
   }
 
@@ -69,15 +71,14 @@ export async function linkReviewersToTask(task: TaskReviewer) {
   });
 
   const existingReviewerSet = new Set(
-    existingReviewers.map((reviewer: { id: number }) => reviewer.id)
+    existingReviewers.map((reviewer: { id: number }) => reviewer.id),
   );
   const taskReviewerData = [];
 
   // Check task name patterns (with null/undefined safety)
-  const taskNameLower = task.name?.toLowerCase() || '';
+  const taskNameLower = task.name?.toLowerCase() || "";
   const isQATask =
-    (taskNameLower.includes("[qa]") ||
-      taskNameLower.includes("qa:")) &&
+    (taskNameLower.includes("[qa]") || taskNameLower.includes("qa:")) &&
     !taskNameLower.includes("[scenario]");
   const isScenarioTask = taskNameLower.includes("[scenario]");
   const scenarioCount =
@@ -91,7 +92,7 @@ export async function linkReviewersToTask(task: TaskReviewer) {
     // Only process if the assignee is also a reviewer
     if (!existingReviewerSet.has(assignee.id)) {
       console.warn(
-        `⏩ Skipping ${assignee.username} - Not a reviewer for this task.`
+        `⏩ Skipping ${assignee.username} - Not a reviewer for this task.`,
       );
       continue;
     }
@@ -138,7 +139,7 @@ export async function linkReviewersToTask(task: TaskReviewer) {
     });
 
     console.log(
-      `✅ ${taskReviewerData.length} reviewers linked to Task ID ${task.id} in Sprint ${task.sprintId}.`
+      `✅ ${taskReviewerData.length} reviewers linked to Task ID ${task.id} in Sprint ${task.sprintId}.`,
     );
   }
 }

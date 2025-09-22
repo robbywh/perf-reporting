@@ -29,7 +29,7 @@ export function SprintDownloadButton({
 
       // Check if we have data
       const hasData = Object.values(sprintData).some(
-        (arr) => arr && arr.length > 0
+        (arr) => arr && arr.length > 0,
       );
 
       if (!hasData) {

@@ -42,7 +42,7 @@ const DynamicCodingHoursForm = dynamic(
     import("@/components/client-wrappers").then((mod) => ({
       default: mod.DynamicCodingHoursForm,
     })),
-  { loading: () => <CodingHoursFormSkeleton /> }
+  { loading: () => <CodingHoursFormSkeleton /> },
 );
 
 const DynamicLeavePublicHoliday = dynamic(
@@ -50,13 +50,13 @@ const DynamicLeavePublicHoliday = dynamic(
     import("@/components/client-wrappers").then((mod) => ({
       default: mod.DynamicLeavePublicHoliday,
     })),
-  { loading: () => <LeavePublicHolidaySkeleton /> }
+  { loading: () => <LeavePublicHolidaySkeleton /> },
 );
 
 // Optimize data fetching with preload and parallel execution
 async function fetchCriticalData(
   sprintIds: string[],
-  engineerId: number
+  engineerId: number,
 ): Promise<{
   engineer: Awaited<ReturnType<typeof findEngineerById>>;
   roleId: string;
@@ -72,7 +72,7 @@ async function fetchCriticalData(
     findEngineerById(engineerId),
     // Preload stats data for faster FCP
     findAverageSPAndMergedCountBySprintIds(sprintIds, engineerId).catch(
-      () => undefined
+      () => undefined,
     ),
   ]);
 
@@ -103,7 +103,7 @@ export default async function EngineerPage({
 }: PageProps) {
   const searchParameters = await searchParams;
   const parameters = await params;
-  
+
   // Extract organization from URL parameters
   const organizationId = searchParameters?.org;
   if (!organizationId) {
@@ -161,8 +161,12 @@ export default async function EngineerPage({
     return (
       <div className="flex min-h-screen items-center justify-center">
         <div className="text-center">
-          <h1 className="text-2xl font-bold text-gray-900">Invalid Engineer ID</h1>
-          <p className="mt-2 text-gray-600">Please check the URL and try again.</p>
+          <h1 className="text-2xl font-bold text-gray-900">
+            Invalid Engineer ID
+          </h1>
+          <p className="mt-2 text-gray-600">
+            Please check the URL and try again.
+          </p>
         </div>
       </div>
     );
@@ -180,11 +184,17 @@ export default async function EngineerPage({
     return (
       <div className="flex min-h-screen items-center justify-center">
         <div className="text-center">
-          <h1 className="text-2xl font-bold text-gray-900">Error Loading Engineer Data</h1>
+          <h1 className="text-2xl font-bold text-gray-900">
+            Error Loading Engineer Data
+          </h1>
           <p className="mt-2 text-gray-600">
-            {error instanceof Error ? error.message : "An unexpected error occurred"}
+            {error instanceof Error
+              ? error.message
+              : "An unexpected error occurred"}
           </p>
-          <p className="mt-1 text-sm text-gray-500">Please try refreshing the page or contact support.</p>
+          <p className="mt-1 text-sm text-gray-500">
+            Please try refreshing the page or contact support.
+          </p>
         </div>
       </div>
     );
@@ -290,7 +300,10 @@ async function AsyncStatsCards({
     };
 
     return (
-      <DynamicStatsCards data={mappedStatsData} sprintCount={sprintIds.length} />
+      <DynamicStatsCards
+        data={mappedStatsData}
+        sprintCount={sprintIds.length}
+      />
     );
   } catch (error) {
     console.error("Error loading stats cards:", error);
@@ -308,7 +321,7 @@ async function AsyncBarChart({
   try {
     const averagesData = await findAveragesByEngineerAndSprintIds(
       sprintIds,
-      engineerId
+      engineerId,
     );
     return <LazyBarChart data={averagesData} />;
   } catch (error) {
@@ -329,7 +342,9 @@ async function AsyncPieDonutChart({
       findTotalTaskToQACounts(sprintIds, engineerId),
       findDetailedTaskToQACounts(sprintIds, engineerId),
     ]);
-    return <LazyPieDonutChart data={taskData} detailedData={detailedTaskData} />;
+    return (
+      <LazyPieDonutChart data={taskData} detailedData={detailedTaskData} />
+    );
   } catch (error) {
     console.error("Error loading pie donut chart:", error);
     return <PieDonutChartSkeleton title="Tasks to QA" />;
@@ -348,7 +363,7 @@ async function AsyncCodingHoursForm({
   try {
     const sprintsForCodingHours = await findSprintsBySprintIds(
       sprintIds,
-      engineerId
+      engineerId,
     );
     return (
       <DynamicCodingHoursForm

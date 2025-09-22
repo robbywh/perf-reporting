@@ -9,9 +9,11 @@ interface SprintDataServerWrapperProps {
   children: React.ReactNode;
 }
 
-const SprintDataContent = async ({ children }: SprintDataServerWrapperProps) => {
+const SprintDataContent = async ({
+  children,
+}: SprintDataServerWrapperProps) => {
   const user = await currentUser();
-  
+
   if (!user?.id) {
     return (
       <div className="flex flex-1 items-center justify-center py-20">
@@ -29,7 +31,7 @@ const SprintDataContent = async ({ children }: SprintDataServerWrapperProps) => 
 
   try {
     const organizations = await findUserOrganizations(user.id);
-    
+
     if (organizations.length === 0) {
       return (
         <div className="flex flex-1 items-center justify-center py-20">
@@ -67,7 +69,9 @@ const SprintDataContent = async ({ children }: SprintDataServerWrapperProps) => 
   }
 };
 
-export function SprintDataServerWrapper({ children }: SprintDataServerWrapperProps) {
+export function SprintDataServerWrapper({
+  children,
+}: SprintDataServerWrapperProps) {
   return (
     <Suspense
       fallback={

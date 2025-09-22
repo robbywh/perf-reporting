@@ -17,45 +17,45 @@ import { TopPerformersSkeleton } from "@/components/top-performers";
 export const DynamicBarChartCapacity = dynamic(
   () =>
     import("@/components/charts/bar-chart-capacity").then(
-      (mod) => mod.BarChartCapacity
+      (mod) => mod.BarChartCapacity,
     ),
   {
     loading: () => <BarChartCapacitySkeleton />,
     ssr: false,
-  }
+  },
 );
 
 export const DynamicLineChartSPCoding = dynamic(
   () =>
     import("@/components/charts/line-chart-sp-coding").then(
-      (mod) => mod.LineChartSPCoding
+      (mod) => mod.LineChartSPCoding,
     ),
   {
     loading: () => <LineChartSPCodingSkeleton />,
     ssr: false,
-  }
+  },
 );
 
 export const DynamicPieTaskCategoryChart = dynamic(
   () =>
     import("@/components/charts/pie-task-category").then(
-      (mod) => mod.PieTaskCategoryChart
+      (mod) => mod.PieTaskCategoryChart,
     ),
   {
     loading: () => <PieChartSkeleton title="Task Category" />,
     ssr: false,
-  }
+  },
 );
 
 export const DynamicPieDonutTaskChart = dynamic(
   () =>
     import("@/components/charts/pie-donut-task").then(
-      (mod) => mod.PieDonutTaskChart
+      (mod) => mod.PieDonutTaskChart,
     ),
   {
     loading: () => <PieDonutChartSkeleton title="Tasks to QA" />,
     ssr: false,
-  }
+  },
 );
 
 export const DynamicTopPerformers = dynamic(
@@ -63,18 +63,18 @@ export const DynamicTopPerformers = dynamic(
   {
     loading: () => <TopPerformersSkeleton />,
     ssr: false,
-  }
+  },
 );
 
 export const DynamicBarChart = dynamic(
   () =>
     import("@/components/charts/bar-chart-multiple").then(
-      (mod) => mod.BarChartMultiple
+      (mod) => mod.BarChartMultiple,
     ),
   {
     loading: () => <BarChartMultipleSkeleton />,
     ssr: false,
-  }
+  },
 );
 
 export const DynamicStatsCards = dynamic(
@@ -82,7 +82,7 @@ export const DynamicStatsCards = dynamic(
   {
     loading: () => <StatsCardsSkeleton />,
     ssr: false,
-  }
+  },
 );
 
 export const DynamicCodingHoursForm = dynamic(
@@ -91,27 +91,27 @@ export const DynamicCodingHoursForm = dynamic(
   {
     loading: () => <CodingHoursFormSkeleton />,
     ssr: false,
-  }
+  },
 );
 
 export const DynamicLeavePublicHoliday = dynamic(
   () =>
     import("@/components/leave-public-holiday-form").then(
-      (mod) => mod.LeavePublicHoliday
+      (mod) => mod.LeavePublicHoliday,
     ),
   {
     loading: () => <LeavePublicHolidaySkeleton />,
     ssr: false,
-  }
+  },
 );
 
 export const DynamicQAPerformancePieChart = dynamic(
   () =>
     import("@/components/charts/pie-qa-performance").then(
-      (mod) => mod.QAPerformancePieChart
+      (mod) => mod.QAPerformancePieChart,
     ),
   {
     loading: () => <QAPerformancePieChartSkeleton />,
     ssr: false,
-  }
+  },
 );

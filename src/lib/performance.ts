@@ -25,7 +25,7 @@ export function preloadCriticalResources() {
  */
 export function createIntersectionObserver(
   callback: (entries: IntersectionObserverEntry[]) => void,
-  options?: IntersectionObserverInit
+  options?: IntersectionObserverInit,
 ) {
   if (typeof window === "undefined") return null;
 
@@ -41,7 +41,7 @@ export function createIntersectionObserver(
  */
 export function debounce<T extends (...args: unknown[]) => unknown>(
   func: T,
-  wait: number
+  wait: number,
 ): (...args: Parameters<T>) => void {
   let timeout: NodeJS.Timeout;
   return (...args: Parameters<T>) => {
@@ -65,7 +65,7 @@ export function markPerformance(name: string) {
 export function measurePerformance(
   measureName: string,
   startMark: string,
-  endMark: string
+  endMark: string,
 ) {
   if (typeof window !== "undefined" && "performance" in window) {
     try {

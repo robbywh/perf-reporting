@@ -11,14 +11,19 @@ export async function getMergedMRsBySprintPeriod(
   endDate: string,
   baseUrl: string,
   accessToken: string,
-  groupId: string
+  groupId: string,
 ): Promise<GitLabMergeRequest[]> {
   const allMRs: GitLabMergeRequest[] = [];
 
   // Handle multiple group IDs separated by comma
-  const groupIds = groupId.split(',').map(id => id.trim()).filter(Boolean);
+  const groupIds = groupId
+    .split(",")
+    .map((id) => id.trim())
+    .filter(Boolean);
 
-  console.log(`🔄 Fetching merged MRs for ${groupIds.length} group(s): ${groupIds.join(', ')}`);
+  console.log(
+    `🔄 Fetching merged MRs for ${groupIds.length} group(s): ${groupIds.join(", ")}`,
+  );
 
   try {
     // Process each group ID
@@ -29,7 +34,7 @@ export async function getMergedMRsBySprintPeriod(
 
       while (true) {
         const url = new URL(
-          `${baseUrl}/groups/${currentGroupId}/merge_requests`
+          `${baseUrl}/groups/${currentGroupId}/merge_requests`,
         );
         url.searchParams.append("state", "merged");
         url.searchParams.append("updated_after", startDate);
@@ -48,7 +53,7 @@ export async function getMergedMRsBySprintPeriod(
         if (!response.ok) {
           const errorText = await response.text();
           console.error(
-            `❌ GitLab API Error for group ${currentGroupId}: ${response.status} ${response.statusText}. Response: ${errorText}`
+            `❌ GitLab API Error for group ${currentGroupId}: ${response.status} ${response.statusText}. Response: ${errorText}`,
           );
           // Continue with next group instead of throwing
           break;
@@ -57,19 +62,23 @@ export async function getMergedMRsBySprintPeriod(
         const data: GitLabMergeRequest[] = await response.json();
 
         if (data.length === 0) {
-          console.log(`✅ No more merged MRs for group ${currentGroupId}. Stopping at page ${page}.`);
+          console.log(
+            `✅ No more merged MRs for group ${currentGroupId}. Stopping at page ${page}.`,
+          );
           break;
         }
 
         groupMRs.push(...data);
         console.log(
-          `🔄 Group ${currentGroupId}: Fetched page ${page}, group MRs: ${groupMRs.length}`
+          `🔄 Group ${currentGroupId}: Fetched page ${page}, group MRs: ${groupMRs.length}`,
         );
 
         page++;
       }
 
-      console.log(`✅ Group ${currentGroupId}: Total merged MRs fetched: ${groupMRs.length}`);
+      console.log(
+        `✅ Group ${currentGroupId}: Total merged MRs fetched: ${groupMRs.length}`,
+      );
       allMRs.push(...groupMRs);
     }
   } catch (error) {

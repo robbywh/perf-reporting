@@ -14,7 +14,7 @@ export interface MRDetailsResponse {
 
 export async function findMRDetailsBySprintIdsAndEngineerId(
   sprintIds: string[],
-  engineerId: number
+  engineerId: number,
 ): Promise<MRDetailsResponse> {
   const sprintKey =
     sprintIds.length === 1

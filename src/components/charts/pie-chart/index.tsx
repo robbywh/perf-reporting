@@ -9,6 +9,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 
 interface ChartData {
   type: string;
+  category?: string;
+  categoryId?: string | null;
   value: number;
   fill: string;
 }
@@ -17,9 +19,10 @@ interface ChartProps {
   title: string;
   config: ChartConfig;
   data: ChartData[];
+  onSegmentClick?: (categoryName?: string, categoryId?: string | null) => void;
 }
 
-export function PieChart({ title, config, data }: ChartProps) {
+export function PieChart({ title, config, data, onSegmentClick }: ChartProps) {
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -51,7 +54,16 @@ export function PieChart({ title, config, data }: ChartProps) {
                 }
               >
                 {data.map((entry, index) => (
-                  <Cell key={`cell-${index}`} fill={entry.fill} />
+                  <Cell
+                    key={`cell-${index}`}
+                    fill={entry.fill}
+                    onClick={() => {
+                      if (onSegmentClick) {
+                        onSegmentClick();
+                      }
+                    }}
+                    style={{ cursor: onSegmentClick ? "pointer" : "default" }}
+                  />
                 ))}
               </Pie>
             </PieRechart>

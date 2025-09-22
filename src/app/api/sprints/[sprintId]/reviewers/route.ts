@@ -7,7 +7,7 @@ import { prisma } from "@/services/db";
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ sprintId: string }> }
+  { params }: { params: Promise<{ sprintId: string }> },
 ) {
   try {
     const authHeader = request.headers.get("authorization");
@@ -88,7 +88,7 @@ export async function GET(
           };
         }[];
       }) => {
-        const taskName = task.name?.toLowerCase() || '';
+        const taskName = task.name?.toLowerCase() || "";
 
         // Process each reviewer for this task
         task.reviewers.forEach(
@@ -134,9 +134,9 @@ export async function GET(
               reviewerMap[reviewerName].qaTasks.count++;
               reviewerMap[reviewerName].qaTasks.data.push(task.name);
             }
-          }
+          },
         );
-      }
+      },
     );
 
     return NextResponse.json({ reviewers: reviewerMap });
@@ -144,7 +144,7 @@ export async function GET(
     console.error("Error fetching sprint reviewer statistics:", error);
     return NextResponse.json(
       { error: "Failed to fetch sprint reviewer statistics" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

@@ -17,7 +17,9 @@ export interface QAPerformanceData {
   totalCount: number;
 }
 
-export async function findQAPerformanceBySprintIds(sprintIds: string[]): Promise<QAPerformanceData[]> {
+export async function findQAPerformanceBySprintIds(
+  sprintIds: string[],
+): Promise<QAPerformanceData[]> {
   // Get all QA tasks for the specified sprints (including scenario and support)
   const tasks = await prisma.task.findMany({
     where: {
@@ -54,7 +56,7 @@ export async function findQAPerformanceBySprintIds(sprintIds: string[]): Promise
 
   // Process tasks and organize by reviewer
   tasks.forEach((task) => {
-    const taskName = task.name?.toLowerCase() || '';
+    const taskName = task.name?.toLowerCase() || "";
 
     // Handle tasks with no reviewers
     if (task.reviewers.length === 0) {
@@ -76,21 +78,20 @@ export async function findQAPerformanceBySprintIds(sprintIds: string[]): Promise
       // Process different categories with Tasks to QA consistent approved/rejected logic
       if (taskName.includes("[scenario]")) {
         reviewerMap[noReviewerKey].scenarioTasks.count++;
-        reviewerMap[noReviewerKey].scenarioTasks.data.push(task.name || '');
-      }
-      else if (taskName.includes("[support]")) {
+        reviewerMap[noReviewerKey].scenarioTasks.data.push(task.name || "");
+      } else if (taskName.includes("[support]")) {
         reviewerMap[noReviewerKey].supportedTasks.count++;
-        reviewerMap[noReviewerKey].supportedTasks.data.push(task.name || '');
+        reviewerMap[noReviewerKey].supportedTasks.data.push(task.name || "");
       }
       // For Tasks to QA consistency: approved/rejected logic must match exactly
       else if (taskName.includes("[rejected]")) {
         reviewerMap[noReviewerKey].rejectedTasks.count++;
-        reviewerMap[noReviewerKey].rejectedTasks.data.push(task.name || '');
+        reviewerMap[noReviewerKey].rejectedTasks.data.push(task.name || "");
       }
       // All other QA tasks are considered approved (same logic as Tasks to QA)
       else {
         reviewerMap[noReviewerKey].approvedTasks.count++;
-        reviewerMap[noReviewerKey].approvedTasks.data.push(task.name || '');
+        reviewerMap[noReviewerKey].approvedTasks.data.push(task.name || "");
       }
     }
 
@@ -115,34 +116,35 @@ export async function findQAPerformanceBySprintIds(sprintIds: string[]): Promise
       // Process different categories with Tasks to QA consistent approved/rejected logic
       if (taskName.includes("[scenario]")) {
         reviewerMap[reviewerName].scenarioTasks.count++;
-        reviewerMap[reviewerName].scenarioTasks.data.push(task.name || '');
-      }
-      else if (taskName.includes("[support]")) {
+        reviewerMap[reviewerName].scenarioTasks.data.push(task.name || "");
+      } else if (taskName.includes("[support]")) {
         reviewerMap[reviewerName].supportedTasks.count++;
-        reviewerMap[reviewerName].supportedTasks.data.push(task.name || '');
+        reviewerMap[reviewerName].supportedTasks.data.push(task.name || "");
       }
       // For Tasks to QA consistency: approved/rejected logic must match exactly
       else if (taskName.includes("[rejected]")) {
         reviewerMap[reviewerName].rejectedTasks.count++;
-        reviewerMap[reviewerName].rejectedTasks.data.push(task.name || '');
+        reviewerMap[reviewerName].rejectedTasks.data.push(task.name || "");
       }
       // All other QA tasks are considered approved (same logic as Tasks to QA)
       else {
         reviewerMap[reviewerName].approvedTasks.count++;
-        reviewerMap[reviewerName].approvedTasks.data.push(task.name || '');
+        reviewerMap[reviewerName].approvedTasks.data.push(task.name || "");
       }
     });
   });
 
   // Calculate total counts and filter out reviewers with no tasks
-  const result = Object.values(reviewerMap).map(reviewer => {
-    reviewer.totalCount =
-      reviewer.rejectedTasks.count +
-      reviewer.scenarioTasks.count +
-      reviewer.approvedTasks.count +
-      reviewer.supportedTasks.count;
-    return reviewer;
-  }).filter(reviewer => reviewer.totalCount > 0);
+  const result = Object.values(reviewerMap)
+    .map((reviewer) => {
+      reviewer.totalCount =
+        reviewer.rejectedTasks.count +
+        reviewer.scenarioTasks.count +
+        reviewer.approvedTasks.count +
+        reviewer.supportedTasks.count;
+      return reviewer;
+    })
+    .filter((reviewer) => reviewer.totalCount > 0);
 
   return result;
 }
@@ -151,7 +153,7 @@ export interface ReviewerDetailedTask {
   id: string;
   name: string;
   status: string | null;
-  taskType: 'scenario' | 'rejected' | 'supported';
+  taskType: "scenario" | "rejected" | "supported";
 }
 
 export interface ReviewerTasksDetail {
@@ -169,7 +171,7 @@ export interface ReviewerTasksDetail {
 
 export async function findReviewerTasksDetailBySprintIds(
   reviewerId: number,
-  sprintIds: string[]
+  sprintIds: string[],
 ): Promise<ReviewerTasksDetail | null> {
   // Get reviewer info
   const reviewer = await prisma.reviewer.findUnique({
@@ -221,13 +223,20 @@ export async function findReviewerTasksDetailBySprintIds(
 
   // Aggregate counts
   const totalCounts = sprintReviewers.reduce(
-    (acc: { scenarioCount: number; rejectedCount: number; supportedCount: number }, sr) => {
+    (
+      acc: {
+        scenarioCount: number;
+        rejectedCount: number;
+        supportedCount: number;
+      },
+      sr,
+    ) => {
       acc.scenarioCount += sr.scenarioCount ?? 0;
       acc.rejectedCount += sr.rejectedCount ?? 0;
       acc.supportedCount += sr.supportedCount ?? 0;
       return acc;
     },
-    { scenarioCount: 0, rejectedCount: 0, supportedCount: 0 }
+    { scenarioCount: 0, rejectedCount: 0, supportedCount: 0 },
   );
 
   // Categorize tasks based on name patterns
@@ -236,23 +245,23 @@ export async function findReviewerTasksDetailBySprintIds(
   const supported: ReviewerDetailedTask[] = [];
 
   taskReviewers.forEach(({ task }) => {
-    const taskName = task.name?.toLowerCase() || '';
+    const taskName = task.name?.toLowerCase() || "";
 
     const taskDetail: ReviewerDetailedTask = {
       id: task.id,
-      name: task.name || '',
+      name: task.name || "",
       status: task.status?.name || null,
-      taskType: 'scenario', // default
+      taskType: "scenario", // default
     };
 
-    if (taskName.includes('[scenario]')) {
-      taskDetail.taskType = 'scenario';
+    if (taskName.includes("[scenario]")) {
+      taskDetail.taskType = "scenario";
       scenarios.push(taskDetail);
-    } else if (taskName.includes('[rejected]')) {
-      taskDetail.taskType = 'rejected';
+    } else if (taskName.includes("[rejected]")) {
+      taskDetail.taskType = "rejected";
       rejected.push(taskDetail);
-    } else if (taskName.includes('[support]')) {
-      taskDetail.taskType = 'supported';
+    } else if (taskName.includes("[support]")) {
+      taskDetail.taskType = "supported";
       supported.push(taskDetail);
     } else {
       // Default to scenario if no specific pattern
@@ -270,7 +279,10 @@ export async function findReviewerTasksDetailBySprintIds(
   };
 }
 
-export async function linkSprintsToReviewers(sprintId: string, organizationId: string) {
+export async function linkSprintsToReviewers(
+  sprintId: string,
+  organizationId: string,
+) {
   try {
     if (!sprintId) {
       console.log(`❌ Sprint ID ${sprintId} not found.`);
@@ -281,9 +293,9 @@ export async function linkSprintsToReviewers(sprintId: string, organizationId: s
       where: {
         reviewerOrganizations: {
           some: {
-            organizationId
-          }
-        }
+            organizationId,
+          },
+        },
       },
       select: {
         id: true,
@@ -311,14 +323,14 @@ export async function linkSprintsToReviewers(sprintId: string, organizationId: s
           },
         });
         console.log(
-          `✅ Sprint Reviewer Updated: Sprint ${sprintId}, Reviewer ${reviewerId}`
+          `✅ Sprint Reviewer Updated: Sprint ${sprintId}, Reviewer ${reviewerId}`,
         );
-      })
+      }),
     );
   } catch (error) {
     console.error(
       `❌ Error updating sprint reviewers for Sprint ${sprintId}:`,
-      error
+      error,
     );
   }
 }

@@ -117,7 +117,7 @@ export async function findSprintsWithLeavesAndHolidays(sprintIds: string[]) {
           description: leave.description,
           date: leave.date.toISOString(),
           type: leave.type,
-        }))
+        })),
     ),
     holidays: publicHolidays
       .filter((holiday) => {
@@ -136,7 +136,7 @@ export async function findSprintsWithLeavesAndHolidays(sprintIds: string[]) {
 
 export async function findSprintsBySprintIds(
   sprintIds: string[],
-  engineerId?: number
+  engineerId?: number,
 ) {
   const sprints = await prisma.sprint.findMany({
     where: {
@@ -176,7 +176,7 @@ export async function findSprintsBySprintIds(
 
   // Helper function to safely convert Decimal to number
   const toNumber = (
-    value: Decimal | number | null | undefined
+    value: Decimal | number | null | undefined,
   ): number | null => {
     if (value === null || value === undefined) return null;
     return value instanceof Decimal ? value.toNumber() : Number(value);
@@ -209,7 +209,7 @@ export async function findSprintsBySprintIds(
         target: toNumber(se.target),
         baselineCh: toNumber(se.baselineCh),
         targetCh: toNumber(se.targetCh),
-      })
+      }),
     ),
   }));
 }

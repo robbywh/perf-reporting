@@ -3,7 +3,7 @@ import { CACHE_STRATEGY } from "@/constants/server";
 import { prisma } from "../db";
 
 export async function findRoleIdAndEngineerIdByUserId(
-  userId: string
+  userId: string,
 ): Promise<{ roleId: string | null; engineerId: number | null }> {
   const user = await prisma.user.findUnique({
     where: { id: userId },

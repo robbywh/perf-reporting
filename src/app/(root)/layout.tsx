@@ -9,7 +9,6 @@ import { findRoleIdAndEngineerIdByUserId } from "@/services/users";
 
 import Header from "../../components/header";
 
-
 const WelcomeMessage = async () => {
   const user = await currentUser(); // Fetch the logged-in user
   const firstName = user?.firstName || "Guest";
@@ -18,8 +17,6 @@ const WelcomeMessage = async () => {
 
   return <div className="flex-1 text-lg font-bold">{welcomeMessage}</div>;
 };
-
-
 
 export default async function RootLayout({
   children,

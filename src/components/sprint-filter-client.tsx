@@ -36,10 +36,10 @@ export function SprintFilterClient() {
 
   useEffect(() => {
     async function fetchSprints() {
-      console.log('🔍 SprintFilter Debug:', { organizationId });
-      
+      console.log("🔍 SprintFilter Debug:", { organizationId });
+
       if (!organizationId) {
-        console.log('❌ No organization ID for filter');
+        console.log("❌ No organization ID for filter");
         setSprints([]);
         setLoading(false);
         return;
@@ -48,10 +48,13 @@ export function SprintFilterClient() {
       try {
         // Show loading immediately when organization changes
         setLoading(true);
-        console.log('⏳ Fetching sprints for filter org:', organizationId);
+        console.log("⏳ Fetching sprints for filter org:", organizationId);
         const result = await getSprintsForOrganization(organizationId);
-        console.log('📊 Filter sprint fetch result:', { success: result.success, dataLength: result.success && result.data ? result.data.length : 0 });
-        
+        console.log("📊 Filter sprint fetch result:", {
+          success: result.success,
+          dataLength: result.success && result.data ? result.data.length : 0,
+        });
+
         if (result.success && result.data) {
           setSprints(result.data);
         } else {
@@ -114,7 +117,7 @@ export function SprintFilterClient() {
   const currentSprint = allSprints.find(
     (sprint: SprintOption) =>
       new Date(sprint.startDate) <= currentDate &&
-      currentDate <= new Date(sprint.endDate)
+      currentDate <= new Date(sprint.endDate),
   );
 
   // Today's sprint
@@ -125,21 +128,21 @@ export function SprintFilterClient() {
     (sprint: SprintOption) =>
       new Date(sprint.endDate) <= currentDate &&
       new Date(sprint.endDate) >= oneMonthAgo &&
-      (currentSprint ? sprint.value !== currentSprint.value : true)
+      (currentSprint ? sprint.value !== currentSprint.value : true),
   );
 
   const past3MonthsSprints = allSprints.filter(
     (sprint: SprintOption) =>
       new Date(sprint.startDate) <= currentDate &&
       new Date(sprint.startDate) >= threeMonthsAgo &&
-      (currentSprint ? sprint.value !== currentSprint.value : true)
+      (currentSprint ? sprint.value !== currentSprint.value : true),
   );
 
   const past6MonthsSprints = allSprints.filter(
     (sprint: SprintOption) =>
       new Date(sprint.startDate) <= currentDate &&
       new Date(sprint.startDate) >= sixMonthsAgo &&
-      (currentSprint ? sprint.value !== currentSprint.value : true)
+      (currentSprint ? sprint.value !== currentSprint.value : true),
   );
 
   const defaultSprint = currentSprint || allSprints[allSprints.length - 1];

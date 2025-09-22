@@ -33,13 +33,13 @@ export async function seedReviewers() {
       where: {
         reviewerId_organizationId: {
           reviewerId: reviewer.id,
-          organizationId: 'ksi',
+          organizationId: "ksi",
         },
       },
       update: {},
       create: {
         reviewerId: reviewer.id,
-        organizationId: 'ksi',
+        organizationId: "ksi",
       },
     });
   }

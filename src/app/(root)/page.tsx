@@ -46,7 +46,7 @@ const DynamicLeavePublicHoliday = dynamic(
     import("@/components/client-wrappers").then((mod) => ({
       default: mod.DynamicLeavePublicHoliday,
     })),
-  { loading: () => <LeavePublicHolidaySkeleton /> }
+  { loading: () => <LeavePublicHolidaySkeleton /> },
 );
 
 // Optimize data fetching with preload and parallel execution for dashboard
@@ -64,7 +64,7 @@ async function fetchCriticalData(sprintIds: string[]): Promise<{
   ]);
 
   const { roleId } = await findRoleIdAndEngineerIdByUserId(
-    authData.userId || ""
+    authData.userId || "",
   );
 
   return {
@@ -108,7 +108,12 @@ async function AsyncPieTaskCategoryChart({
   sprintIds: string[];
 }) {
   const taskCategoryData = await findCountTasksByCategory(sprintIds);
-  return <LazyPieTaskCategoryChart taskData={taskCategoryData} />;
+  return (
+    <LazyPieTaskCategoryChart
+      taskData={taskCategoryData}
+      sprintIds={sprintIds}
+    />
+  );
 }
 
 async function AsyncPieDonutTaskChart({ sprintIds }: { sprintIds: string[] }) {

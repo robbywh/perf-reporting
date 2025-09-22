@@ -22,7 +22,7 @@ export interface EngineerProps extends SprintProps {
  */
 export function withSuspense<P extends object>(
   AsyncComponent: React.ComponentType<P>,
-  Fallback: React.ReactNode
+  Fallback: React.ReactNode,
 ) {
   return function SuspenseWrappedComponent(props: P) {
     return (
@@ -39,7 +39,7 @@ export function withSuspense<P extends object>(
  */
 export function createAsyncComponentFactory<DataType, PropType>(
   fetchData: (props: PropType) => Promise<DataType>,
-  Component: React.ComponentType<{ data: DataType }>
+  Component: React.ComponentType<{ data: DataType }>,
 ) {
   return async function AsyncComponent(props: PropType) {
     const data = await fetchData(props);

@@ -13,7 +13,7 @@ interface TaskAssignee {
 export async function linkAssigneesToTask(task: TaskAssignee) {
   if (!task.id) {
     console.error(
-      "❌ Task ID is null or undefined, skipping assignee linking."
+      "❌ Task ID is null or undefined, skipping assignee linking.",
     );
     return;
   }
@@ -36,7 +36,7 @@ export async function linkAssigneesToTask(task: TaskAssignee) {
 
   if (!existingTask) {
     console.error(
-      `❌ Task ID ${task.id} in Sprint ${task.sprintId} does not exist in the database, skipping.`
+      `❌ Task ID ${task.id} in Sprint ${task.sprintId} does not exist in the database, skipping.`,
     );
     return;
   }
@@ -52,8 +52,8 @@ export async function linkAssigneesToTask(task: TaskAssignee) {
   if (task.organizationId) {
     engineerQuery.engineerOrganizations = {
       some: {
-        organizationId: task.organizationId
-      }
+        organizationId: task.organizationId,
+      },
     };
   }
 
@@ -63,7 +63,7 @@ export async function linkAssigneesToTask(task: TaskAssignee) {
   });
 
   const existingEngineerSet = new Set(
-    existingEngineers.map((engineer: { id: number }) => engineer.id)
+    existingEngineers.map((engineer: { id: number }) => engineer.id),
   );
   const taskAssigneeData = [];
 
@@ -108,7 +108,7 @@ export async function linkAssigneesToTask(task: TaskAssignee) {
     });
 
     console.log(
-      `✅ ${taskAssigneeData.length} assignees linked to Task ID ${task.id} in Sprint ${task.sprintId}.`
+      `✅ ${taskAssigneeData.length} assignees linked to Task ID ${task.id} in Sprint ${task.sprintId}.`,
     );
   }
 }

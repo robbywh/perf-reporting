@@ -7,7 +7,7 @@ import { SprintDetailRow } from "@/actions/downloads";
 export async function generateExcel(
   sprintData: { [sprintName: string]: SprintDetailRow[] },
   filename = "sprint-details.xlsx",
-  sprintIds?: string[]
+  sprintIds?: string[],
 ): Promise<void> {
   // Check if window is available (client-side only)
   if (typeof window === "undefined") {
@@ -30,7 +30,7 @@ export async function generateExcel(
       // Iterate through sprintIds and find matching sprint names
       for (const sprintId of sprintIds) {
         const matchingName = Object.keys(sprintData).find(
-          (name) => name === sprintId || name.includes(sprintId)
+          (name) => name === sprintId || name.includes(sprintId),
         );
         if (matchingName) {
           orderedSprintNames.push(matchingName);
@@ -39,7 +39,7 @@ export async function generateExcel(
 
       // Add any remaining sprint names that weren't matched
       const remainingNames = sprintNames.filter(
-        (name) => !orderedSprintNames.includes(name)
+        (name) => !orderedSprintNames.includes(name),
       );
 
       // Use the ordered sprint names if we found matches
@@ -130,7 +130,7 @@ export async function generateExcel(
 
 export async function downloadSprintData(
   sprintData: { [sprintName: string]: SprintDetailRow[] },
-  sprintIds?: string[]
+  sprintIds?: string[],
 ): Promise<void> {
   try {
     // Generate filename with date

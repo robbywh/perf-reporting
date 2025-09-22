@@ -23,7 +23,7 @@ const codingHoursSchema = z.object({
   sprintId: z.string(),
   codingHours: z.preprocess(
     (val) => parseFloat(val as string),
-    z.number().positive()
+    z.number().positive(),
   ),
 });
 
@@ -63,10 +63,10 @@ function CodingHoursEditor({
   onCancel,
 }: CodingHoursEditorProps) {
   const [screenshot, setScreenshot] = useState<string | null>(
-    sprint.sprintEngineers[0]?.codingHoursUrl || null
+    sprint.sprintEngineers[0]?.codingHoursUrl || null,
   );
   const [codingHours, setCodingHours] = useState<string>(
-    sprint.sprintEngineers[0]?.codingHours?.toString() || ""
+    sprint.sprintEngineers[0]?.codingHours?.toString() || "",
   );
   const [isValid, setIsValid] = useState<boolean>(false);
   const [isPending, startTransition] = useTransition();
@@ -297,8 +297,8 @@ export function CodingHoursForm({
                 },
               ],
             }
-          : sprint
-      )
+          : sprint,
+      ),
     );
     setIsEditing(false);
   };

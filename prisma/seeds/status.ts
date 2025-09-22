@@ -21,7 +21,7 @@ export async function seedStatuses() {
       },
       create: {
         ...status,
-        organizationId: 'ksi',
+        organizationId: "ksi",
       },
     });
   }

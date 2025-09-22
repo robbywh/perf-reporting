@@ -14,7 +14,6 @@ type Sprint = {
   endDate: string | Date;
 };
 
-
 export function SprintComponentsClient() {
   const searchParams = useSearchParams();
   const organizationId = searchParams.get("org");
@@ -23,10 +22,10 @@ export function SprintComponentsClient() {
 
   useEffect(() => {
     async function fetchSprints() {
-      console.log('🔍 SprintComponents Debug:', { organizationId });
-      
+      console.log("🔍 SprintComponents Debug:", { organizationId });
+
       if (!organizationId) {
-        console.log('❌ No organization ID');
+        console.log("❌ No organization ID");
         setSprints([]);
         setLoading(false);
         return;
@@ -35,10 +34,13 @@ export function SprintComponentsClient() {
       try {
         // Show loading immediately when organization changes
         setLoading(true);
-        console.log('⏳ Fetching sprints for org:', organizationId);
+        console.log("⏳ Fetching sprints for org:", organizationId);
         const result = await getSprintsForOrganization(organizationId);
-        console.log('📊 Sprint fetch result:', { success: result.success, dataLength: result.success && result.data ? result.data.length : 0 });
-        
+        console.log("📊 Sprint fetch result:", {
+          success: result.success,
+          dataLength: result.success && result.data ? result.data.length : 0,
+        });
+
         if (result.success && result.data) {
           setSprints(result.data);
         } else {
@@ -69,9 +71,7 @@ export function SprintComponentsClient() {
   // Show message if no sprint data
   if (sprints.length === 0) {
     return (
-      <div className="text-sm text-gray-500">
-        No sprint data available
-      </div>
+      <div className="text-sm text-gray-500">No sprint data available</div>
     );
   }
 
@@ -83,9 +83,5 @@ export function SprintComponentsClient() {
     endDate: new Date(sprint.endDate),
   }));
 
-
-
-  return (
-    <SprintDateRange allSprints={allSprints} />
-  );
+  return <SprintDateRange allSprints={allSprints} />;
 }

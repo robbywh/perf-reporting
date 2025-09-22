@@ -1,6 +1,6 @@
 export function getWelcomeMessage(
   role: string,
-  firstName: string = "Guest"
+  firstName: string = "Guest",
 ): string {
   const WELCOME_MESSAGES: Record<string, string> = {
     se: `Hi, ${firstName}! Focus on the features, we'll handle the reporting.`,

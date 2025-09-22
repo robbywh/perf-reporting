@@ -19,7 +19,10 @@ interface SprintDataWrapperProps {
   organizations: Organization[];
 }
 
-export function SprintDataWrapper({ children, organizations }: SprintDataWrapperProps) {
+export function SprintDataWrapper({
+  children,
+  organizations,
+}: SprintDataWrapperProps) {
   const searchParams = useSearchParams();
   const organizationId = searchParams.get("org");
   const [hasSprintData, setHasSprintData] = useState<boolean | null>(null);
@@ -36,7 +39,9 @@ export function SprintDataWrapper({ children, organizations }: SprintDataWrapper
       try {
         setLoading(true);
         const result = await getSprintsForOrganization(organizationId);
-        setHasSprintData(result.success && result.data ? result.data.length > 0 : false);
+        setHasSprintData(
+          result.success && result.data ? result.data.length > 0 : false,
+        );
       } catch (error) {
         console.error("Error checking sprint data:", error);
         setHasSprintData(false);
@@ -64,7 +69,8 @@ export function SprintDataWrapper({ children, organizations }: SprintDataWrapper
               Select Organization
             </div>
             <div className="text-sm text-gray-500">
-              Please select an organization from the dropdown above to view data.
+              Please select an organization from the dropdown above to view
+              data.
             </div>
           </div>
         </div>
@@ -97,9 +103,7 @@ export function SprintDataWrapper({ children, organizations }: SprintDataWrapper
       <>
         <div className="flex items-center justify-between">
           <OrganizationSelector organizations={organizations} />
-          <div className="text-sm text-gray-500">
-            No sprint data available
-          </div>
+          <div className="text-sm text-gray-500">No sprint data available</div>
         </div>
         <div className="flex flex-1 items-center justify-center py-20">
           <div className="text-center">

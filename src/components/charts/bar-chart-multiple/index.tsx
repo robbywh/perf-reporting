@@ -191,7 +191,7 @@ export function BarChartMultiple({ data }: { data: ChartDataProps }) {
       <CardFooter className="flex flex-col gap-1 text-sm font-bold">
         {(() => {
           const belowTarget = chartData.filter(
-            ({ done, target }) => done < target
+            ({ done, target }) => done < target,
           );
           if (!belowTarget.length) return null;
 

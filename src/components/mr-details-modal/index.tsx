@@ -50,7 +50,7 @@ export function MRDetailsModal({
     if (mrDetails.length > 0) {
       setTotalPages(Math.ceil(mrDetails.length / itemsPerPage));
       setPaginatedMRs(
-        mrDetails.slice((page - 1) * itemsPerPage, page * itemsPerPage)
+        mrDetails.slice((page - 1) * itemsPerPage, page * itemsPerPage),
       );
     } else {
       setTotalPages(1);

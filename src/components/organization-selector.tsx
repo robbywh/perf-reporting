@@ -20,7 +20,9 @@ interface OrganizationSelectorProps {
   organizations: Organization[];
 }
 
-export const OrganizationSelector = memo(function OrganizationSelector({ organizations }: OrganizationSelectorProps) {
+export const OrganizationSelector = memo(function OrganizationSelector({
+  organizations,
+}: OrganizationSelectorProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [selectedOrganization, setSelectedOrganization] = useState<string>("");
@@ -31,21 +33,24 @@ export const OrganizationSelector = memo(function OrganizationSelector({ organiz
   useEffect(() => {
     // Only proceed if we have organizations
     if (memoizedOrganizations.length === 0) return;
-    
+
     // Get organization from URL params
     const orgFromUrl = searchParams.get("org");
-    
+
     // If URL has valid org, use it
-    if (orgFromUrl && memoizedOrganizations.some(org => org.id === orgFromUrl)) {
+    if (
+      orgFromUrl &&
+      memoizedOrganizations.some((org) => org.id === orgFromUrl)
+    ) {
       setSelectedOrganization(orgFromUrl);
       return;
     }
-    
+
     // If no valid org in URL, set the first one and update URL
     if (memoizedOrganizations.length > 0) {
       const firstOrgId = memoizedOrganizations[0].id;
       setSelectedOrganization(firstOrgId);
-      
+
       // Update URL to include the first organization
       const newParams = new URLSearchParams(searchParams.toString());
       newParams.set("org", firstOrgId);
@@ -53,14 +58,17 @@ export const OrganizationSelector = memo(function OrganizationSelector({ organiz
     }
   }, [memoizedOrganizations, searchParams, router]);
 
-  const handleOrganizationChange = useCallback((organizationId: string) => {
-    setSelectedOrganization(organizationId);
-    
-    // Update URL params
-    const newParams = new URLSearchParams(searchParams.toString());
-    newParams.set("org", organizationId);
-    router.push(`?${newParams.toString()}`);
-  }, [searchParams, router]);
+  const handleOrganizationChange = useCallback(
+    (organizationId: string) => {
+      setSelectedOrganization(organizationId);
+
+      // Update URL params
+      const newParams = new URLSearchParams(searchParams.toString());
+      newParams.set("org", organizationId);
+      router.push(`?${newParams.toString()}`);
+    },
+    [searchParams, router],
+  );
 
   // Memoize the organization options to prevent rerendering
   const organizationOptions = useMemo(() => {
@@ -79,13 +87,14 @@ export const OrganizationSelector = memo(function OrganizationSelector({ organiz
   return (
     <div className="flex items-center gap-2">
       <span className="text-sm font-medium text-gray-700">Organization:</span>
-      <Select value={selectedOrganization} onValueChange={handleOrganizationChange}>
+      <Select
+        value={selectedOrganization}
+        onValueChange={handleOrganizationChange}
+      >
         <SelectTrigger className="w-[300px]">
           <SelectValue placeholder="Select organization..." />
         </SelectTrigger>
-        <SelectContent>
-          {organizationOptions}
-        </SelectContent>
+        <SelectContent>{organizationOptions}</SelectContent>
       </Select>
     </div>
   );

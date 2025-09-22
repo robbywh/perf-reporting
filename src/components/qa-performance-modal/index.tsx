@@ -43,10 +43,8 @@ interface QAPerformanceModalProps {
 interface QATaskItem {
   taskName: string;
   reviewerName: string;
-  category: 'scenario' | 'rejected' | 'approved' | 'supported';
+  category: "scenario" | "rejected" | "approved" | "supported";
 }
-
-
 
 export function QAPerformanceModal({
   isOpen,
@@ -55,7 +53,9 @@ export function QAPerformanceModal({
 }: QAPerformanceModalProps) {
   const [mounted, setMounted] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
-  const [filter, setFilter] = useState<"all" | "scenario" | "rejected" | "approved" | "supported">("all");
+  const [filter, setFilter] = useState<
+    "all" | "scenario" | "rejected" | "approved" | "supported"
+  >("all");
   const [reviewerFilter, setReviewerFilter] = useState<"all" | string>("all");
   const itemsPerPage = 10;
 
@@ -73,7 +73,7 @@ export function QAPerformanceModal({
         tasks.push({
           taskName,
           reviewerName: reviewer.reviewerName,
-          category: 'scenario',
+          category: "scenario",
         });
       });
 
@@ -82,7 +82,7 @@ export function QAPerformanceModal({
         tasks.push({
           taskName,
           reviewerName: reviewer.reviewerName,
-          category: 'rejected',
+          category: "rejected",
         });
       });
 
@@ -91,7 +91,7 @@ export function QAPerformanceModal({
         tasks.push({
           taskName,
           reviewerName: reviewer.reviewerName,
-          category: 'approved',
+          category: "approved",
         });
       });
 
@@ -100,7 +100,7 @@ export function QAPerformanceModal({
         tasks.push({
           taskName,
           reviewerName: reviewer.reviewerName,
-          category: 'supported',
+          category: "supported",
         });
       });
     });
@@ -109,12 +109,28 @@ export function QAPerformanceModal({
   }, [qaData]);
 
   // Calculate statistics and filtering
-  const { scenarioTasks, rejectedTasks, approvedTasks, supportedTasks, filteredTasks, reviewerStats, uniqueReviewers } = useMemo(() => {
+  const {
+    scenarioTasks,
+    rejectedTasks,
+    approvedTasks,
+    supportedTasks,
+    filteredTasks,
+    reviewerStats,
+    uniqueReviewers,
+  } = useMemo(() => {
     const scenario: QATaskItem[] = [];
     const rejected: QATaskItem[] = [];
     const approved: QATaskItem[] = [];
     const supported: QATaskItem[] = [];
-    const stats: Record<string, { scenario: number; rejected: number; approved: number; supported: number }> = {};
+    const stats: Record<
+      string,
+      {
+        scenario: number;
+        rejected: number;
+        approved: number;
+        supported: number;
+      }
+    > = {};
     const reviewerSet = new Set<string>();
 
     allTasks.forEach((task) => {
@@ -123,23 +139,28 @@ export function QAPerformanceModal({
 
       // Categorize tasks
       switch (task.category) {
-        case 'scenario':
+        case "scenario":
           scenario.push(task);
           break;
-        case 'rejected':
+        case "rejected":
           rejected.push(task);
           break;
-        case 'approved':
+        case "approved":
           approved.push(task);
           break;
-        case 'supported':
+        case "supported":
           supported.push(task);
           break;
       }
 
       // Calculate reviewer stats
       if (!stats[task.reviewerName]) {
-        stats[task.reviewerName] = { scenario: 0, rejected: 0, approved: 0, supported: 0 };
+        stats[task.reviewerName] = {
+          scenario: 0,
+          rejected: 0,
+          approved: 0,
+          supported: 0,
+        };
       }
       stats[task.reviewerName][task.category]++;
     });
@@ -165,7 +186,9 @@ export function QAPerformanceModal({
 
     // Apply reviewer filter
     if (reviewerFilter !== "all") {
-      filtered = filtered.filter(task => task.reviewerName === reviewerFilter);
+      filtered = filtered.filter(
+        (task) => task.reviewerName === reviewerFilter,
+      );
     }
 
     return {
@@ -185,7 +208,7 @@ export function QAPerformanceModal({
       setFilter(newFilter);
       setCurrentPage(1);
     },
-    []
+    [],
   );
 
   // Reset to page 1 when reviewer filter changes
@@ -194,7 +217,7 @@ export function QAPerformanceModal({
       setReviewerFilter(newReviewerFilter);
       setCurrentPage(1);
     },
-    []
+    [],
   );
 
   // Pagination logic
@@ -209,14 +232,30 @@ export function QAPerformanceModal({
 
   const getCategoryBadge = (category: string) => {
     switch (category) {
-      case 'scenario':
-        return <Badge className="bg-blue-100 text-blue-800 hover:bg-blue-200">Scenario</Badge>;
-      case 'rejected':
-        return <Badge className="bg-red-100 text-red-800 hover:bg-red-200">Rejected</Badge>;
-      case 'approved':
-        return <Badge className="bg-green-100 text-green-800 hover:bg-green-200">Approved</Badge>;
-      case 'supported':
-        return <Badge className="bg-orange-100 text-orange-800 hover:bg-orange-200">Supported</Badge>;
+      case "scenario":
+        return (
+          <Badge className="bg-blue-100 text-blue-800 hover:bg-blue-200">
+            Scenario
+          </Badge>
+        );
+      case "rejected":
+        return (
+          <Badge className="bg-red-100 text-red-800 hover:bg-red-200">
+            Rejected
+          </Badge>
+        );
+      case "approved":
+        return (
+          <Badge className="bg-green-100 text-green-800 hover:bg-green-200">
+            Approved
+          </Badge>
+        );
+      case "supported":
+        return (
+          <Badge className="bg-orange-100 text-orange-800 hover:bg-orange-200">
+            Supported
+          </Badge>
+        );
       default:
         return <Badge variant="secondary">{category}</Badge>;
     }
@@ -244,10 +283,18 @@ export function QAPerformanceModal({
               <h3 className="mb-2 text-sm font-semibold">Task Summary</h3>
               <div className="space-y-1 text-sm">
                 <div>Total Tasks: {allTasks.length}</div>
-                <div className="text-blue-600">Scenarios: {scenarioTasks.length}</div>
-                <div className="text-red-600">Rejected: {rejectedTasks.length}</div>
-                <div className="text-green-600">Approved: {approvedTasks.length}</div>
-                <div className="text-orange-600">Supported: {supportedTasks.length}</div>
+                <div className="text-blue-600">
+                  Scenarios: {scenarioTasks.length}
+                </div>
+                <div className="text-red-600">
+                  Rejected: {rejectedTasks.length}
+                </div>
+                <div className="text-green-600">
+                  Approved: {approvedTasks.length}
+                </div>
+                <div className="text-orange-600">
+                  Supported: {supportedTasks.length}
+                </div>
               </div>
             </div>
 
@@ -261,13 +308,19 @@ export function QAPerformanceModal({
                       <div className="flex gap-1 text-xs">
                         <span className="text-blue-600">S{stats.scenario}</span>
                         <span className="text-red-600">R{stats.rejected}</span>
-                        <span className="text-green-600">A{stats.approved}</span>
-                        <span className="text-orange-600">U{stats.supported}</span>
+                        <span className="text-green-600">
+                          A{stats.approved}
+                        </span>
+                        <span className="text-orange-600">
+                          U{stats.supported}
+                        </span>
                       </div>
                     </div>
                   ))
                 ) : (
-                  <div className="text-muted-foreground">No reviewers found</div>
+                  <div className="text-muted-foreground">
+                    No reviewers found
+                  </div>
                 )}
               </div>
             </div>
@@ -279,45 +332,55 @@ export function QAPerformanceModal({
           <div className="flex items-center gap-2">
             <span className="text-sm font-medium">Category:</span>
             <div className="flex gap-1">
-            <Button
-              variant={filter === "all" ? "default" : "outline"}
-              size="sm"
-              onClick={() => handleFilterChange("all")}
-            >
-              All ({allTasks.length})
-            </Button>
-            <Button
-              variant={filter === "scenario" ? "default" : "outline"}
-              size="sm"
-              onClick={() => handleFilterChange("scenario")}
-              className={filter === "scenario" ? "bg-blue-600 hover:bg-blue-700" : ""}
-            >
-              Scenarios ({scenarioTasks.length})
-            </Button>
-            <Button
-              variant={filter === "rejected" ? "default" : "outline"}
-              size="sm"
-              onClick={() => handleFilterChange("rejected")}
-              className={filter === "rejected" ? "bg-red-600 hover:bg-red-700" : ""}
-            >
-              Rejected ({rejectedTasks.length})
-            </Button>
-            <Button
-              variant={filter === "approved" ? "default" : "outline"}
-              size="sm"
-              onClick={() => handleFilterChange("approved")}
-              className={filter === "approved" ? "bg-green-600 hover:bg-green-700" : ""}
-            >
-              Approved ({approvedTasks.length})
-            </Button>
-            <Button
-              variant={filter === "supported" ? "default" : "outline"}
-              size="sm"
-              onClick={() => handleFilterChange("supported")}
-              className={filter === "supported" ? "bg-orange-600 hover:bg-orange-700" : ""}
-            >
-              Supported ({supportedTasks.length})
-            </Button>
+              <Button
+                variant={filter === "all" ? "default" : "outline"}
+                size="sm"
+                onClick={() => handleFilterChange("all")}
+              >
+                All ({allTasks.length})
+              </Button>
+              <Button
+                variant={filter === "scenario" ? "default" : "outline"}
+                size="sm"
+                onClick={() => handleFilterChange("scenario")}
+                className={
+                  filter === "scenario" ? "bg-blue-600 hover:bg-blue-700" : ""
+                }
+              >
+                Scenarios ({scenarioTasks.length})
+              </Button>
+              <Button
+                variant={filter === "rejected" ? "default" : "outline"}
+                size="sm"
+                onClick={() => handleFilterChange("rejected")}
+                className={
+                  filter === "rejected" ? "bg-red-600 hover:bg-red-700" : ""
+                }
+              >
+                Rejected ({rejectedTasks.length})
+              </Button>
+              <Button
+                variant={filter === "approved" ? "default" : "outline"}
+                size="sm"
+                onClick={() => handleFilterChange("approved")}
+                className={
+                  filter === "approved" ? "bg-green-600 hover:bg-green-700" : ""
+                }
+              >
+                Approved ({approvedTasks.length})
+              </Button>
+              <Button
+                variant={filter === "supported" ? "default" : "outline"}
+                size="sm"
+                onClick={() => handleFilterChange("supported")}
+                className={
+                  filter === "supported"
+                    ? "bg-orange-600 hover:bg-orange-700"
+                    : ""
+                }
+              >
+                Supported ({supportedTasks.length})
+              </Button>
             </div>
           </div>
 
@@ -338,7 +401,12 @@ export function QAPerformanceModal({
                   size="sm"
                   onClick={() => handleReviewerFilterChange(reviewer)}
                 >
-                  {reviewer} ({allTasks.filter(task => task.reviewerName === reviewer).length})
+                  {reviewer} (
+                  {
+                    allTasks.filter((task) => task.reviewerName === reviewer)
+                      .length
+                  }
+                  )
                 </Button>
               ))}
             </div>
@@ -364,16 +432,16 @@ export function QAPerformanceModal({
                 </TableHeader>
                 <TableBody>
                   {currentTasks.map((task, index) => (
-                    <TableRow key={`${task.reviewerName}-${task.category}-${index}`}>
+                    <TableRow
+                      key={`${task.reviewerName}-${task.category}-${index}`}
+                    >
                       <TableCell className="font-medium">
                         <div className="break-words">{task.taskName}</div>
                       </TableCell>
                       <TableCell>
                         <div className="break-words">{task.reviewerName}</div>
                       </TableCell>
-                      <TableCell>
-                        {getCategoryBadge(task.category)}
-                      </TableCell>
+                      <TableCell>{getCategoryBadge(task.category)}</TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
@@ -383,7 +451,8 @@ export function QAPerformanceModal({
               {totalPages > 1 && (
                 <div className="flex items-center justify-between border-t px-4 py-3">
                   <div className="text-sm text-muted-foreground">
-                    Showing {startIndex + 1} to {Math.min(endIndex, filteredTasks.length)} of{" "}
+                    Showing {startIndex + 1} to{" "}
+                    {Math.min(endIndex, filteredTasks.length)} of{" "}
                     {filteredTasks.length}
                     {filter === "all" && reviewerFilter === "all"
                       ? " tasks"
@@ -401,30 +470,37 @@ export function QAPerformanceModal({
 
                     {/* Page numbers */}
                     <div className="flex items-center space-x-1">
-                      {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                        let pageNumber;
-                        if (totalPages <= 5) {
-                          pageNumber = i + 1;
-                        } else if (currentPage <= 3) {
-                          pageNumber = i + 1;
-                        } else if (currentPage >= totalPages - 2) {
-                          pageNumber = totalPages - 4 + i;
-                        } else {
-                          pageNumber = currentPage - 2 + i;
-                        }
+                      {Array.from(
+                        { length: Math.min(5, totalPages) },
+                        (_, i) => {
+                          let pageNumber;
+                          if (totalPages <= 5) {
+                            pageNumber = i + 1;
+                          } else if (currentPage <= 3) {
+                            pageNumber = i + 1;
+                          } else if (currentPage >= totalPages - 2) {
+                            pageNumber = totalPages - 4 + i;
+                          } else {
+                            pageNumber = currentPage - 2 + i;
+                          }
 
-                        return (
-                          <Button
-                            key={pageNumber}
-                            variant={currentPage === pageNumber ? "default" : "outline"}
-                            size="sm"
-                            onClick={() => goToPage(pageNumber)}
-                            className="size-8 p-0"
-                          >
-                            {pageNumber}
-                          </Button>
-                        );
-                      })}
+                          return (
+                            <Button
+                              key={pageNumber}
+                              variant={
+                                currentPage === pageNumber
+                                  ? "default"
+                                  : "outline"
+                              }
+                              size="sm"
+                              onClick={() => goToPage(pageNumber)}
+                              className="size-8 p-0"
+                            >
+                              {pageNumber}
+                            </Button>
+                          );
+                        },
+                      )}
                     </div>
 
                     <Button

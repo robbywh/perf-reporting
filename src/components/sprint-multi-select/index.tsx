@@ -29,7 +29,7 @@ export function SprintMultiSelect({
   const searchParams = useSearchParams();
   const [mounted, setMounted] = useState(false);
   const [selectedOptions, setSelectedOptions] = useState<MultiValue<Option>>(
-    []
+    [],
   );
 
   // Create filter options with useMemo
@@ -40,7 +40,7 @@ export function SprintMultiSelect({
       { value: "past-3-months", label: "Past 3 Months" },
       { value: "past-6-months", label: "Past 6 Months" },
     ],
-    []
+    [],
   );
 
   // Get sprints based on filter with useCallback
@@ -62,7 +62,7 @@ export function SprintMultiSelect({
       });
       return option?.sprints || [];
     },
-    [sprintOptions]
+    [sprintOptions],
   );
 
   // Find current sprint with useCallback
@@ -98,7 +98,7 @@ export function SprintMultiSelect({
       setSelectedOptions(filteredSprints);
     } else {
       setSelectedOptions(
-        sprints.filter((sprint) => sprintIdsFromUrl.includes(sprint.value))
+        sprints.filter((sprint) => sprintIdsFromUrl.includes(sprint.value)),
       );
     }
   }, [

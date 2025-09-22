@@ -14,7 +14,7 @@ export async function GET(request: Request) {
     // Get today's sprints
     const todaySprints = await findTodaySprints();
     const sprintIds = todaySprints.map(
-      (sprint: { id: string | number }) => sprint.id
+      (sprint: { id: string | number }) => sprint.id,
     );
 
     // Get tasks with the specified statuses from today's sprints
@@ -75,7 +75,7 @@ export async function GET(request: Request) {
             .join(", ");
           const statusName = task.status?.name || "No status";
           return `| ${task.sprint.name} | ${task.id} | ${task.name} | ${statusName} | ${assigneeNames || "No assignee"} |`;
-        }
+        },
       )
       .join("\n");
 

@@ -140,7 +140,7 @@ export const BarChartCapacity = memo(function BarChartCapacity({
           percentage: Math.round(percentage * 100) / 100, // Round to 2 decimal places
         };
       }),
-    [sprints]
+    [sprints],
   );
 
   // Memoize the average velocity calculation

@@ -26,7 +26,7 @@ export interface SprintDetailRow {
 }
 
 export async function getSprintDetailsForDownload(
-  sprintIds: string[]
+  sprintIds: string[],
 ): Promise<{
   [sprintName: string]: SprintDetailRow[];
 }> {
@@ -98,7 +98,7 @@ export async function getSprintDetailsForDownload(
 
       // Filter tasks for this engineer
       const engineerTasks = tasks.filter((task) =>
-        task.assignees.some((ta) => ta.engineerId === engineerId)
+        task.assignees.some((ta) => ta.engineerId === engineerId),
       );
 
       // Calculate task statistics using the exact same logic as findAverageSPAndMergedCountBySprintIds
@@ -139,7 +139,7 @@ export async function getSprintDetailsForDownload(
         const sp = Number(task.storyPoint) || 0;
         const tags = taskTagsMap[task.id] || [];
         const isSupport = tags.includes("support");
-        const isNonDev = tags.some(tag => NODEV_TAGS.includes(tag));
+        const isNonDev = tags.some((tag) => NODEV_TAGS.includes(tag));
         const isApproved = APPROVED_STATUS_IDS.includes(task.statusId || "");
 
         const category = isApproved
@@ -192,7 +192,7 @@ export async function getSprintDetailsForDownload(
         // Use the findTotalTaskToQACounts function to get QA task counts
         const qaTaskCounts = await findTotalTaskToQACounts(
           [sprint.id],
-          engineerId
+          engineerId,
         );
         approvedQATasks = qaTaskCounts.approvedTasks;
         rejectedQATasks = qaTaskCounts.rejectedTasks;

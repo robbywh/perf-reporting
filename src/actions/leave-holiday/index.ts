@@ -78,11 +78,11 @@ type SprintEngineer = {
 
 async function findSprintByDate(
   date: Date,
-  tx: PrismaTransactionClient = prisma
+  tx: PrismaTransactionClient = prisma,
 ) {
   // Convert all dates to UTC midnight for comparison
   const dateToFind = new Date(
-    date.toISOString().split("T")[0] + "T00:00:00.000Z"
+    date.toISOString().split("T")[0] + "T00:00:00.000Z",
   );
 
   const sprint = await tx.sprint.findFirst({
@@ -120,11 +120,11 @@ export async function adjustBaselineTarget(
     | "half_day_after_break"
     | null,
   isDelete: boolean = false,
-  tx: PrismaTransactionClient = prisma
+  tx: PrismaTransactionClient = prisma,
 ) {
   // Convert input date to UTC midnight for consistent comparison
   const dateToProcess = new Date(
-    date.toISOString().split("T")[0] + "T00:00:00.000Z"
+    date.toISOString().split("T")[0] + "T00:00:00.000Z",
   );
 
   // Find sprint based on date
@@ -259,7 +259,7 @@ export async function deleteLeaveOrHolidayAction(formData: FormData) {
           leave.engineerId,
           leave.type,
           true, // isDelete flag
-          tx
+          tx,
         );
       } else {
         // Get holiday before deletion
@@ -281,7 +281,7 @@ export async function deleteLeaveOrHolidayAction(formData: FormData) {
           null,
           "full_day",
           true, // isDelete flag
-          tx
+          tx,
         );
       }
     });
@@ -335,7 +335,7 @@ export async function addLeaveOrHolidayAction(formData: FormData) {
             engineerId,
             requestType,
             false,
-            tx
+            tx,
           );
         } else {
           await tx.publicHoliday.create({
@@ -350,7 +350,7 @@ export async function addLeaveOrHolidayAction(formData: FormData) {
       },
       {
         timeout: 10000, // Increase timeout to 10 seconds
-      }
+      },
     );
 
     revalidatePath(`/`);

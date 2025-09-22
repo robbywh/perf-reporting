@@ -8,7 +8,7 @@ import { ReactNode, Suspense, ComponentType } from "react";
  */
 export function withSuspense<T extends object>(
   Component: ComponentType<T>,
-  Fallback: ComponentType<unknown> | ReactNode
+  Fallback: ComponentType<unknown> | ReactNode,
 ) {
   return function WithSuspenseWrapper(props: T) {
     return (

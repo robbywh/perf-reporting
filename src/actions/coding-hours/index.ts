@@ -25,33 +25,35 @@ export async function uploadFile({
   try {
     // Sanitize fileName by removing special characters and replacing spaces with hyphens
     const sanitizedFileName = fileName
-      .replace(/[^a-zA-Z0-9-_.]/g, '-')  // Replace special chars with hyphens
-      .replace(/\s+/g, '-')               // Replace spaces with hyphens
-      .replace(/-+/g, '-')                // Replace multiple hyphens with single hyphen
-      .toLowerCase();                      // Convert to lowercase
-    
+      .replace(/[^a-zA-Z0-9-_.]/g, "-") // Replace special chars with hyphens
+      .replace(/\s+/g, "-") // Replace spaces with hyphens
+      .replace(/-+/g, "-") // Replace multiple hyphens with single hyphen
+      .toLowerCase(); // Convert to lowercase
+
     // Add timestamp to ensure uniqueness
     const timestamp = Date.now();
-    const fileExtension = file.name.split('.').pop() || 'jpg';
+    const fileExtension = file.name.split(".").pop() || "jpg";
     const finalFileName = `${sanitizedFileName}-${timestamp}.${fileExtension}`;
-    
+
     console.log("Server: Starting blob upload:", {
       originalFileName: fileName,
       sanitizedFileName: finalFileName,
       filePath,
       fileSize: file.size,
-      fileType: file.type
+      fileType: file.type,
     });
-    
+
     const blob = await put(`${filePath}${finalFileName}`, file, {
       access: "public",
     });
-    
+
     console.log("Server: Blob upload successful:", blob.url);
     return blob.url;
   } catch (error) {
     console.error("Server: Blob upload failed:", error);
-    throw new Error(`Failed to upload file: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    throw new Error(
+      `Failed to upload file: ${error instanceof Error ? error.message : "Unknown error"}`,
+    );
   }
 }
 

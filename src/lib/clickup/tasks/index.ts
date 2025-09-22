@@ -11,10 +11,10 @@ export interface ClickUpTask {
 }
 
 export async function getListTasks(
-  sprintId: string, 
-  apiToken: string, 
+  sprintId: string,
+  apiToken: string,
   baseUrl: string,
-  page: number = 0
+  page: number = 0,
 ) {
   const url = `${baseUrl}/list/${sprintId}/task?page=${page}&subtasks=true&include_closed=true`;
 
@@ -30,7 +30,7 @@ export async function getListTasks(
     if (!response.ok) {
       const errorText = await response.text();
       throw new Error(
-        `ClickUp API Error: ${response.status} ${response.statusText}. Response: ${errorText}`
+        `ClickUp API Error: ${response.status} ${response.statusText}. Response: ${errorText}`,
       );
     }
 

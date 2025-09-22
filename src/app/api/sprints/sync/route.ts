@@ -25,9 +25,14 @@ type PrismaTransaction = {
   [key: string]: unknown;
 };
 
-async function syncSprintsFromClickUp(organizationId: string, targetSprintId?: string) {
-  const sprintInfo = targetSprintId ? ` for sprint ${targetSprintId}` : '';
-  console.log(`🔄 Starting sprint sync for organization: ${organizationId}${sprintInfo}`);
+async function syncSprintsFromClickUp(
+  organizationId: string,
+  targetSprintId?: string,
+) {
+  const sprintInfo = targetSprintId ? ` for sprint ${targetSprintId}` : "";
+  console.log(
+    `🔄 Starting sprint sync for organization: ${organizationId}${sprintInfo}`,
+  );
 
   try {
     // Get API configuration from database
@@ -35,7 +40,7 @@ async function syncSprintsFromClickUp(organizationId: string, targetSprintId?: s
 
     if (!apiConfig.CLICKUP_API_TOKEN || !apiConfig.CLICKUP_FOLDER_ID) {
       console.log(
-        `⚠️ Missing ClickUp API configuration for organization ${organizationId}, skipping...`
+        `⚠️ Missing ClickUp API configuration for organization ${organizationId}, skipping...`,
       );
       return;
     }
@@ -45,12 +50,14 @@ async function syncSprintsFromClickUp(organizationId: string, targetSprintId?: s
       const existingSprint = await prisma.sprint.findFirst({
         where: {
           id: targetSprintId,
-          organizationId
-        }
+          organizationId,
+        },
       });
 
       if (!existingSprint) {
-        console.log(`❌ Sprint ${targetSprintId} not found in organization ${organizationId}`);
+        console.log(
+          `❌ Sprint ${targetSprintId} not found in organization ${organizationId}`,
+        );
         return;
       }
     }
@@ -59,7 +66,7 @@ async function syncSprintsFromClickUp(organizationId: string, targetSprintId?: s
     const folderListResponse = await getFolderList(
       apiConfig.CLICKUP_API_TOKEN,
       apiConfig.CLICKUP_BASE_URL!,
-      apiConfig.CLICKUP_FOLDER_ID
+      apiConfig.CLICKUP_FOLDER_ID,
     );
 
     // Ensure the response contains a "lists" array.
@@ -70,7 +77,7 @@ async function syncSprintsFromClickUp(organizationId: string, targetSprintId?: s
 
     // Filter lists if targeting a specific sprint
     const filteredLists = targetSprintId
-      ? lists.filter(list => list.id === targetSprintId)
+      ? lists.filter((list) => list.id === targetSprintId)
       : lists;
 
     if (targetSprintId && filteredLists.length === 0) {
@@ -108,16 +115,18 @@ async function syncSprintsFromClickUp(organizationId: string, targetSprintId?: s
             where: { id: sprint.id },
             create: sprint,
             update: sprint,
-          })
-        )
+          }),
+        ),
       );
     });
 
-    console.log(`✅ Successfully synchronized sprints for organization: ${organizationId}`);
+    console.log(
+      `✅ Successfully synchronized sprints for organization: ${organizationId}`,
+    );
   } catch (error) {
     console.error(
       `❌ Error synchronizing sprints for organization ${organizationId}:`,
-      error
+      error,
     );
     // Don't throw - let the main sync continue with next organization
   }
@@ -129,19 +138,20 @@ async function processBatch(
   statusMap: Map<string, string>,
   statuses: { id: string; name: string }[],
   categoryIds: Set<string>,
-  organizationId: string
+  organizationId: string,
 ) {
   const taskDataBatch = tasks.map((task) => {
     const categoryField = task.custom_fields?.find(
-      (field) => field.name === "Kategori"
+      (field) => field.name === "Kategori",
     );
     const rawCategoryId = categoryField?.value?.[0] ?? null;
     // Only use categoryId if it exists in the organization
-    const categoryId = rawCategoryId && categoryIds.has(rawCategoryId) ? rawCategoryId : null;
+    const categoryId =
+      rawCategoryId && categoryIds.has(rawCategoryId) ? rawCategoryId : null;
 
     if (rawCategoryId && !categoryIds.has(rawCategoryId)) {
       console.warn(
-        `🟡 Task ${task.id} (${task.name}) has invalid category: ${rawCategoryId}, setting to null`
+        `🟡 Task ${task.id} (${task.name}) has invalid category: ${rawCategoryId}, setting to null`,
       );
     }
 
@@ -149,7 +159,7 @@ async function processBatch(
     const statusId = statusMap.get(task.status.status);
     if (!statusId) {
       console.warn(
-        `🟡 Task ${task.id} (${task.name}) has an invalid status: ${task.status.status}`
+        `🟡 Task ${task.id} (${task.name}) has an invalid status: ${task.status.status}`,
       );
     }
     return {
@@ -202,7 +212,7 @@ async function processBatch(
     {
       timeout: 15000, // 15 seconds timeout for task creation
       maxWait: 10000, // 10 seconds maximum wait time
-    }
+    },
   );
 
   // Step 2: After all tasks are guaranteed to exist, create relationships
@@ -214,8 +224,8 @@ async function processBatch(
           id: taskData.id,
           sprintId: taskData.sprintId,
           tags: taskData.tags,
-        })
-      )
+        }),
+      ),
     ),
     // Link assignees for all tasks
     Promise.all(
@@ -229,8 +239,8 @@ async function processBatch(
             ? statuses.find((s) => s.id === taskData.statusId)?.name || ""
             : "",
           organizationId,
-        })
-      )
+        }),
+      ),
     ),
     // Link reviewers for all tasks
     Promise.all(
@@ -246,23 +256,28 @@ async function processBatch(
           name: taskData.name,
           taskTags: taskData.tags?.map((tag) => ({ tagId: tag.name })),
           organizationId,
-        })
-      )
+        }),
+      ),
     ),
   ]);
 }
 
-async function syncTodayTasksFromClickUp(organizationId: string, targetSprintId?: string) {
+async function syncTodayTasksFromClickUp(
+  organizationId: string,
+  targetSprintId?: string,
+) {
   try {
-    const sprintInfo = targetSprintId ? ` for sprint ${targetSprintId}` : '';
-    console.log(`🔄 Starting task sync for organization: ${organizationId}${sprintInfo}`);
+    const sprintInfo = targetSprintId ? ` for sprint ${targetSprintId}` : "";
+    console.log(
+      `🔄 Starting task sync for organization: ${organizationId}${sprintInfo}`,
+    );
 
     // Get API configuration from database
     const apiConfig = await getApiConfig(organizationId);
 
     if (!apiConfig.CLICKUP_API_TOKEN) {
       console.log(
-        `⚠️ Missing ClickUp API configuration for organization ${organizationId}, skipping...`
+        `⚠️ Missing ClickUp API configuration for organization ${organizationId}, skipping...`,
       );
       return;
     }
@@ -274,12 +289,14 @@ async function syncTodayTasksFromClickUp(organizationId: string, targetSprintId?
       const specificSprint = await prisma.sprint.findFirst({
         where: {
           id: targetSprintId,
-          organizationId
-        }
+          organizationId,
+        },
       });
 
       if (!specificSprint) {
-        console.log(`❌ Sprint ${targetSprintId} not found in organization ${organizationId}`);
+        console.log(
+          `❌ Sprint ${targetSprintId} not found in organization ${organizationId}`,
+        );
         return;
       }
 
@@ -287,7 +304,8 @@ async function syncTodayTasksFromClickUp(organizationId: string, targetSprintId?
       console.log(`🎯 Syncing specific sprint: ${specificSprint.name}`);
     } else {
       // Get current and future sprints for engineer/reviewer linking
-      const currentAndFutureSprints = await findCurrentAndFutureSprints(organizationId);
+      const currentAndFutureSprints =
+        await findCurrentAndFutureSprints(organizationId);
 
       // Link engineers and reviewers for current and future sprints
       for (const sprint of currentAndFutureSprints) {
@@ -304,7 +322,7 @@ async function syncTodayTasksFromClickUp(organizationId: string, targetSprintId?
       where: { organizationId },
     });
     const statusMap = new Map<string, string>(
-      statuses.map((s: { name: string; id: string }) => [s.name, s.id])
+      statuses.map((s: { name: string; id: string }) => [s.name, s.id]),
     );
 
     // Fetch all categories to validate categoryId
@@ -324,7 +342,7 @@ async function syncTodayTasksFromClickUp(organizationId: string, targetSprintId?
             sprint.id,
             apiConfig.CLICKUP_API_TOKEN,
             apiConfig.CLICKUP_BASE_URL!,
-            page
+            page,
           );
           allTasks.push(...response.tasks);
           lastPage = response.last_page;
@@ -333,7 +351,7 @@ async function syncTodayTasksFromClickUp(organizationId: string, targetSprintId?
       } catch (error) {
         console.error(
           `❌ Error fetching tasks for sprint ${sprint.id} in organization ${organizationId}:`,
-          error
+          error,
         );
         // Skip this sprint and continue with next sprint
         continue;
@@ -354,7 +372,7 @@ async function syncTodayTasksFromClickUp(organizationId: string, targetSprintId?
 
       // Find tasks that exist in DB but not in ClickUp (moved to another sprint)
       const tasksToDelete = existingTasks.filter(
-        (task: { id: string }) => !clickUpTaskIds.has(task.id)
+        (task: { id: string }) => !clickUpTaskIds.has(task.id),
       );
 
       // Delete tasks that were moved to another sprint
@@ -394,7 +412,7 @@ async function syncTodayTasksFromClickUp(organizationId: string, targetSprintId?
         });
 
         console.log(
-          `✅ Deleted ${tasksToDelete.length} tasks that were moved from Sprint ${sprint.id}`
+          `✅ Deleted ${tasksToDelete.length} tasks that were moved from Sprint ${sprint.id}`,
         );
       }
 
@@ -409,7 +427,7 @@ async function syncTodayTasksFromClickUp(organizationId: string, targetSprintId?
             statusMap as Map<string, string>,
             statuses,
             categoryIds,
-            organizationId
+            organizationId,
           );
         } catch (error: unknown) {
           if (
@@ -420,7 +438,7 @@ async function syncTodayTasksFromClickUp(organizationId: string, targetSprintId?
             console.warn(
               `Transaction timeout for batch ${i}-${
                 i + batchSize
-              }, retrying with smaller batch...`
+              }, retrying with smaller batch...`,
             );
             // If transaction times out, process the batch in even smaller chunks
             const smallerBatchSize = 10;
@@ -432,7 +450,7 @@ async function syncTodayTasksFromClickUp(organizationId: string, targetSprintId?
                 statusMap as Map<string, string>,
                 statuses,
                 categoryIds,
-                organizationId
+                organizationId,
               );
             }
           } else {
@@ -443,12 +461,12 @@ async function syncTodayTasksFromClickUp(organizationId: string, targetSprintId?
     }
 
     console.log(
-      `✅ Successfully synchronized tasks for organization: ${organizationId}`
+      `✅ Successfully synchronized tasks for organization: ${organizationId}`,
     );
   } catch (error) {
     console.error(
       `❌ Error synchronizing tasks for organization ${organizationId}:`,
-      error
+      error,
     );
     throw error;
   }
@@ -473,8 +491,12 @@ export async function GET(request: Request) {
     const rawSprintId = url.searchParams.get("sprint_id");
 
     // Treat empty strings as null (sync all)
-    const targetOrganizationId = rawOrganizationId && rawOrganizationId.trim() !== '' ? rawOrganizationId : null;
-    const targetSprintId = rawSprintId && rawSprintId.trim() !== '' ? rawSprintId : null;
+    const targetOrganizationId =
+      rawOrganizationId && rawOrganizationId.trim() !== ""
+        ? rawOrganizationId
+        : null;
+    const targetSprintId =
+      rawSprintId && rawSprintId.trim() !== "" ? rawSprintId : null;
 
     // If sprint_id is provided, get its organization
     let sprintOrganizationId = targetOrganizationId;
@@ -486,14 +508,19 @@ export async function GET(request: Request) {
 
       if (!sprint) {
         console.log(`❌ Sprint ${targetSprintId} not found`);
-        return NextResponse.json({
-          success: false,
-          error: `Sprint ${targetSprintId} not found`,
-        }, { status: 400 });
+        return NextResponse.json(
+          {
+            success: false,
+            error: `Sprint ${targetSprintId} not found`,
+          },
+          { status: 400 },
+        );
       }
 
       sprintOrganizationId = sprint.organizationId;
-      console.log(`🎯 Targeting specific sprint: ${targetSprintId} (${sprint.name}) in organization: ${sprintOrganizationId}`);
+      console.log(
+        `🎯 Targeting specific sprint: ${targetSprintId} (${sprint.name}) in organization: ${sprintOrganizationId}`,
+      );
     }
 
     // Build the where clause for organization filtering
@@ -523,45 +550,53 @@ export async function GET(request: Request) {
     const validOrganizations = organizations.filter((org) => {
       const settings = org.settings;
       const hasToken = settings.some(
-        (s) => s.param === "CLICKUP_API_TOKEN" && s.value
+        (s) => s.param === "CLICKUP_API_TOKEN" && s.value,
       );
       const hasFolder = settings.some(
-        (s) => s.param === "CLICKUP_FOLDER_ID" && s.value
+        (s) => s.param === "CLICKUP_FOLDER_ID" && s.value,
       );
       return hasToken && hasFolder;
     });
 
     // Log parameter interpretation
-    if (rawOrganizationId !== null && rawOrganizationId.trim() === '') {
-      console.log(`📝 Empty organization_id parameter detected - syncing all organizations`);
+    if (rawOrganizationId !== null && rawOrganizationId.trim() === "") {
+      console.log(
+        `📝 Empty organization_id parameter detected - syncing all organizations`,
+      );
     }
-    if (rawSprintId !== null && rawSprintId.trim() === '') {
-      console.log(`📝 Empty sprint_id parameter detected - syncing all sprints`);
+    if (rawSprintId !== null && rawSprintId.trim() === "") {
+      console.log(
+        `📝 Empty sprint_id parameter detected - syncing all sprints`,
+      );
     }
 
     if (targetOrganizationId) {
       console.log(
-        `🎯 Targeting specific organization: ${targetOrganizationId}`
+        `🎯 Targeting specific organization: ${targetOrganizationId}`,
       );
 
       if (validOrganizations.length === 0) {
-        const message = organizations.length === 0
-          ? `Organization ${targetOrganizationId} not found`
-          : `Organization ${targetOrganizationId} found but missing ClickUp API configuration`;
+        const message =
+          organizations.length === 0
+            ? `Organization ${targetOrganizationId} not found`
+            : `Organization ${targetOrganizationId} found but missing ClickUp API configuration`;
 
         console.log(`❌ ${message}`);
-        return NextResponse.json({
-          success: false,
-          error: message,
-        }, { status: 400 });
+        return NextResponse.json(
+          {
+            success: false,
+            error: message,
+          },
+          { status: 400 },
+        );
       }
 
       console.log(
-        `🔍 Found organization with ClickUp configuration: ${validOrganizations[0].name}`
+        `🔍 Found organization with ClickUp configuration: ${validOrganizations[0].name}`,
       );
     } else {
       console.log(
-        `🔍 Found ${validOrganizations.length} organizations with ClickUp configuration`
+        `🔍 Found ${validOrganizations.length} organizations with ClickUp configuration`,
       );
     }
 
@@ -575,13 +610,13 @@ export async function GET(request: Request) {
       } catch (error) {
         console.error(
           `❌ Error syncing organization ${org.name} (${org.id}):`,
-          error
+          error,
         );
         // Continue with next organization instead of failing completely
       }
     }
 
-    let message = '';
+    let message = "";
     if (targetSprintId) {
       message = `Successfully synchronized sprint ${targetSprintId}`;
     } else if (targetOrganizationId) {
@@ -606,7 +641,7 @@ export async function GET(request: Request) {
         success: false,
         error: errorMessage,
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

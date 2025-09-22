@@ -84,7 +84,7 @@ export function PerformanceMonitor({
       measurePerformance(
         `${pageName}-total`,
         `${pageName}-start`,
-        `${pageName}-loaded`
+        `${pageName}-loaded`,
       );
     };
 

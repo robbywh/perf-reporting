@@ -36,13 +36,13 @@ export const TopPerformers = memo(function TopPerformers({
   // Memoize the total story points calculation
   const totalSP = useMemo(
     () => performers.reduce((sum, p) => sum + p.storyPoints, 0),
-    [performers]
+    [performers],
   );
 
   // Memoize the total target calculation
   const totalTarget = useMemo(
     () => performers.reduce((sum, p) => sum + p.target, 0),
-    [performers]
+    [performers],
   );
 
   // Calculate overall percentage
@@ -121,7 +121,9 @@ const PerformerItem = memo(function PerformerItem({
 
       // If no organization is in the URL, we can't navigate to engineer page
       if (!currentOrg) {
-        console.error("No organization parameter found. Unable to navigate to engineer page.");
+        console.error(
+          "No organization parameter found. Unable to navigate to engineer page.",
+        );
         return;
       }
 
@@ -132,7 +134,7 @@ const PerformerItem = memo(function PerformerItem({
       const queryString = params.toString();
       router.push(`/engineer/${performer.id}?${queryString}`);
     },
-    [router, performer.id, sprintIds, searchParams]
+    [router, performer.id, sprintIds, searchParams],
   );
 
   return (

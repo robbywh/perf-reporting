@@ -1,7 +1,9 @@
 import { CACHE_STRATEGY } from "@/constants/server";
 import { prisma } from "@/services/db";
 
-export async function findEngineerOrganization(engineerId: number): Promise<string | null> {
+export async function findEngineerOrganization(
+  engineerId: number,
+): Promise<string | null> {
   try {
     const engineerOrg = await prisma.engineerOrganization.findFirst({
       where: { engineerId },
@@ -22,13 +24,15 @@ export async function findEngineerOrganization(engineerId: number): Promise<stri
 export async function findAllEngineers(organizationId?: string) {
   try {
     const engineers = await prisma.engineer.findMany({
-      where: organizationId ? {
-        engineerOrganizations: {
-          some: {
-            organizationId
+      where: organizationId
+        ? {
+            engineerOrganizations: {
+              some: {
+                organizationId,
+              },
+            },
           }
-        }
-      } : undefined,
+        : undefined,
       select: {
         id: true,
         name: true,

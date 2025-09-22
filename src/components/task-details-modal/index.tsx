@@ -80,7 +80,10 @@ export function TaskDetailsModal({
     }
 
     // Check if task name contains [Rejected] or [rejected]
-    if (task.name && (task.name.includes("[Rejected]") || task.name.includes("[rejected]"))) {
+    if (
+      task.name &&
+      (task.name.includes("[Rejected]") || task.name.includes("[rejected]"))
+    ) {
       return { text: "Rejected", variant: "destructive" as const };
     }
 
@@ -193,7 +196,7 @@ export function TaskDetailsModal({
       setFilter(newFilter);
       setCurrentPage(1);
     },
-    []
+    [],
   );
 
   // Pagination logic
@@ -395,7 +398,7 @@ export function TaskDetailsModal({
                               {pageNumber}
                             </Button>
                           );
-                        }
+                        },
                       )}
                     </div>
 

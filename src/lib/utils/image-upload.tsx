@@ -38,7 +38,7 @@ export function useImageUpload() {
   const handleFileUpload = async (
     file: File,
     fileName: string,
-    filePath: string
+    filePath: string,
   ): Promise<string | null> => {
     if (!validateFile(file)) return null;
 

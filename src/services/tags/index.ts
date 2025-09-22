@@ -30,7 +30,7 @@ export async function linkTagsToTask(task: TaskTag) {
     }),
     prisma.tag.findMany({
       where: {
-        name: { in: task.tags.map((tag) => tag.name) }
+        name: { in: task.tags.map((tag) => tag.name) },
       },
       select: { id: true, name: true },
     }),
@@ -38,13 +38,13 @@ export async function linkTagsToTask(task: TaskTag) {
 
   if (!existingTask) {
     console.error(
-      `❌ Task ID ${task.id} in Sprint ${task.sprintId} does not exist in the database, skipping.`
+      `❌ Task ID ${task.id} in Sprint ${task.sprintId} does not exist in the database, skipping.`,
     );
     return;
   }
 
   const tagMap = new Map(
-    existingTags.map((tag: { name: string; id: string }) => [tag.name, tag.id])
+    existingTags.map((tag: { name: string; id: string }) => [tag.name, tag.id]),
   );
   const taskTagRelations = [];
 
@@ -70,7 +70,7 @@ export async function linkTagsToTask(task: TaskTag) {
     });
 
     console.log(
-      `✅ ${taskTagRelations.length} tags linked to Task ID ${task.id} in Sprint ${task.sprintId}.`
+      `✅ ${taskTagRelations.length} tags linked to Task ID ${task.id} in Sprint ${task.sprintId}.`,
     );
   }
 }

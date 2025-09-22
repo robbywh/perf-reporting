@@ -35,9 +35,7 @@ const COLORS = {
   supported: "#FF9800", // Orange/Yellow for supported
 };
 
-export function QAPerformancePieChart({
-  qaData,
-}: QAPerformancePieChartProps) {
+export function QAPerformancePieChart({ qaData }: QAPerformancePieChartProps) {
   const [mounted, setMounted] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
@@ -54,7 +52,7 @@ export function QAPerformancePieChart({
       acc.supportedCount += reviewer.supportedTasks.count;
       return acc;
     },
-    { scenarioCount: 0, rejectedCount: 0, approvedCount: 0, supportedCount: 0 }
+    { scenarioCount: 0, rejectedCount: 0, approvedCount: 0, supportedCount: 0 },
   );
 
   const chartData = [
@@ -78,7 +76,7 @@ export function QAPerformancePieChart({
       value: aggregatedData.supportedCount,
       fill: COLORS.supported,
     },
-  ].filter(item => item.value > 0); // Only show segments with data
+  ].filter((item) => item.value > 0); // Only show segments with data
 
   const chartConfig: ChartConfig = {
     value: {
@@ -131,7 +129,10 @@ export function QAPerformancePieChart({
           {!mounted ? (
             <div className="mx-auto h-[400px] w-full animate-pulse rounded-lg bg-gray-200" />
           ) : (
-            <ChartContainer config={chartConfig} className="mx-auto max-h-[400px]">
+            <ChartContainer
+              config={chartConfig}
+              className="mx-auto max-h-[400px]"
+            >
               <PieRechart
                 width={500}
                 height={500}

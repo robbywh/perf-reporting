@@ -125,13 +125,14 @@ export async function findCountTasksByCategory(sprintIds: string[]) {
 
   // Map category names to grouped counts
   const categoryMap = Object.fromEntries(
-    result.map((cat: { id: string; name: string }) => [cat.id, cat.name])
+    result.map((cat: { id: string; name: string }) => [cat.id, cat.name]),
   );
 
   const finalResult = groupedTasks.map((task: GroupedTask) => ({
     category: task.categoryId
       ? categoryMap[task.categoryId] || "OTHER"
       : "OTHER",
+    categoryId: task.categoryId,
     count: task._count.id,
   }));
 
@@ -140,7 +141,7 @@ export async function findCountTasksByCategory(sprintIds: string[]) {
 
 export async function findTotalTaskToQACounts(
   sprintIds: string[],
-  engineerId?: number
+  engineerId?: number,
 ) {
   const tasks = (await prisma.task.findMany({
     where: {
@@ -190,7 +191,7 @@ export async function findTotalTaskToQACounts(
     parentTasks.map((task: ParentTask) => [
       task.id,
       task.assignees.map((a: { engineerId: number }) => a.engineerId),
-    ])
+    ]),
   );
 
   // Filtering tasks: Check if engineerId is assigned directly or through parentTaskId
@@ -200,21 +201,21 @@ export async function findTotalTaskToQACounts(
           // Task has direct engineer assignment
           task.assignees.some(
             (assignee: { engineerId: number }) =>
-              assignee.engineerId === engineerId
+              assignee.engineerId === engineerId,
           ) ||
           // Parent task has engineer assigned
           (task.parentTaskId &&
-            parentTaskMap.get(task.parentTaskId)?.includes(engineerId))
+            parentTaskMap.get(task.parentTaskId)?.includes(engineerId)),
       )
     : tasks;
 
   const approvedTasks = filteredTasks.filter(
     (task: TaskWithAssignees) =>
-      !(task.name?.toLowerCase() || "").includes("[rejected]")
+      !(task.name?.toLowerCase() || "").includes("[rejected]"),
   ).length;
 
   const rejectedTasks = filteredTasks.filter((task: TaskWithAssignees) =>
-    (task.name?.toLowerCase() || "").includes("[rejected]")
+    (task.name?.toLowerCase() || "").includes("[rejected]"),
   ).length;
 
   return {
@@ -225,7 +226,7 @@ export async function findTotalTaskToQACounts(
 
 export async function findAverageSPAndMergedCountBySprintIds(
   sprintIds: string[],
-  engineerId: number
+  engineerId: number,
 ) {
   // Create a hash or composite identifier for multiple sprints to stay within cache tag limits
   const sprintKey =
@@ -323,7 +324,7 @@ export async function findAverageSPAndMergedCountBySprintIds(
   tasks.forEach((task) => {
     const sp = Number(task.storyPoint) || 0;
     const tags = task.taskTags.map(
-      ({ tag }: { tag: { id: string } }) => tag.id
+      ({ tag }: { tag: { id: string } }) => tag.id,
     );
     const isSupport = tags.includes("support");
     const isNonDev = tags.some((tag) => NODEV_TAGS.includes(tag));
@@ -375,7 +376,7 @@ export async function findAverageSPAndMergedCountBySprintIds(
   // Fetch MR details
   const mrData = await findMRDetailsBySprintIdsAndEngineerId(
     sprintIds,
-    engineerId
+    engineerId,
   );
 
   return {
@@ -424,20 +425,269 @@ export async function deleteTaskFromSprint(taskId: string, sprintId: string) {
     });
 
     console.log(
-      `✅ Task ${taskId} successfully deleted from Sprint ${sprintId}`
+      `✅ Task ${taskId} successfully deleted from Sprint ${sprintId}`,
     );
   } catch (error) {
     console.error(
       `❌ Error deleting Task ${taskId} from Sprint ${sprintId}:`,
-      error
+      error,
     );
     throw new Error("Failed to delete task from sprint");
   }
 }
 
+export async function findTasksByCategory(
+  sprintIds: string[],
+  categoryId: string,
+) {
+  // First get organization ID from sprint
+  const sprint = await prisma.sprint.findFirst({
+    where: { id: { in: sprintIds } },
+    select: { organizationId: true },
+  });
+
+  if (!sprint) {
+    return [];
+  }
+
+  // Get parent tasks for the category
+  const parentTasks = await prisma.task.findMany({
+    where: {
+      sprintId: { in: sprintIds },
+      categoryId,
+      parentTaskId: null,
+    },
+    select: {
+      id: true,
+      name: true,
+      storyPoint: true,
+      sprintId: true,
+      status: {
+        select: {
+          id: true,
+          name: true,
+        },
+      },
+      category: {
+        select: {
+          id: true,
+          name: true,
+        },
+      },
+      assignees: {
+        select: {
+          engineer: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+        },
+      },
+      reviewers: {
+        select: {
+          reviewer: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+        },
+      },
+      taskTags: {
+        select: {
+          tag: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+        },
+      },
+    },
+    orderBy: {
+      name: "asc",
+    },
+    cacheStrategy: {
+      ...CACHE_STRATEGY.DEFAULT,
+      tags: ["tasksByCategory"],
+    },
+  });
+
+  // Get all subtasks for these parent tasks
+  const parentTaskIds = parentTasks.map((task) => task.id);
+  const subtasks =
+    parentTaskIds.length > 0
+      ? await prisma.task.findMany({
+          where: {
+            sprintId: { in: sprintIds },
+            parentTaskId: { in: parentTaskIds },
+          },
+          select: {
+            parentTaskId: true,
+            storyPoint: true,
+          },
+          cacheStrategy: {
+            ...CACHE_STRATEGY.DEFAULT,
+            tags: ["subtasksByCategory"],
+          },
+        })
+      : [];
+
+  // Calculate total story points including subtasks
+  const subtaskMap = new Map<string, number>();
+  subtasks.forEach((subtask) => {
+    if (subtask.parentTaskId) {
+      const current = subtaskMap.get(subtask.parentTaskId) || 0;
+      subtaskMap.set(
+        subtask.parentTaskId,
+        current + (Number(subtask.storyPoint) || 0),
+      );
+    }
+  });
+
+  const tasksWithTotalSP = parentTasks.map((task) => {
+    const subtaskSP = subtaskMap.get(task.id) || 0;
+    const totalStoryPoint = (Number(task.storyPoint) || 0) + subtaskSP;
+
+    return {
+      ...task,
+      totalStoryPoint,
+    };
+  });
+
+  return tasksWithTotalSP;
+}
+
+export async function findAllTasksByCategories(sprintIds: string[]) {
+  // First get organization ID from sprint
+  const sprint = await prisma.sprint.findFirst({
+    where: { id: { in: sprintIds } },
+    select: { organizationId: true },
+  });
+
+  if (!sprint) {
+    return [];
+  }
+
+  // Get all parent tasks with their categories
+  const parentTasks = await prisma.task.findMany({
+    where: {
+      sprintId: { in: sprintIds },
+      parentTaskId: null,
+    },
+    select: {
+      id: true,
+      name: true,
+      storyPoint: true,
+      sprintId: true,
+      status: {
+        select: {
+          id: true,
+          name: true,
+        },
+      },
+      category: {
+        select: {
+          id: true,
+          name: true,
+        },
+      },
+      assignees: {
+        select: {
+          engineer: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+        },
+      },
+      reviewers: {
+        select: {
+          reviewer: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+        },
+      },
+      taskTags: {
+        select: {
+          tag: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+        },
+      },
+    },
+    orderBy: [
+      {
+        category: {
+          name: "asc",
+        },
+      },
+      {
+        name: "asc",
+      },
+    ],
+    cacheStrategy: {
+      ...CACHE_STRATEGY.DEFAULT,
+      tags: ["allTasksByCategories"],
+    },
+  });
+
+  // Get all subtasks for these parent tasks
+  const parentTaskIds = parentTasks.map((task) => task.id);
+  const subtasks =
+    parentTaskIds.length > 0
+      ? await prisma.task.findMany({
+          where: {
+            sprintId: { in: sprintIds },
+            parentTaskId: { in: parentTaskIds },
+          },
+          select: {
+            parentTaskId: true,
+            storyPoint: true,
+          },
+          cacheStrategy: {
+            ...CACHE_STRATEGY.DEFAULT,
+            tags: ["allSubtasksByCategories"],
+          },
+        })
+      : [];
+
+  // Calculate total story points including subtasks
+  const subtaskMap = new Map<string, number>();
+  subtasks.forEach((subtask) => {
+    if (subtask.parentTaskId) {
+      const current = subtaskMap.get(subtask.parentTaskId) || 0;
+      subtaskMap.set(
+        subtask.parentTaskId,
+        current + (Number(subtask.storyPoint) || 0),
+      );
+    }
+  });
+
+  const tasksWithTotalSP = parentTasks.map((task) => {
+    const subtaskSP = subtaskMap.get(task.id) || 0;
+    const totalStoryPoint = (Number(task.storyPoint) || 0) + subtaskSP;
+
+    return {
+      ...task,
+      totalStoryPoint,
+    };
+  });
+
+  return tasksWithTotalSP;
+}
+
 export async function findDetailedTaskToQACounts(
   sprintIds: string[],
-  engineerId?: number
+  engineerId?: number,
 ): Promise<QATasksBreakdown> {
   const tasks = await prisma.task.findMany({
     where: {
@@ -526,12 +776,12 @@ export async function findDetailedTaskToQACounts(
       task.assignees.map((assignee) => ({
         engineer: assignee.engineer,
       })),
-    ])
+    ]),
   );
 
   // Create a map of parent task ID to task info
   const parentTaskMap = new Map<string, { id: string; name: string }>(
-    parentTasks.map((task) => [task.id, { id: task.id, name: task.name }])
+    parentTasks.map((task) => [task.id, { id: task.id, name: task.name }]),
   );
 
   // If engineerId is provided, filter tasks by engineer assignment
@@ -542,24 +792,24 @@ export async function findDetailedTaskToQACounts(
       parentTasks.map((task) => [
         task.id,
         task.assignees.map((a) => a.engineerId),
-      ])
+      ]),
     );
 
     filteredTasks = tasks.filter(
       (task) =>
         // Task has direct engineer assignment
         task.assignees.some(
-          (assignee) => assignee.engineer.id === engineerId
+          (assignee) => assignee.engineer.id === engineerId,
         ) ||
         // Parent task has engineer assigned
         (task.parentTaskId &&
-          parentTaskEngineerMap.get(task.parentTaskId)?.includes(engineerId))
+          parentTaskEngineerMap.get(task.parentTaskId)?.includes(engineerId)),
     );
   }
 
   // Map tasks to include parent task assignees
   const mapTaskWithParentAssignees = (
-    task: (typeof tasks)[0]
+    task: (typeof tasks)[0],
   ): DetailedTask => ({
     id: task.id,
     name: task.name,

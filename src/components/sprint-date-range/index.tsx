@@ -35,7 +35,7 @@ export function SprintDateRange({ allSprints }: SprintDateRangeProps) {
 
     // Filter the sprints that match the selected IDs
     const selectedSprints = allSprints.filter((sprint) =>
-      sprintIds.includes(sprint.value)
+      sprintIds.includes(sprint.value),
     );
 
     if (selectedSprints.length === 0) return;

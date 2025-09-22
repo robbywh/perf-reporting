@@ -53,7 +53,7 @@ export function StatsTaskDetailsModal({
   const [totalTasks, setTotalTasks] = useState(0);
   const [totalStoryPoints, setTotalStoryPoints] = useState(0);
   const [activeStatusFilter, setActiveStatusFilter] = useState<string | null>(
-    null
+    null,
   );
   const itemsPerPage = 10;
 
@@ -64,7 +64,7 @@ export function StatsTaskDetailsModal({
       (task) =>
         task.parentTaskId !== undefined &&
         task.parentTaskId !== null &&
-        task.parentTaskId !== ""
+        task.parentTaskId !== "",
     );
 
     // Apply status filter if active
@@ -77,7 +77,7 @@ export function StatsTaskDetailsModal({
     // Calculate summary statistics based on filtered tasks
     setTotalTasks(statusFiltered.length);
     setTotalStoryPoints(
-      statusFiltered.reduce((sum, task) => sum + task.storyPoint, 0)
+      statusFiltered.reduce((sum, task) => sum + task.storyPoint, 0),
     );
   }, [tasks, activeStatusFilter]);
 
@@ -100,7 +100,7 @@ export function StatsTaskDetailsModal({
       (task) =>
         task.parentTaskId !== undefined &&
         task.parentTaskId !== null &&
-        task.parentTaskId !== ""
+        task.parentTaskId !== "",
     );
 
     validTasks.forEach((task) => {
@@ -124,7 +124,7 @@ export function StatsTaskDetailsModal({
     if (filteredTasks.length > 0) {
       setTotalPages(Math.ceil(filteredTasks.length / itemsPerPage));
       setPaginatedTasks(
-        filteredTasks.slice((page - 1) * itemsPerPage, page * itemsPerPage)
+        filteredTasks.slice((page - 1) * itemsPerPage, page * itemsPerPage),
       );
     } else {
       setTotalPages(1);

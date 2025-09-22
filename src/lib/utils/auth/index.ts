@@ -17,7 +17,8 @@ export async function authenticateAndRedirect() {
   if (roleId === ROLE.SOFTWARE_ENGINEER && engineerId) {
     // Get the user's top organization (first in their organization list)
     const organizations = await findUserOrganizations(userId);
-    const organizationId = organizations.length > 0 ? organizations[0].id : null;
+    const organizationId =
+      organizations.length > 0 ? organizations[0].id : null;
 
     if (organizationId) {
       // Get current sprint for the organization

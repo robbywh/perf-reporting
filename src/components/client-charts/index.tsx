@@ -20,7 +20,7 @@ export const LazyBarChart = dynamic(
   {
     loading: () => <BarChartMultipleSkeleton />,
     ssr: false, // Client-side only for better performance
-  }
+  },
 );
 
 export const LazyPieDonutChart = dynamic(
@@ -31,7 +31,7 @@ export const LazyPieDonutChart = dynamic(
   {
     loading: () => <PieDonutChartSkeleton title="Tasks to QA" />,
     ssr: false, // Client-side only for better performance
-  }
+  },
 );
 
 // Client-side only chart components for better performance (Dashboard Page)
@@ -43,7 +43,7 @@ export const LazyBarChartCapacity = dynamic(
   {
     loading: () => <BarChartCapacitySkeleton />,
     ssr: false, // Client-side only for better performance
-  }
+  },
 );
 
 export const LazyLineChartSPCoding = dynamic(
@@ -54,7 +54,7 @@ export const LazyLineChartSPCoding = dynamic(
   {
     loading: () => <LineChartSPCodingSkeleton />,
     ssr: false, // Client-side only for better performance
-  }
+  },
 );
 
 export const LazyPieTaskCategoryChart = dynamic(
@@ -65,7 +65,7 @@ export const LazyPieTaskCategoryChart = dynamic(
   {
     loading: () => <PieChartSkeleton title="Task Category" />,
     ssr: false, // Client-side only for better performance
-  }
+  },
 );
 
 export const LazyDashboardPieDonutChart = dynamic(
@@ -76,7 +76,7 @@ export const LazyDashboardPieDonutChart = dynamic(
   {
     loading: () => <PieDonutChartSkeleton title="Tasks to QA" />,
     ssr: false, // Client-side only for better performance
-  }
+  },
 );
 
 export const LazyQAPerformancePieChart = dynamic(
@@ -87,5 +87,5 @@ export const LazyQAPerformancePieChart = dynamic(
   {
     loading: () => <QAPerformancePieChartSkeleton />,
     ssr: false, // Client-side only for better performance
-  }
+  },
 );
