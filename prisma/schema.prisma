@@ -28,9 +28,7 @@ model Organization {
   sprints                 Sprint[]
   engineerOrganizations   EngineerOrganization[]
   reviewerOrganizations   ReviewerOrganization[]
-  categories              Category[]
   statuses                Status[]
-  tags                    Tag[]
   settings                Setting[]
 
   @@map("organization")
@@ -70,11 +68,9 @@ model Setting {
 }
 
 model Category {
-  id             String       @id @db.Char(36)
-  name           String       @db.VarChar(25)
-  organizationId String       @map("organization_id") @db.VarChar(25)
-  organization   Organization @relation(fields: [organizationId], references: [id])
-  tasks          Task[]
+  id    String @id @db.Char(36)
+  name  String @db.VarChar(25)
+  tasks Task[]
 
   @@map("category")
 }
@@ -153,13 +149,10 @@ model TaskAssignee {
 }
 
 model Tag {
-  id             String       @id @db.VarChar(25)
-  name           String       @db.VarChar(25)
-  organizationId String       @map("organization_id") @db.VarChar(25)
-  organization   Organization @relation(fields: [organizationId], references: [id])
-  taskTags       TaskTag[]
+  id       String    @id @db.VarChar(25)
+  name     String    @unique @db.VarChar(25)
+  taskTags TaskTag[]
 
-  @@unique([name, organizationId])
   @@map("tag")
 }
 
