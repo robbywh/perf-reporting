@@ -13,13 +13,12 @@ export async function seedTags() {
 
   for (const tag of tags) {
     await prisma.tag.upsert({
-      where: { id: tag.id },
+      where: { name: tag.name },
       update: {
-        name: tag.name,
+        id: tag.id,
       },
       create: {
         ...tag,
-        organizationId: 'ksi',
       },
     });
   }

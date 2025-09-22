@@ -214,7 +214,6 @@ async function processBatch(
           id: taskData.id,
           sprintId: taskData.sprintId,
           tags: taskData.tags,
-          organizationId,
         })
       )
     ),
@@ -308,10 +307,8 @@ async function syncTodayTasksFromClickUp(organizationId: string, targetSprintId?
       statuses.map((s: { name: string; id: string }) => [s.name, s.id])
     );
 
-    // Fetch all categories for this organization to validate categoryId
-    const categories = await prisma.category.findMany({
-      where: { organizationId },
-    });
+    // Fetch all categories to validate categoryId
+    const categories = await prisma.category.findMany();
     const categoryIds = new Set(categories.map((c) => c.id));
 
     // Only sync tasks for the determined sprints

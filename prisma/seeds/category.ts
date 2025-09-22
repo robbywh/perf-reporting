@@ -21,7 +21,6 @@ export async function seedCategories() {
       },
       create: {
         ...category,
-        organizationId: 'ksi',
       },
     });
   }

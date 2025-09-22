@@ -104,7 +104,7 @@ export async function findCountTasksByCategory(sprintIds: string[]) {
     return [];
   }
 
-  // Fetch category names filtered by organization
+  // Fetch category names
   const result = await prisma.category.findMany({
     where: {
       id: {
@@ -112,7 +112,6 @@ export async function findCountTasksByCategory(sprintIds: string[]) {
           .map((task: GroupedTask) => task.categoryId)
           .filter((id: string | null): id is string => id !== null),
       },
-      organizationId: sprint.organizationId,
     },
     select: {
       id: true,
