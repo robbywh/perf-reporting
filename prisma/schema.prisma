@@ -28,7 +28,6 @@ model Organization {
   sprints                 Sprint[]
   engineerOrganizations   EngineerOrganization[]
   reviewerOrganizations   ReviewerOrganization[]
-  statuses                Status[]
   settings                Setting[]
 
   @@map("organization")
@@ -76,13 +75,10 @@ model Category {
 }
 
 model Status {
-  id             String       @id @db.VarChar(25)
-  name           String       @db.VarChar(25)
-  organizationId String       @map("organization_id") @db.VarChar(25)
-  organization   Organization @relation(fields: [organizationId], references: [id])
-  tasks          Task[]
+  id    String @id @db.VarChar(25)
+  name  String @unique @db.VarChar(25)
+  tasks Task[]
 
-  @@unique([name, organizationId])
   @@map("status")
 }
 

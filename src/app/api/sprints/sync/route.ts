@@ -318,9 +318,7 @@ async function syncTodayTasksFromClickUp(
     }
 
     // First, fetch all statuses to create a name-to-id mapping
-    const statuses = await prisma.status.findMany({
-      where: { organizationId },
-    });
+    const statuses = await prisma.status.findMany();
     const statusMap = new Map<string, string>(
       statuses.map((s: { name: string; id: string }) => [s.name, s.id]),
     );
