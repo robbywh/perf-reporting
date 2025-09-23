@@ -8,6 +8,7 @@ import { OrganizationSelector } from "@/components/organization-selector";
 import { SprintComponentsClient } from "@/components/sprint-components-client";
 import { SprintFilterClient } from "@/components/sprint-filter-client";
 import { Skeleton } from "@/components/ui/skeleton";
+import { OrganizationProvider } from "@/contexts/organization-context";
 
 type Organization = {
   id: string;
@@ -19,7 +20,7 @@ interface SprintDataWrapperProps {
   organizations: Organization[];
 }
 
-export function SprintDataWrapper({
+function SprintDataWrapperContent({
   children,
   organizations,
 }: SprintDataWrapperProps) {
@@ -129,5 +130,21 @@ export function SprintDataWrapper({
       <SprintFilterClient />
       {children}
     </>
+  );
+}
+
+export function SprintDataWrapper({
+  children,
+  organizations,
+}: SprintDataWrapperProps) {
+  // Find default organization (first one)
+  const defaultOrganization = organizations.length > 0 ? organizations[0] : undefined;
+
+  return (
+    <OrganizationProvider defaultOrganization={defaultOrganization}>
+      <SprintDataWrapperContent organizations={organizations}>
+        {children}
+      </SprintDataWrapperContent>
+    </OrganizationProvider>
   );
 }

@@ -4,6 +4,7 @@ import dynamic from "next/dynamic";
 
 import { BarChartCapacitySkeleton } from "@/components/charts/bar-chart-capacity";
 import { LineChartSPCodingSkeleton } from "@/components/charts/line-chart-sp-coding";
+import { OrganizationAwareChart } from "@/components/charts/organization-aware-chart";
 import { PieChartSkeleton } from "@/components/charts/pie-chart";
 import { QAPerformancePieChartSkeleton } from "@/components/charts/pie-qa-performance";
 import {
@@ -11,81 +12,112 @@ import {
   PieDonutChartSkeleton,
 } from "@/components/skeletons";
 
-// Client-side only chart components for better performance
-export const LazyBarChart = dynamic(
+// Base dynamic imports without organization awareness
+const BaseLazyBarChart = dynamic(
   () =>
     import("@/components/client-wrappers").then((mod) => ({
       default: mod.DynamicBarChart,
     })),
   {
     loading: () => <BarChartMultipleSkeleton />,
-    ssr: false, // Client-side only for better performance
+    ssr: false,
   },
 );
 
-export const LazyPieDonutChart = dynamic(
-  () =>
-    import("@/components/client-wrappers").then((mod) => ({
-      default: mod.DynamicPieDonutTaskChart,
-    })),
-  {
-    loading: () => <PieDonutChartSkeleton title="Tasks to QA" />,
-    ssr: false, // Client-side only for better performance
-  },
-);
-
-// Client-side only chart components for better performance (Dashboard Page)
-export const LazyBarChartCapacity = dynamic(
+const BaseLazyBarChartCapacity = dynamic(
   () =>
     import("@/components/client-wrappers").then((mod) => ({
       default: mod.DynamicBarChartCapacity,
     })),
   {
     loading: () => <BarChartCapacitySkeleton />,
-    ssr: false, // Client-side only for better performance
+    ssr: false,
   },
 );
 
-export const LazyLineChartSPCoding = dynamic(
+const BaseLazyLineChartSPCoding = dynamic(
   () =>
     import("@/components/client-wrappers").then((mod) => ({
       default: mod.DynamicLineChartSPCoding,
     })),
   {
     loading: () => <LineChartSPCodingSkeleton />,
-    ssr: false, // Client-side only for better performance
+    ssr: false,
   },
 );
 
-export const LazyPieTaskCategoryChart = dynamic(
+const BaseLazyPieTaskCategoryChart = dynamic(
   () =>
     import("@/components/client-wrappers").then((mod) => ({
       default: mod.DynamicPieTaskCategoryChart,
     })),
   {
     loading: () => <PieChartSkeleton title="Task Category" />,
-    ssr: false, // Client-side only for better performance
+    ssr: false,
   },
 );
 
-export const LazyDashboardPieDonutChart = dynamic(
+const BaseLazyDashboardPieDonutChart = dynamic(
   () =>
     import("@/components/client-wrappers").then((mod) => ({
       default: mod.DynamicPieDonutTaskChart,
     })),
   {
     loading: () => <PieDonutChartSkeleton title="Tasks to QA" />,
-    ssr: false, // Client-side only for better performance
+    ssr: false,
   },
 );
 
-export const LazyQAPerformancePieChart = dynamic(
+const BaseLazyQAPerformancePieChart = dynamic(
   () =>
     import("@/components/client-wrappers").then((mod) => ({
       default: mod.DynamicQAPerformancePieChart,
     })),
   {
     loading: () => <QAPerformancePieChartSkeleton />,
-    ssr: false, // Client-side only for better performance
+    ssr: false,
   },
+);
+
+// Organization-aware chart components that show skeleton during org changes
+export const LazyBarChart = (props: React.ComponentProps<typeof BaseLazyBarChart>) => (
+  <OrganizationAwareChart skeleton={<BarChartMultipleSkeleton />}>
+    <BaseLazyBarChart {...props} />
+  </OrganizationAwareChart>
+);
+
+export const LazyPieDonutChart = (props: React.ComponentProps<typeof BaseLazyDashboardPieDonutChart>) => (
+  <OrganizationAwareChart skeleton={<PieDonutChartSkeleton title="Tasks to QA" />}>
+    <BaseLazyDashboardPieDonutChart {...props} />
+  </OrganizationAwareChart>
+);
+
+export const LazyBarChartCapacity = (props: React.ComponentProps<typeof BaseLazyBarChartCapacity>) => (
+  <OrganizationAwareChart skeleton={<BarChartCapacitySkeleton />}>
+    <BaseLazyBarChartCapacity {...props} />
+  </OrganizationAwareChart>
+);
+
+export const LazyLineChartSPCoding = (props: React.ComponentProps<typeof BaseLazyLineChartSPCoding>) => (
+  <OrganizationAwareChart skeleton={<LineChartSPCodingSkeleton />}>
+    <BaseLazyLineChartSPCoding {...props} />
+  </OrganizationAwareChart>
+);
+
+export const LazyPieTaskCategoryChart = (props: React.ComponentProps<typeof BaseLazyPieTaskCategoryChart>) => (
+  <OrganizationAwareChart skeleton={<PieChartSkeleton title="Task Category" />}>
+    <BaseLazyPieTaskCategoryChart {...props} />
+  </OrganizationAwareChart>
+);
+
+export const LazyDashboardPieDonutChart = (props: React.ComponentProps<typeof BaseLazyDashboardPieDonutChart>) => (
+  <OrganizationAwareChart skeleton={<PieDonutChartSkeleton title="Tasks to QA" />}>
+    <BaseLazyDashboardPieDonutChart {...props} />
+  </OrganizationAwareChart>
+);
+
+export const LazyQAPerformancePieChart = (props: React.ComponentProps<typeof BaseLazyQAPerformancePieChart>) => (
+  <OrganizationAwareChart skeleton={<QAPerformancePieChartSkeleton />}>
+    <BaseLazyQAPerformancePieChart {...props} />
+  </OrganizationAwareChart>
 );

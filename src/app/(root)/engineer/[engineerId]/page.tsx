@@ -205,7 +205,7 @@ export default async function EngineerPage({
 
   // Render header immediately for better FCP
   return (
-    <div>
+    <div key={`engineer-page-${organizationId || 'no-org'}-${engineerId}`}>
       {!isSoftwareEngineer && (
         <div className="mb-6">
           <div className="flex items-center gap-4">
@@ -218,49 +218,52 @@ export default async function EngineerPage({
       )}
 
       {/* Critical above-the-fold content - Stats Cards with priority */}
-      <div className="mb-6 min-h-[120px]">
+      <div className="mb-6 min-h-[120px]" key={`stats-section-${organizationId || 'no-org'}`}>
         <Suspense fallback={<StatsCardsSkeleton />}>
           <AsyncStatsCards
             sprintIds={sprintIds}
             engineerId={engineerId}
             preloadedData={statsData}
+            key={`stats-cards-${organizationId || 'no-org'}`}
           />
         </Suspense>
       </div>
 
       {/* Charts Section - Lazy load with intersection observer */}
-      <div className="flex min-h-[400px] flex-row items-stretch gap-4">
+      <div className="flex min-h-[400px] flex-row items-stretch gap-4" key={`charts-section-${organizationId || 'no-org'}`}>
         <div className="min-h-[400px] flex-[6]">
           <Suspense fallback={<BarChartMultipleSkeleton />}>
-            <AsyncBarChart sprintIds={sprintIds} engineerId={engineerId} />
+            <AsyncBarChart sprintIds={sprintIds} engineerId={engineerId} key={`bar-chart-${organizationId || 'no-org'}`} />
           </Suspense>
         </div>
         <div className="min-h-[400px] flex-[4]">
           <Suspense fallback={<PieDonutChartSkeleton title="Tasks to QA" />}>
-            <AsyncPieDonutChart sprintIds={sprintIds} engineerId={engineerId} />
+            <AsyncPieDonutChart sprintIds={sprintIds} engineerId={engineerId} key={`pie-donut-${organizationId || 'no-org'}`} />
           </Suspense>
         </div>
       </div>
 
       {/* Below-the-fold content - Lower priority */}
-      <div className="mb-6 flex min-h-[200px]">
+      <div className="mb-6 flex min-h-[200px]" key={`coding-hours-section-${organizationId || 'no-org'}`}>
         <Suspense fallback={<CodingHoursFormSkeleton />}>
           <AsyncCodingHoursForm
             sprintIds={sprintIds}
             engineerId={engineerId}
             roleId={roleId}
+            key={`coding-hours-${organizationId || 'no-org'}`}
           />
         </Suspense>
       </div>
 
       {isSoftwareEngineer && (
-        <div className="min-h-[300px]">
+        <div className="min-h-[300px]" key={`leave-section-${organizationId || 'no-org'}`}>
           <Suspense fallback={<LeavePublicHolidaySkeleton />}>
             <AsyncLeavePublicHoliday
               sprintIds={sprintIds}
               organizationId={organizationId}
               roleId={roleId}
               isEngineeringManager={isEngineeringManager}
+              key={`leave-holiday-${organizationId || 'no-org'}`}
             />
           </Suspense>
         </div>

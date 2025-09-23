@@ -1,7 +1,7 @@
 "use client";
 
 import { useSearchParams } from "next/navigation";
-import { createContext, useContext, useEffect, useState } from "react";
+import { createContext, useContext, useEffect, useRef, useState } from "react";
 
 type Organization = {
   id: string;
@@ -12,10 +12,11 @@ type OrganizationContextType = {
   currentOrganization: Organization | null;
   setCurrentOrganization: (org: Organization) => void;
   isLoading: boolean;
+  isChangingOrganization: boolean;
 };
 
 const OrganizationContext = createContext<OrganizationContextType | undefined>(
-  undefined,
+  undefined
 );
 
 interface OrganizationProviderProps {
@@ -30,21 +31,54 @@ export function OrganizationProvider({
   const [currentOrganization, setCurrentOrganization] =
     useState<Organization | null>(defaultOrganization || null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isChangingOrganization, setIsChangingOrganization] = useState(false);
   const searchParams = useSearchParams();
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const mountedRef = useRef(true);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      mountedRef.current = false;
+      if (timerRef.current) {
+        clearTimeout(timerRef.current);
+      }
+    };
+  }, []);
 
   useEffect(() => {
+    if (!mountedRef.current) return;
+
     const orgId = searchParams.get("org");
+
+    // Handle organization change
     if (orgId && orgId !== currentOrganization?.id) {
-      // In a real app, you might fetch the organization details here
-      // For now, we'll assume the organization selector handles this
-      setCurrentOrganization((prev) =>
-        prev?.id === orgId ? prev : { id: orgId, name: orgId },
-      );
-    } else if (!currentOrganization && defaultOrganization) {
+      setIsChangingOrganization(true);
+      setCurrentOrganization({ id: orgId, name: orgId });
+
+      // Clear any existing timer
+      if (timerRef.current) {
+        clearTimeout(timerRef.current);
+      }
+
+      // Clear the changing state after a brief delay to allow UI updates
+      timerRef.current = setTimeout(() => {
+        if (mountedRef.current) {
+          setIsChangingOrganization(false);
+        }
+      }, 2000);
+    }
+  }, [searchParams, currentOrganization?.id]);
+
+  // Separate effect for initial setup
+  useEffect(() => {
+    if (!mountedRef.current) return;
+
+    if (!currentOrganization && defaultOrganization) {
       setCurrentOrganization(defaultOrganization);
     }
     setIsLoading(false);
-  }, [searchParams, currentOrganization, defaultOrganization]);
+  }, [currentOrganization, defaultOrganization]);
 
   return (
     <OrganizationContext.Provider
@@ -52,6 +86,7 @@ export function OrganizationProvider({
         currentOrganization,
         setCurrentOrganization,
         isLoading,
+        isChangingOrganization,
       }}
     >
       {children}
@@ -63,7 +98,7 @@ export function useOrganization() {
   const context = useContext(OrganizationContext);
   if (context === undefined) {
     throw new Error(
-      "useOrganization must be used within an OrganizationProvider",
+      "useOrganization must be used within an OrganizationProvider"
     );
   }
   return context;

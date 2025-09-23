@@ -5,6 +5,7 @@ import dynamic from "next/dynamic";
 import { BarChartCapacitySkeleton } from "@/components/charts/bar-chart-capacity";
 import { BarChartMultipleSkeleton } from "@/components/charts/bar-chart-multiple";
 import { LineChartSPCodingSkeleton } from "@/components/charts/line-chart-sp-coding";
+import { OrganizationAwareChart } from "@/components/charts/organization-aware-chart";
 import { PieChartSkeleton } from "@/components/charts/pie-chart";
 import { PieDonutChartSkeleton } from "@/components/charts/pie-donut-chart";
 import { QAPerformancePieChartSkeleton } from "@/components/charts/pie-qa-performance";
@@ -58,12 +59,18 @@ export const DynamicPieDonutTaskChart = dynamic(
   },
 );
 
-export const DynamicTopPerformers = dynamic(
+const BaseDynamicTopPerformers = dynamic(
   () => import("@/components/top-performers").then((mod) => mod.TopPerformers),
   {
     loading: () => <TopPerformersSkeleton />,
     ssr: false,
   },
+);
+
+export const DynamicTopPerformers = (props: React.ComponentProps<typeof BaseDynamicTopPerformers>) => (
+  <OrganizationAwareChart skeleton={<TopPerformersSkeleton />}>
+    <BaseDynamicTopPerformers {...props} />
+  </OrganizationAwareChart>
 );
 
 export const DynamicBarChart = dynamic(
