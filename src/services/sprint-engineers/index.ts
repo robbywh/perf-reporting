@@ -234,6 +234,8 @@ export async function linkSprintsToEngineers(
             jobLevelId,
             baseline,
             target,
+            baselineCh,
+            targetCh,
             storyPoints: 0,
             mergedCount,
           },
