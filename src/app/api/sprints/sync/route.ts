@@ -302,6 +302,10 @@ async function syncTodayTasksFromClickUp(
 
       sprintsToSync = [specificSprint];
       console.log(`🎯 Syncing specific sprint: ${specificSprint.name}`);
+
+      // Link engineers and reviewers for the specific sprint
+      await linkSprintsToEngineers(targetSprintId, organizationId);
+      await linkSprintsToReviewers(targetSprintId, organizationId);
     } else {
       // Get current and future sprints for engineer/reviewer linking
       const currentAndFutureSprints =
