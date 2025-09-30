@@ -100,7 +100,7 @@ async function syncSprintsFromClickUp(
 
       return {
         id,
-        name: name.substring(0, 10),
+        name: name === "Kanban Board" ? name : name.substring(0, 10),
         startDate: startDateUTC,
         endDate: endDateUTC,
         organizationId,
@@ -319,6 +319,22 @@ async function syncTodayTasksFromClickUp(
 
       // Get today's sprints for task syncing
       sprintsToSync = await findTodaySprints(organizationId);
+
+      // Also include all "Kanban Board" sprints regardless of date
+      const kanbanSprints = await prisma.sprint.findMany({
+        where: {
+          name: "Kanban Board",
+          organizationId,
+        },
+      });
+
+      // Merge kanban sprints with today's sprints, avoiding duplicates
+      const sprintIds = new Set(sprintsToSync.map((s) => s.id));
+      for (const kanbanSprint of kanbanSprints) {
+        if (!sprintIds.has(kanbanSprint.id)) {
+          sprintsToSync.push(kanbanSprint);
+        }
+      }
     }
 
     // First, fetch all statuses to create a name-to-id mapping
