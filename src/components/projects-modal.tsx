@@ -28,7 +28,7 @@ interface Task {
     id: string;
     name: string;
   } | null;
-  category: {
+  project: {
     id: string;
     name: string;
     color: string | null;
@@ -53,51 +53,51 @@ interface Task {
   }>;
 }
 
-interface TaskCategoriesModalProps {
+interface ProjectsModalProps {
   isOpen: boolean;
   onClose: () => void;
-  categoryColors?: Record<string, string>;
+  projectColors?: Record<string, string>;
   tasks: Task[];
 }
 
-export function TaskCategoriesModal({
+export function ProjectsModal({
   isOpen,
   onClose,
-  categoryColors: propCategoryColors,
+  projectColors: propProjectColors,
   tasks,
-}: TaskCategoriesModalProps) {
+}: ProjectsModalProps) {
   const [filter, setFilter] = useState<"all" | string>("all");
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
 
-  // Get unique categories including OTHER for tasks without category
-  // Only include categories that have story points > 0
-  const categoryStoryPoints = tasks.reduce((acc, task) => {
-    const categoryName = task.category?.name || "OTHER";
-    acc[categoryName] = (acc[categoryName] || 0) + (task.totalStoryPoint || 0);
+  // Get unique projects including OTHER for tasks without project
+  // Only include projects that have story points > 0
+  const projectStoryPoints = tasks.reduce((acc, task) => {
+    const projectName = task.project?.name || "OTHER";
+    acc[projectName] = (acc[projectName] || 0) + (task.totalStoryPoint || 0);
     return acc;
   }, {} as Record<string, number>);
 
-  const categories = Array.from(
+  const projects = Array.from(
     new Set<string>(
       tasks
-        .map((task) => task.category?.name || "OTHER")
-        .filter((name): name is string => !!name && categoryStoryPoints[name] > 0),
+        .map((task) => task.project?.name || "OTHER")
+        .filter((name): name is string => !!name && projectStoryPoints[name] > 0),
     ),
   ).sort();
 
   // Filter tasks based on selected filter
   const filteredTasks = tasks.filter((task) => {
-    const categoryName = task.category?.name || "OTHER";
+    const projectName = task.project?.name || "OTHER";
 
-    // Only show tasks from categories with story points > 0
-    if (categoryStoryPoints[categoryName] <= 0) {
+    // Only show tasks from projects with story points > 0
+    if (projectStoryPoints[projectName] <= 0) {
       return false;
     }
 
     if (filter === "all") return true;
-    if (filter === "OTHER") return !task.category?.name;
-    return task.category?.name === filter;
+    if (filter === "OTHER") return !task.project?.name;
+    return task.project?.name === filter;
   });
 
   // Pagination logic
@@ -106,14 +106,14 @@ export function TaskCategoriesModal({
   const endIndex = startIndex + itemsPerPage;
   const currentTasks = filteredTasks.slice(startIndex, endIndex);
 
-  // Group current page tasks by category for display
-  const tasksByCategory = currentTasks.reduce(
+  // Group current page tasks by project for display
+  const tasksByProject = currentTasks.reduce(
     (acc, task) => {
-      const categoryName = task.category?.name || "OTHER";
-      if (!acc[categoryName]) {
-        acc[categoryName] = [];
+      const projectName = task.project?.name || "OTHER";
+      if (!acc[projectName]) {
+        acc[projectName] = [];
       }
-      acc[categoryName].push(task);
+      acc[projectName].push(task);
       return acc;
     },
     {} as Record<string, Task[]>,
@@ -131,11 +131,11 @@ export function TaskCategoriesModal({
     }, 0);
   };
 
-  const getTaskCountByCategory = (categoryName: string) => {
-    if (categoryName === "OTHER") {
-      return tasks.filter((task) => !task.category?.name).length;
+  const getTaskCountByProject = (projectName: string) => {
+    if (projectName === "OTHER") {
+      return tasks.filter((task) => !task.project?.name).length;
     }
-    return tasks.filter((task) => task.category?.name === categoryName).length;
+    return tasks.filter((task) => task.project?.name === projectName).length;
   };
 
   // Generate colors matching the pie chart
@@ -157,14 +157,14 @@ export function TaskCategoriesModal({
     return `hsl(${hue}, 70%, 50%)`;
   };
 
-  // Use provided category colors from props, or database colors, or fallback to generated colors
-  const categoryColors = propCategoryColors || categories.reduce((acc, categoryName, index) => {
-    // Find the first task with this category to get its color from database
-    const taskWithCategory = tasks.find(
-      (task) => (task.category?.name || "OTHER") === categoryName
+  // Use provided project colors from props, or database colors, or fallback to generated colors
+  const projectColors = propProjectColors || projects.reduce((acc, projectName, index) => {
+    // Find the first task with this project to get its color from database
+    const taskWithProject = tasks.find(
+      (task) => (task.project?.name || "OTHER") === projectName
     );
-    const dbColor = taskWithCategory?.category?.color;
-    acc[categoryName] = dbColor || generateColor(index);
+    const dbColor = taskWithProject?.project?.color;
+    acc[projectName] = dbColor || generateColor(index);
     return acc;
   }, {} as Record<string, string>);
 
@@ -182,7 +182,7 @@ export function TaskCategoriesModal({
       <DialogContent className="max-h-[90vh] max-w-7xl overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-xl font-bold">
-            {filter === "all" ? "All Task Categories" : `${filter} Tasks`} (
+            {filter === "all" ? "All Projects" : `${filter} Tasks`} (
             {filteredTasks.length} tasks) - Total SP: {getTotalStoryPoints()}
           </DialogTitle>
         </DialogHeader>
@@ -201,7 +201,7 @@ export function TaskCategoriesModal({
                   <div className="space-y-1 text-sm">
                     <div>Total Tasks: {tasks.length}</div>
                     <div>Total Story Points: {getAllTotalStoryPoints()}</div>
-                    <div>Total Categories: {categories.length}</div>
+                    <div>Total Projects: {projects.length}</div>
                     {filter !== "all" && (
                       <div className="text-blue-600">
                         Filtered - {filter}: {filteredTasks.length} tasks ({getTotalStoryPoints()} SP)
@@ -211,37 +211,37 @@ export function TaskCategoriesModal({
                 </div>
 
                 <div className="rounded-lg bg-gray-50 p-4">
-                  <h3 className="mb-2 text-sm font-semibold">Category Summary</h3>
+                  <h3 className="mb-2 text-sm font-semibold">Project Summary</h3>
                   <div className="flex flex-wrap gap-2">
-                    {categories.length > 0 ? (
-                      categories.map((categoryName) => {
-                        const categoryTasks = tasks.filter(
-                          (task) => categoryName === "OTHER"
-                            ? !task.category?.name
-                            : task.category?.name === categoryName,
+                    {projects.length > 0 ? (
+                      projects.map((projectName) => {
+                        const projectTasks = tasks.filter(
+                          (task) => projectName === "OTHER"
+                            ? !task.project?.name
+                            : task.project?.name === projectName,
                         );
-                        const categoryStoryPoints = categoryTasks.reduce(
+                        const projectStoryPoints = projectTasks.reduce(
                           (total, task) => total + (task.totalStoryPoint || 0),
                           0,
                         );
                         return (
                           <Badge
-                            key={categoryName}
+                            key={projectName}
                             variant="secondary"
                             className="text-xs"
                             style={{
-                              backgroundColor: categoryColors[categoryName],
+                              backgroundColor: projectColors[projectName],
                               color: "white",
-                              borderColor: categoryColors[categoryName],
+                              borderColor: projectColors[projectName],
                             }}
                           >
-                            {categoryName}: {categoryTasks.length}T / {categoryStoryPoints}SP
+                            {projectName}: {projectTasks.length}T / {projectStoryPoints}SP
                           </Badge>
                         );
                       })
                     ) : (
                       <div className="text-sm text-muted-foreground">
-                        No categories found
+                        No projects found
                       </div>
                     )}
                   </div>
@@ -252,7 +252,7 @@ export function TaskCategoriesModal({
             {/* Filter Section */}
             <div className="space-y-3">
               <div className="flex items-center gap-2">
-                <span className="text-sm font-medium">Category:</span>
+                <span className="text-sm font-medium">Project:</span>
                 <div className="flex flex-wrap gap-2">
                   <Button
                     variant={filter === "all" ? "default" : "outline"}
@@ -261,22 +261,22 @@ export function TaskCategoriesModal({
                   >
                     All ({tasks.length})
                   </Button>
-                  {categories.map((categoryName) => (
+                  {projects.map((projectName) => (
                     <Button
-                      key={categoryName}
-                      variant={filter === categoryName ? "default" : "outline"}
+                      key={projectName}
+                      variant={filter === projectName ? "default" : "outline"}
                       size="sm"
-                      onClick={() => handleFilterChange(categoryName)}
-                      style={filter === categoryName ? {
-                        backgroundColor: categoryColors[categoryName],
-                        borderColor: categoryColors[categoryName],
+                      onClick={() => handleFilterChange(projectName)}
+                      style={filter === projectName ? {
+                        backgroundColor: projectColors[projectName],
+                        borderColor: projectColors[projectName],
                         color: "white",
                       } : {
-                        borderColor: categoryColors[categoryName],
-                        color: categoryColors[categoryName],
+                        borderColor: projectColors[projectName],
+                        color: projectColors[projectName],
                       }}
                     >
-                      {categoryName} ({getTaskCountByCategory(categoryName)})
+                      {projectName} ({getTaskCountByProject(projectName)})
                     </Button>
                   ))}
                 </div>
@@ -288,36 +288,36 @@ export function TaskCategoriesModal({
                 <div className="py-8 text-center text-muted-foreground">
                   {filter === "all"
                     ? "No tasks found"
-                    : `No tasks found in ${filter} category`}
+                    : `No tasks found in ${filter} project`}
                 </div>
               ) : (
                 <>
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead className="w-[150px]">Category</TableHead>
+                        <TableHead className="w-[150px]">Project</TableHead>
                         <TableHead className="w-[450px]">Task Name</TableHead>
                         <TableHead className="w-[120px]">Total SP</TableHead>
                         <TableHead className="w-[200px]">Assignees</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {Object.entries(tasksByCategory)
+                      {Object.entries(tasksByProject)
                         .sort(([a], [b]) => a.localeCompare(b))
-                        .map(([categoryName, categoryTasks]) =>
-                          categoryTasks.map((task) => (
+                        .map(([projectName, projectTasks]) =>
+                          projectTasks.map((task) => (
                             <TableRow key={task.id}>
                               <TableCell>
                                 <Badge
                                   variant="secondary"
                                   className="text-xs font-medium"
                                   style={{
-                                    backgroundColor: categoryColors[categoryName],
+                                    backgroundColor: projectColors[projectName],
                                     color: "white",
-                                    borderColor: categoryColors[categoryName],
+                                    borderColor: projectColors[projectName],
                                   }}
                                 >
-                                  {categoryName}
+                                  {projectName}
                                 </Badge>
                               </TableCell>
                               <TableCell className="font-medium">

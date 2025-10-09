@@ -16,6 +16,7 @@ import {
   LazyBarChartCapacity,
   LazyLineChartSPCoding,
   LazyPieTaskCategoryChart,
+  LazyPieProjectChart,
   LazyDashboardPieDonutChart,
   LazyQAPerformancePieChart,
 } from "@/components/client-charts";
@@ -34,8 +35,11 @@ import { findSprintsWithLeavesAndHolidays } from "@/services/sprints";
 import { getCurrentSprintId } from "@/services/sprints/getCurrentSprintId";
 import {
   findCountTasksByCategory,
+  findCountTasksByProject,
   findDetailedTaskToQACounts,
   findTotalTaskToQACounts,
+  findAllTasksByCategories,
+  findAllTasksByProjects,
 } from "@/services/tasks";
 import { findRoleIdAndEngineerIdByUserId } from "@/services/users";
 import { ROLE } from "@/types/roles";
@@ -134,16 +138,49 @@ async function AsyncPieTaskCategoryChart({
     return (
       <LazyPieTaskCategoryChart
         taskData={[]}
-        sprintIds={sprintIds}
+        allTasksData={[]}
       />
     );
   }
 
-  const taskCategoryData = await findCountTasksByCategory(sprintIds);
+  const [taskCategoryData, allTasksData] = await Promise.all([
+    findCountTasksByCategory(sprintIds),
+    findAllTasksByCategories(sprintIds),
+  ]);
+
   return (
     <LazyPieTaskCategoryChart
       taskData={taskCategoryData}
-      sprintIds={sprintIds}
+      allTasksData={allTasksData}
+    />
+  );
+}
+
+async function AsyncPieProjectChart({
+  sprintIds,
+  organizationId,
+}: {
+  sprintIds: string[];
+  organizationId?: string;
+}) {
+  if (!organizationId || sprintIds.length === 0) {
+    return (
+      <LazyPieProjectChart
+        taskData={[]}
+        allTasksData={[]}
+      />
+    );
+  }
+
+  const [taskProjectData, allTasksData] = await Promise.all([
+    findCountTasksByProject(sprintIds),
+    findAllTasksByProjects(sprintIds),
+  ]);
+
+  return (
+    <LazyPieProjectChart
+      taskData={taskProjectData}
+      allTasksData={allTasksData}
     />
   );
 }
@@ -265,9 +302,9 @@ export default async function Home({
         </div>
       </section>
 
-      {/* Second Section: Task Category + Tasks to QA + QA Performances */}
-      <section className="grid gap-6 lg:grid-cols-5" key={`section-2-${organizationId || 'no-org'}`}>
-        <div className="lg:col-span-2">
+      {/* Second Section: Task Category + Project Percentage */}
+      <section className="grid gap-6 lg:grid-cols-2" key={`section-2-${organizationId || 'no-org'}`}>
+        <div>
           <Suspense fallback={<PieChartSkeleton title="Task Category Percentage By SP" />}>
             <AsyncPieTaskCategoryChart
               sprintIds={sprintIds}
@@ -276,16 +313,20 @@ export default async function Home({
             />
           </Suspense>
         </div>
-        <div className="flex justify-center lg:col-span-1">
-          <Suspense fallback={<PieDonutChartSkeleton title="Tasks to QA" />}>
-            <AsyncPieDonutTaskChart
+        <div>
+          <Suspense fallback={<PieChartSkeleton title="Project Percentage By SP" />}>
+            <AsyncPieProjectChart
               sprintIds={sprintIds}
               organizationId={organizationId}
-              key={`pie-donut-${organizationId || 'no-org'}`}
+              key={`pie-project-${organizationId || 'no-org'}`}
             />
           </Suspense>
         </div>
-        <div className="lg:col-span-2">
+      </section>
+
+      {/* Third Section: QA Performance + Tasks to QA */}
+      <section className="grid gap-6 lg:grid-cols-2" key={`section-3-${organizationId || 'no-org'}`}>
+        <div>
           <Suspense fallback={<QAPerformancePieChartSkeleton />}>
             <AsyncQAPerformancePieChart
               sprintIds={sprintIds}
@@ -294,10 +335,19 @@ export default async function Home({
             />
           </Suspense>
         </div>
+        <div>
+          <Suspense fallback={<PieDonutChartSkeleton title="Tasks to QA" />}>
+            <AsyncPieDonutTaskChart
+              sprintIds={sprintIds}
+              organizationId={organizationId}
+              key={`pie-donut-${organizationId || 'no-org'}`}
+            />
+          </Suspense>
+        </div>
       </section>
 
-      {/* Third Section: Engineer Trends - Full Width */}
-      <section className="w-full" key={`section-3-${organizationId || 'no-org'}`}>
+      {/* Fourth Section: Engineer Trends - Full Width */}
+      <section className="w-full" key={`section-4-${organizationId || 'no-org'}`}>
         <Suspense fallback={<LineChartSPCodingSkeleton />}>
           <AsyncLineChartSPCoding
             sprintIds={sprintIds}
@@ -307,8 +357,8 @@ export default async function Home({
         </Suspense>
       </section>
 
-      {/* Fourth Section: Leave & Holiday Management */}
-      <section className="w-full" key={`section-4-${organizationId || 'no-org'}`}>
+      {/* Fifth Section: Leave & Holiday Management */}
+      <section className="w-full" key={`section-5-${organizationId || 'no-org'}`}>
         <Suspense fallback={<LeavePublicHolidaySkeleton />}>
           <AsyncLeavePublicHoliday
             sprintIds={sprintIds}

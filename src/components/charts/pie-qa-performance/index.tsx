@@ -126,7 +126,7 @@ export function QAPerformancePieChart({ qaData }: QAPerformancePieChartProps) {
           <CardTitle>QA Performances</CardTitle>
         </CardHeader>
         <CardContent className="flex-1 pb-0">
-          {!mounted ? (
+          {!mounted || chartData.length === 0 ? (
             <div className="mx-auto h-[400px] w-full animate-pulse rounded-lg bg-gray-200" />
           ) : (
             <ChartContainer

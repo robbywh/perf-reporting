@@ -35,7 +35,7 @@ export function PieChart({ title, config, data, onSegmentClick }: ChartProps) {
         <CardTitle>{title}</CardTitle>
       </CardHeader>
       <CardContent className="flex-1 pb-0">
-        {!mounted ? (
+        {!mounted || data.length === 0 ? (
           <div className="mx-auto h-[400px] w-full animate-pulse rounded-lg bg-gray-200" />
         ) : (
           <ChartContainer config={config} className="mx-auto max-h-[400px]">
@@ -49,9 +49,12 @@ export function PieChart({ title, config, data, onSegmentClick }: ChartProps) {
                 dataKey="value"
                 nameKey="type"
                 outerRadius={100} // Increased outer radius
-                label={({ index, value, percent }) =>
-                  `${config[data[index].type].label}: ${value} SP (${(percent * 100).toFixed(2)}%)`
-                }
+                label={({ index, value, percent }) => {
+                  const entry = data[index];
+                  const configEntry = entry && config[entry.type];
+                  const label = configEntry?.label || entry?.type || "";
+                  return `${label}: ${value} SP (${(percent * 100).toFixed(2)}%)`;
+                }}
               >
                 {data.map((entry, index) => (
                   <Cell

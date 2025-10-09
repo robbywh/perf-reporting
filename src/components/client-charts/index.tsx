@@ -52,7 +52,18 @@ const BaseLazyPieTaskCategoryChart = dynamic(
       default: mod.DynamicPieTaskCategoryChart,
     })),
   {
-    loading: () => <PieChartSkeleton title="Task Category" />,
+    loading: () => <PieChartSkeleton title="Task Category Percentage By SP" />,
+    ssr: false,
+  },
+);
+
+const BaseLazyPieProjectChart = dynamic(
+  () =>
+    import("@/components/client-wrappers").then((mod) => ({
+      default: mod.DynamicPieProjectChart,
+    })),
+  {
+    loading: () => <PieChartSkeleton title="Project Percentage By SP" />,
     ssr: false,
   },
 );
@@ -105,7 +116,7 @@ export const LazyLineChartSPCoding = (props: React.ComponentProps<typeof BaseLaz
 );
 
 export const LazyPieTaskCategoryChart = (props: React.ComponentProps<typeof BaseLazyPieTaskCategoryChart>) => (
-  <OrganizationAwareChart skeleton={<PieChartSkeleton title="Task Category" />}>
+  <OrganizationAwareChart skeleton={<PieChartSkeleton title="Task Category Percentage By SP" />}>
     <BaseLazyPieTaskCategoryChart {...props} />
   </OrganizationAwareChart>
 );
@@ -119,5 +130,11 @@ export const LazyDashboardPieDonutChart = (props: React.ComponentProps<typeof Ba
 export const LazyQAPerformancePieChart = (props: React.ComponentProps<typeof BaseLazyQAPerformancePieChart>) => (
   <OrganizationAwareChart skeleton={<QAPerformancePieChartSkeleton />}>
     <BaseLazyQAPerformancePieChart {...props} />
+  </OrganizationAwareChart>
+);
+
+export const LazyPieProjectChart = (props: React.ComponentProps<typeof BaseLazyPieProjectChart>) => (
+  <OrganizationAwareChart skeleton={<PieChartSkeleton title="Project Percentage By SP" />}>
+    <BaseLazyPieProjectChart {...props} />
   </OrganizationAwareChart>
 );

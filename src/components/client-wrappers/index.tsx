@@ -43,7 +43,18 @@ export const DynamicPieTaskCategoryChart = dynamic(
       (mod) => mod.PieTaskCategoryChart,
     ),
   {
-    loading: () => <PieChartSkeleton title="Task Category" />,
+    loading: () => <PieChartSkeleton title="Task Category Percentage By SP" />,
+    ssr: false,
+  },
+);
+
+export const DynamicPieProjectChart = dynamic(
+  () =>
+    import("@/components/charts/pie-project").then(
+      (mod) => mod.PieProjectChart,
+    ),
+  {
+    loading: () => <PieChartSkeleton title="Project Percentage By SP" />,
     ssr: false,
   },
 );

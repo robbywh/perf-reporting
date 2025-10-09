@@ -344,7 +344,7 @@ async function syncProjectsFromCustomFields(tasks: ClickUpTask[]) {
       for (const option of projectField.type_config.options) {
         if (!projectsMap.has(option.id)) {
           projectsMap.set(option.id, {
-            name: option.name,
+            name: option.label,
             color: option.color || null,
           });
         }

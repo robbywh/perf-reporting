@@ -67,6 +67,118 @@ export type QATasksBreakdown = {
   rejectedTasks: DetailedTask[];
 };
 
+export async function findCountTasksByProject(sprintIds: string[]) {
+  // First get organization ID from sprint
+  const sprint = await prisma.sprint.findFirst({
+    where: { id: { in: sprintIds } },
+    select: { organizationId: true },
+  });
+
+  if (!sprint) {
+    return [];
+  }
+
+  // Get all parent tasks with their projects and story points
+  const parentTasks = await prisma.task.findMany({
+    where: {
+      parentTaskId: null,
+      sprintId: { in: sprintIds },
+    },
+    select: {
+      id: true,
+      projectId: true,
+      storyPoint: true,
+    },
+    cacheStrategy: {
+      ...CACHE_STRATEGY.DEFAULT,
+      tags: ["parentTasksForProject"],
+    },
+  });
+
+  // Get all subtasks for these parent tasks
+  const parentTaskIds = parentTasks.map((task) => task.id);
+  const subtasks = parentTaskIds.length > 0
+    ? await prisma.task.findMany({
+        where: {
+          sprintId: { in: sprintIds },
+          parentTaskId: { in: parentTaskIds },
+        },
+        select: {
+          parentTaskId: true,
+          storyPoint: true,
+        },
+        cacheStrategy: {
+          ...CACHE_STRATEGY.DEFAULT,
+          tags: ["subtasksForProject"],
+        },
+      })
+    : [];
+
+  // Calculate total story points including subtasks for each parent task
+  const subtaskMap = new Map<string, number>();
+  subtasks.forEach((subtask) => {
+    if (subtask.parentTaskId) {
+      const current = subtaskMap.get(subtask.parentTaskId) || 0;
+      subtaskMap.set(
+        subtask.parentTaskId,
+        current + (Number(subtask.storyPoint) || 0),
+      );
+    }
+  });
+
+  // Group by project and sum story points
+  const projectStoryPoints = new Map<string | null, number>();
+  parentTasks.forEach((task) => {
+    const subtaskSP = subtaskMap.get(task.id) || 0;
+    const totalStoryPoint = (Number(task.storyPoint) || 0) + subtaskSP;
+
+    const currentSP = projectStoryPoints.get(task.projectId) || 0;
+    projectStoryPoints.set(task.projectId, currentSP + totalStoryPoint);
+  });
+
+  // Fetch project names
+  const projectIds = Array.from(projectStoryPoints.keys())
+    .filter((id): id is string => id !== null);
+
+  const result = projectIds.length > 0
+    ? await prisma.project.findMany({
+        where: {
+          id: { in: projectIds },
+        },
+        select: {
+          id: true,
+          name: true,
+          color: true,
+        },
+        cacheStrategy: {
+          ...CACHE_STRATEGY.DEFAULT,
+          tags: ["projectNames"],
+        },
+      })
+    : [];
+
+  // Map project names and colors to grouped story points
+  const projectMap = Object.fromEntries(
+    result.map((proj: { id: string; name: string; color: string | null }) => [
+      proj.id,
+      { name: proj.name, color: proj.color },
+    ]),
+  );
+
+  const finalResult = Array.from(projectStoryPoints.entries())
+    .map(([projectId, storyPoints]) => ({
+      project: projectId
+        ? projectMap[projectId]?.name || "OTHER"
+        : "OTHER",
+      projectId,
+      color: projectId ? projectMap[projectId]?.color || null : null,
+      count: storyPoints,
+    }))
+    .sort((a, b) => b.count - a.count); // Sort by story points descending
+
+  return finalResult;
+}
+
 export async function findCountTasksByCategory(sprintIds: string[]) {
   // First get organization ID from sprint
   const sprint = await prisma.sprint.findFirst({
@@ -170,7 +282,7 @@ export async function findCountTasksByCategory(sprintIds: string[]) {
       category: categoryId
         ? categoryMap[categoryId]?.name || "OTHER"
         : "OTHER",
-      categoryId: categoryId,
+      categoryId,
       color: categoryId ? categoryMap[categoryId]?.color || null : null,
       count: storyPoints,
     }))
@@ -593,6 +705,7 @@ export async function findTasksByCategory(
 
     return {
       ...task,
+      storyPoint: task.storyPoint ? Number(task.storyPoint) : null,
       totalStoryPoint,
     };
   });
@@ -720,6 +833,135 @@ export async function findAllTasksByCategories(sprintIds: string[]) {
 
     return {
       ...task,
+      storyPoint: task.storyPoint ? Number(task.storyPoint) : null,
+      totalStoryPoint,
+    };
+  });
+
+  return tasksWithTotalSP;
+}
+
+export async function findAllTasksByProjects(sprintIds: string[]) {
+  // First get organization ID from sprint
+  const sprint = await prisma.sprint.findFirst({
+    where: { id: { in: sprintIds } },
+    select: { organizationId: true },
+  });
+
+  if (!sprint) {
+    return [];
+  }
+
+  // Get all parent tasks with their projects
+  const parentTasks = await prisma.task.findMany({
+    where: {
+      sprintId: { in: sprintIds },
+      parentTaskId: null,
+    },
+    select: {
+      id: true,
+      name: true,
+      storyPoint: true,
+      sprintId: true,
+      status: {
+        select: {
+          id: true,
+          name: true,
+        },
+      },
+      project: {
+        select: {
+          id: true,
+          name: true,
+          color: true,
+        },
+      },
+      assignees: {
+        select: {
+          engineer: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+        },
+      },
+      reviewers: {
+        select: {
+          reviewer: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+        },
+      },
+      taskTags: {
+        select: {
+          tag: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+        },
+      },
+    },
+    orderBy: [
+      {
+        project: {
+          name: "asc",
+        },
+      },
+      {
+        name: "asc",
+      },
+    ],
+    cacheStrategy: {
+      ...CACHE_STRATEGY.DEFAULT,
+      tags: ["allTasksByProjects"],
+    },
+  });
+
+  // Get all subtasks for these parent tasks
+  const parentTaskIds = parentTasks.map((task) => task.id);
+  const subtasks =
+    parentTaskIds.length > 0
+      ? await prisma.task.findMany({
+          where: {
+            sprintId: { in: sprintIds },
+            parentTaskId: { in: parentTaskIds },
+          },
+          select: {
+            parentTaskId: true,
+            storyPoint: true,
+          },
+          cacheStrategy: {
+            ...CACHE_STRATEGY.DEFAULT,
+            tags: ["allSubtasksByProjects"],
+          },
+        })
+      : [];
+
+  // Calculate total story points including subtasks
+  const subtaskMap = new Map<string, number>();
+  subtasks.forEach((subtask) => {
+    if (subtask.parentTaskId) {
+      const current = subtaskMap.get(subtask.parentTaskId) || 0;
+      subtaskMap.set(
+        subtask.parentTaskId,
+        current + (Number(subtask.storyPoint) || 0),
+      );
+    }
+  });
+
+  const tasksWithTotalSP = parentTasks.map((task) => {
+    const subtaskSP = subtaskMap.get(task.id) || 0;
+    const totalStoryPoint = (Number(task.storyPoint) || 0) + subtaskSP;
+
+    return {
+      ...task,
+      storyPoint: task.storyPoint ? Number(task.storyPoint) : null,
       totalStoryPoint,
     };
   });

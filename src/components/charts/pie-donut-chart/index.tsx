@@ -62,7 +62,7 @@ export function PieDonutChart({
         <CardTitle>{title}</CardTitle>
       </CardHeader>
       <CardContent className="flex-1 pb-0">
-        {!mounted ? (
+        {!mounted || data.length === 0 ? (
           <div className="mx-auto aspect-square max-h-[250px] animate-pulse rounded-full bg-gray-200" />
         ) : (
           <ChartContainer

@@ -11,8 +11,7 @@ export interface ClickUpTask {
     type_config?: {
       options?: Array<{
         id: string;
-        name?: string;
-        label?: string;
+        label: string;
         color?: string;
         orderindex?: number;
       }>;

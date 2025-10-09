@@ -2,14 +2,14 @@
 
 import { useState } from "react";
 
-import { TaskCategoriesModal } from "@/components/task-categories-modal";
+import { ProjectsModal } from "@/components/projects-modal";
 import { ChartConfig } from "@/components/ui/chart";
 
 import { PieChart } from "../pie-chart";
 
-interface TaskCategory {
-  category: string;
-  categoryId: string | null;
+interface TaskProject {
+  project: string;
+  projectId: string | null;
   color: string | null;
   count: number;
 }
@@ -23,7 +23,7 @@ interface Task {
     id: string;
     name: string;
   } | null;
-  category: {
+  project: {
     id: string;
     name: string;
     color: string | null;
@@ -48,12 +48,12 @@ interface Task {
   }>;
 }
 
-interface PieTaskCategoryChartProps {
-  taskData: TaskCategory[];
+interface PieProjectChartProps {
+  taskData: TaskProject[];
   allTasksData: Task[];
 }
 
-// ✅ Function to generate unique colors for each category dynamically
+// ✅ Function to generate unique colors for each project dynamically
 const generateColor = (index: number) => {
   const predefinedColors = [
     "hsl(var(--chart-1))",
@@ -66,49 +66,49 @@ const generateColor = (index: number) => {
     "hsl(var(--chart-8))",
   ];
 
-  // If more categories than predefined colors, generate dynamically
+  // If more projects than predefined colors, generate dynamically
   if (index < predefinedColors.length) return predefinedColors[index];
 
   const hue = (index * 137) % 360; // Spread colors evenly across hue spectrum
   return `hsl(${hue}, 70%, 50%)`;
 };
 
-export function PieTaskCategoryChart({
+export function PieProjectChart({
   taskData,
   allTasksData,
-}: PieTaskCategoryChartProps) {
+}: PieProjectChartProps) {
   const [modalOpen, setModalOpen] = useState(false);
 
   const handleChartClick = () => {
     setModalOpen(true);
   };
 
-  // Create category color mapping - use database color or fallback to generated color
-  const categoryColors = taskData.reduce((acc, task, index) => {
-    const categoryName = task.category || "OTHER";
-    acc[categoryName] = task.color || generateColor(index);
+  // Create project color mapping - use database color or fallback to generated color
+  const projectColors = taskData.reduce((acc, task, index) => {
+    const projectName = task.project || "OTHER";
+    acc[projectName] = task.color || generateColor(index);
     return acc;
   }, {} as Record<string, string>);
 
   const chartData = taskData.map((task, index) => ({
-    type: (task.category || "").toLowerCase().replace(/\s/g, ""), // Normalize category name
-    category: task.category || "OTHER",
-    categoryId: task.categoryId,
+    type: (task.project || "").toLowerCase().replace(/\s/g, ""), // Normalize project name
+    project: task.project || "OTHER",
+    projectId: task.projectId,
     value: task.count,
     fill: task.color || generateColor(index),
   }));
 
   const chartConfig: ChartConfig = {
     value: {
-      label: "Task Category Percentage By SP",
+      label: "Project Percentage By SP",
     },
   };
 
   taskData.forEach((task, index) => {
-    const normalizedCategory = (task.category || "").toLowerCase().replace(/\s/g, "");
-    if (normalizedCategory) {
-      chartConfig[normalizedCategory] = {
-        label: task.category || "OTHER",
+    const normalizedProject = (task.project || "").toLowerCase().replace(/\s/g, "");
+    if (normalizedProject) {
+      chartConfig[normalizedProject] = {
+        label: task.project || "OTHER",
         color: task.color || generateColor(index),
       };
     }
@@ -117,16 +117,16 @@ export function PieTaskCategoryChart({
   return (
     <>
       <PieChart
-        title="Task Category Percentage By SP"
+        title="Project Percentage By SP"
         data={chartData}
         config={chartConfig}
         onSegmentClick={handleChartClick}
       />
 
-      <TaskCategoriesModal
+      <ProjectsModal
         isOpen={modalOpen}
         onClose={() => setModalOpen(false)}
-        categoryColors={categoryColors}
+        projectColors={projectColors}
         tasks={allTasksData}
       />
     </>
