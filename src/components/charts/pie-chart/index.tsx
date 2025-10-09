@@ -51,8 +51,9 @@ export function PieChart({ title, config, data, onSegmentClick }: ChartProps) {
                 outerRadius={100} // Increased outer radius
                 label={({ index, value, percent }) => {
                   const entry = data[index];
-                  const configEntry = entry && config[entry.type];
-                  const label = configEntry?.label || entry?.type || "";
+                  if (!entry || !entry.type) return "";
+                  const configEntry = config[entry.type];
+                  const label = configEntry?.label || entry.type || "Unknown";
                   return `${label}: ${value} SP (${(percent * 100).toFixed(2)}%)`;
                 }}
               >

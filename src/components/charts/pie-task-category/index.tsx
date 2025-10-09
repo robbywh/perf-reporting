@@ -90,13 +90,19 @@ export function PieTaskCategoryChart({
     return acc;
   }, {} as Record<string, string>);
 
-  const chartData = taskData.map((task, index) => ({
-    type: (task.category || "").toLowerCase().replace(/\s/g, ""), // Normalize category name
-    category: task.category || "OTHER",
-    categoryId: task.categoryId,
-    value: task.count,
-    fill: task.color || generateColor(index),
-  }));
+  const chartData = taskData
+    .filter((task) => task.count > 0) // Only include tasks with story points
+    .map((task, index) => {
+      const categoryName = task.category || "OTHER";
+      const normalizedType = categoryName.toLowerCase().replace(/\s/g, "") || "other";
+      return {
+        type: normalizedType,
+        category: categoryName,
+        categoryId: task.categoryId,
+        value: task.count,
+        fill: task.color || generateColor(index),
+      };
+    });
 
   const chartConfig: ChartConfig = {
     value: {
@@ -104,15 +110,16 @@ export function PieTaskCategoryChart({
     },
   };
 
-  taskData.forEach((task, index) => {
-    const normalizedCategory = (task.category || "").toLowerCase().replace(/\s/g, "");
-    if (normalizedCategory) {
+  taskData
+    .filter((task) => task.count > 0)
+    .forEach((task, index) => {
+      const categoryName = task.category || "OTHER";
+      const normalizedCategory = categoryName.toLowerCase().replace(/\s/g, "") || "other";
       chartConfig[normalizedCategory] = {
-        label: task.category || "OTHER",
+        label: categoryName,
         color: task.color || generateColor(index),
       };
-    }
-  });
+    });
 
   return (
     <>

@@ -90,13 +90,19 @@ export function PieProjectChart({
     return acc;
   }, {} as Record<string, string>);
 
-  const chartData = taskData.map((task, index) => ({
-    type: (task.project || "").toLowerCase().replace(/\s/g, ""), // Normalize project name
-    project: task.project || "OTHER",
-    projectId: task.projectId,
-    value: task.count,
-    fill: task.color || generateColor(index),
-  }));
+  const chartData = taskData
+    .filter((task) => task.count > 0) // Only include tasks with story points
+    .map((task, index) => {
+      const projectName = task.project || "OTHER";
+      const normalizedType = projectName.toLowerCase().replace(/\s/g, "") || "other";
+      return {
+        type: normalizedType,
+        project: projectName,
+        projectId: task.projectId,
+        value: task.count,
+        fill: task.color || generateColor(index),
+      };
+    });
 
   const chartConfig: ChartConfig = {
     value: {
@@ -104,15 +110,16 @@ export function PieProjectChart({
     },
   };
 
-  taskData.forEach((task, index) => {
-    const normalizedProject = (task.project || "").toLowerCase().replace(/\s/g, "");
-    if (normalizedProject) {
+  taskData
+    .filter((task) => task.count > 0)
+    .forEach((task, index) => {
+      const projectName = task.project || "OTHER";
+      const normalizedProject = projectName.toLowerCase().replace(/\s/g, "") || "other";
       chartConfig[normalizedProject] = {
-        label: task.project || "OTHER",
+        label: projectName,
         color: task.color || generateColor(index),
       };
-    }
-  });
+    });
 
   return (
     <>
