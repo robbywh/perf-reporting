@@ -75,6 +75,15 @@ model Category {
   @@map("category")
 }
 
+model Project {
+  id    String  @id @db.Char(36)
+  name  String  @db.VarChar(100)
+  color String? @db.VarChar(50)
+  tasks Task[]
+
+  @@map("project")
+}
+
 model Status {
   id    String @id @db.VarChar(25)
   name  String @unique @db.VarChar(25)
@@ -104,15 +113,17 @@ model Task {
   sprintId     String         @map("sprint_id") @db.VarChar(25)
   statusId     String?        @map("status_id") @db.VarChar(25)
   categoryId   String?        @map("category_id") @db.VarChar(36)
+  projectId    String?        @map("project_id") @db.VarChar(36)
   parentTaskId String?        @map("parent_task_id") @db.VarChar(25)
   storyPoint   Decimal?       @map("story_point") @db.Decimal
   category     Category?      @relation(fields: [categoryId], references: [id])
+  project      Project?       @relation(fields: [projectId], references: [id])
   sprint       Sprint         @relation(fields: [sprintId], references: [id])
   status       Status?        @relation(fields: [statusId], references: [id])
   assignees    TaskAssignee[]
   taskTags     TaskTag[]
   reviewers    TaskReviewer[]
-  
+
   @@id([id, sprintId])
   @@index([sprintId])
   @@index([sprintId, statusId])

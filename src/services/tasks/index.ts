@@ -6,12 +6,6 @@ import { CACHE_STRATEGY } from "@/constants/server";
 import { prisma } from "../db";
 import { findMRDetailsBySprintIdsAndEngineerId } from "../gitlab";
 
-// Define types for task group result
-type GroupedTask = {
-  categoryId: string | null;
-  _count: { id: number };
-};
-
 // Define types for task with assignees
 type TaskWithAssignees = {
   id: string;

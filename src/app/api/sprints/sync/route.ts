@@ -27,11 +27,11 @@ type PrismaTransaction = {
 
 async function syncSprintsFromClickUp(
   organizationId: string,
-  targetSprintId?: string,
+  targetSprintId?: string
 ) {
   const sprintInfo = targetSprintId ? ` for sprint ${targetSprintId}` : "";
   console.log(
-    `🔄 Starting sprint sync for organization: ${organizationId}${sprintInfo}`,
+    `🔄 Starting sprint sync for organization: ${organizationId}${sprintInfo}`
   );
 
   try {
@@ -40,7 +40,7 @@ async function syncSprintsFromClickUp(
 
     if (!apiConfig.CLICKUP_API_TOKEN || !apiConfig.CLICKUP_FOLDER_ID) {
       console.log(
-        `⚠️ Missing ClickUp API configuration for organization ${organizationId}, skipping...`,
+        `⚠️ Missing ClickUp API configuration for organization ${organizationId}, skipping...`
       );
       return;
     }
@@ -56,7 +56,7 @@ async function syncSprintsFromClickUp(
 
       if (!existingSprint) {
         console.log(
-          `❌ Sprint ${targetSprintId} not found in organization ${organizationId}`,
+          `❌ Sprint ${targetSprintId} not found in organization ${organizationId}`
         );
         return;
       }
@@ -66,7 +66,7 @@ async function syncSprintsFromClickUp(
     const folderListResponse = await getFolderList(
       apiConfig.CLICKUP_API_TOKEN,
       apiConfig.CLICKUP_BASE_URL!,
-      apiConfig.CLICKUP_FOLDER_ID,
+      apiConfig.CLICKUP_FOLDER_ID
     );
 
     // Ensure the response contains a "lists" array.
@@ -115,18 +115,18 @@ async function syncSprintsFromClickUp(
             where: { id: sprint.id },
             create: sprint,
             update: sprint,
-          }),
-        ),
+          })
+        )
       );
     });
 
     console.log(
-      `✅ Successfully synchronized sprints for organization: ${organizationId}`,
+      `✅ Successfully synchronized sprints for organization: ${organizationId}`
     );
   } catch (error) {
     console.error(
       `❌ Error synchronizing sprints for organization ${organizationId}:`,
-      error,
+      error
     );
     // Don't throw - let the main sync continue with next organization
   }
@@ -138,11 +138,12 @@ async function processBatch(
   statusMap: Map<string, string>,
   statuses: { id: string; name: string }[],
   categoryIds: Set<string>,
-  organizationId: string,
+  projectIds: Set<string>,
+  organizationId: string
 ) {
   const taskDataBatch = tasks.map((task) => {
     const categoryField = task.custom_fields?.find(
-      (field) => field.name === "Kategori",
+      (field) => field.name === "Kategori"
     );
     const rawCategoryId = categoryField?.value?.[0] ?? null;
     // Only use categoryId if it exists in the organization
@@ -151,7 +152,21 @@ async function processBatch(
 
     if (rawCategoryId && !categoryIds.has(rawCategoryId)) {
       console.warn(
-        `🟡 Task ${task.id} (${task.name}) has invalid category: ${rawCategoryId}, setting to null`,
+        `🟡 Task ${task.id} (${task.name}) has invalid category: ${rawCategoryId}, setting to null`
+      );
+    }
+
+    const projectField = task.custom_fields?.find(
+      (field) => field.name === "Project"
+    );
+    const rawProjectId = projectField?.value?.[0] ?? null;
+    // Only use projectId if it exists in the database
+    const projectId =
+      rawProjectId && projectIds.has(rawProjectId) ? rawProjectId : null;
+
+    if (rawProjectId && !projectIds.has(rawProjectId)) {
+      console.warn(
+        `🟡 Task ${task.id} (${task.name}) has invalid project: ${rawProjectId}, setting to null`
       );
     }
 
@@ -159,7 +174,7 @@ async function processBatch(
     const statusId = statusMap.get(task.status.status);
     if (!statusId) {
       console.warn(
-        `🟡 Task ${task.id} (${task.name}) has an invalid status: ${task.status.status}`,
+        `🟡 Task ${task.id} (${task.name}) has an invalid status: ${task.status.status}`
       );
     }
     return {
@@ -168,6 +183,7 @@ async function processBatch(
       sprintId: sprint.id,
       statusId,
       categoryId,
+      projectId,
       parentTaskId: task.parent,
       storyPoint,
       tags: task.tags,
@@ -196,6 +212,7 @@ async function processBatch(
             sprintId: taskData.sprintId,
             statusId: taskData.statusId,
             categoryId: taskData.categoryId,
+            projectId: taskData.projectId,
             parentTaskId: taskData.parentTaskId,
             storyPoint: taskData.storyPoint,
           },
@@ -203,6 +220,7 @@ async function processBatch(
             name: taskData.name,
             statusId: taskData.statusId,
             categoryId: taskData.categoryId,
+            projectId: taskData.projectId,
             parentTaskId: taskData.parentTaskId,
             storyPoint: taskData.storyPoint,
           },
@@ -212,7 +230,7 @@ async function processBatch(
     {
       timeout: 15000, // 15 seconds timeout for task creation
       maxWait: 10000, // 10 seconds maximum wait time
-    },
+    }
   );
 
   // Step 2: After all tasks are guaranteed to exist, create relationships
@@ -224,8 +242,8 @@ async function processBatch(
           id: taskData.id,
           sprintId: taskData.sprintId,
           tags: taskData.tags,
-        }),
-      ),
+        })
+      )
     ),
     // Link assignees for all tasks
     Promise.all(
@@ -239,8 +257,8 @@ async function processBatch(
             ? statuses.find((s) => s.id === taskData.statusId)?.name || ""
             : "",
           organizationId,
-        }),
-      ),
+        })
+      )
     ),
     // Link reviewers for all tasks
     Promise.all(
@@ -256,20 +274,117 @@ async function processBatch(
           name: taskData.name,
           taskTags: taskData.tags?.map((tag) => ({ tagId: tag.name })),
           organizationId,
-        }),
-      ),
+        })
+      )
     ),
   ]);
 }
 
+async function syncCategoriesFromCustomFields(tasks: ClickUpTask[]) {
+  // Extract unique categories from all tasks' custom_fields
+  const categoriesMap = new Map<
+    string,
+    { name: string; color: string | null }
+  >();
+
+  for (const task of tasks) {
+    const categoryField = task.custom_fields?.find(
+      (field) => field.name === "Kategori"
+    );
+
+    if (categoryField && categoryField.type_config?.options) {
+      for (const option of categoryField.type_config.options) {
+        if (!categoriesMap.has(option.id)) {
+          categoriesMap.set(option.id, {
+            name: option.label,
+            color: option.color || null,
+          });
+        }
+      }
+    }
+  }
+
+  // Upsert all categories found in custom_fields
+  if (categoriesMap.size > 0) {
+    await prisma.$transaction(async (tx) => {
+      for (const [id, categoryData] of categoriesMap.entries()) {
+        await tx.category.upsert({
+          where: { id },
+          create: {
+            id,
+            name: categoryData.name,
+            color: categoryData.color,
+          },
+          update: {
+            name: categoryData.name,
+            color: categoryData.color,
+          },
+        });
+      }
+    });
+
+    console.log(
+      `✅ Synced ${categoriesMap.size} categories from custom fields`
+    );
+  }
+
+  return categoriesMap;
+}
+
+async function syncProjectsFromCustomFields(tasks: ClickUpTask[]) {
+  // Extract unique projects from all tasks' custom_fields
+  const projectsMap = new Map<string, { name: string; color: string | null }>();
+
+  for (const task of tasks) {
+    const projectField = task.custom_fields?.find(
+      (field) => field.name === "Project"
+    );
+
+    if (projectField && projectField.type_config?.options) {
+      for (const option of projectField.type_config.options) {
+        if (!projectsMap.has(option.id)) {
+          projectsMap.set(option.id, {
+            name: option.name,
+            color: option.color || null,
+          });
+        }
+      }
+    }
+  }
+
+  // Upsert all projects found in custom_fields
+  if (projectsMap.size > 0) {
+    await prisma.$transaction(async (tx) => {
+      for (const [id, projectData] of projectsMap.entries()) {
+        await tx.project.upsert({
+          where: { id },
+          create: {
+            id,
+            name: projectData.name,
+            color: projectData.color,
+          },
+          update: {
+            name: projectData.name,
+            color: projectData.color,
+          },
+        });
+      }
+    });
+
+    console.log(`✅ Synced ${projectsMap.size} projects from custom fields`);
+  }
+
+  return projectsMap;
+}
+
 async function syncTodayTasksFromClickUp(
   organizationId: string,
-  targetSprintId?: string,
+  targetSprintId?: string
 ) {
   try {
     const sprintInfo = targetSprintId ? ` for sprint ${targetSprintId}` : "";
     console.log(
-      `🔄 Starting task sync for organization: ${organizationId}${sprintInfo}`,
+      `🔄 Starting task sync for organization: ${organizationId}${sprintInfo}`
     );
 
     // Get API configuration from database
@@ -277,7 +392,7 @@ async function syncTodayTasksFromClickUp(
 
     if (!apiConfig.CLICKUP_API_TOKEN) {
       console.log(
-        `⚠️ Missing ClickUp API configuration for organization ${organizationId}, skipping...`,
+        `⚠️ Missing ClickUp API configuration for organization ${organizationId}, skipping...`
       );
       return;
     }
@@ -295,7 +410,7 @@ async function syncTodayTasksFromClickUp(
 
       if (!specificSprint) {
         console.log(
-          `❌ Sprint ${targetSprintId} not found in organization ${organizationId}`,
+          `❌ Sprint ${targetSprintId} not found in organization ${organizationId}`
         );
         return;
       }
@@ -340,7 +455,7 @@ async function syncTodayTasksFromClickUp(
     // First, fetch all statuses to create a name-to-id mapping
     const statuses = await prisma.status.findMany();
     const statusMap = new Map<string, string>(
-      statuses.map((s: { name: string; id: string }) => [s.name, s.id]),
+      statuses.map((s: { name: string; id: string }) => [s.name, s.id])
     );
 
     // Fetch all categories to validate categoryId
@@ -360,7 +475,7 @@ async function syncTodayTasksFromClickUp(
             sprint.id,
             apiConfig.CLICKUP_API_TOKEN,
             apiConfig.CLICKUP_BASE_URL!,
-            page,
+            page
           );
           allTasks.push(...response.tasks);
           lastPage = response.last_page;
@@ -369,11 +484,19 @@ async function syncTodayTasksFromClickUp(
       } catch (error) {
         console.error(
           `❌ Error fetching tasks for sprint ${sprint.id} in organization ${organizationId}:`,
-          error,
+          error
         );
         // Skip this sprint and continue with next sprint
         continue;
       }
+
+      // Sync categories and projects from custom_fields before processing tasks
+      await syncCategoriesFromCustomFields(allTasks);
+      await syncProjectsFromCustomFields(allTasks);
+
+      // Fetch all projects to validate projectId
+      const projects = await prisma.project.findMany();
+      const projectIds = new Set(projects.map((p) => p.id));
 
       // Get all existing tasks in this sprint
       const existingTasks = await prisma.task.findMany({
@@ -390,7 +513,7 @@ async function syncTodayTasksFromClickUp(
 
       // Find tasks that exist in DB but not in ClickUp (moved to another sprint)
       const tasksToDelete = existingTasks.filter(
-        (task: { id: string }) => !clickUpTaskIds.has(task.id),
+        (task: { id: string }) => !clickUpTaskIds.has(task.id)
       );
 
       // Delete tasks that were moved to another sprint
@@ -430,7 +553,7 @@ async function syncTodayTasksFromClickUp(
         });
 
         console.log(
-          `✅ Deleted ${tasksToDelete.length} tasks that were moved from Sprint ${sprint.id}`,
+          `✅ Deleted ${tasksToDelete.length} tasks that were moved from Sprint ${sprint.id}`
         );
       }
 
@@ -445,7 +568,8 @@ async function syncTodayTasksFromClickUp(
             statusMap as Map<string, string>,
             statuses,
             categoryIds,
-            organizationId,
+            projectIds,
+            organizationId
           );
         } catch (error: unknown) {
           if (
@@ -456,7 +580,7 @@ async function syncTodayTasksFromClickUp(
             console.warn(
               `Transaction timeout for batch ${i}-${
                 i + batchSize
-              }, retrying with smaller batch...`,
+              }, retrying with smaller batch...`
             );
             // If transaction times out, process the batch in even smaller chunks
             const smallerBatchSize = 10;
@@ -468,7 +592,8 @@ async function syncTodayTasksFromClickUp(
                 statusMap as Map<string, string>,
                 statuses,
                 categoryIds,
-                organizationId,
+                projectIds,
+                organizationId
               );
             }
           } else {
@@ -479,12 +604,12 @@ async function syncTodayTasksFromClickUp(
     }
 
     console.log(
-      `✅ Successfully synchronized tasks for organization: ${organizationId}`,
+      `✅ Successfully synchronized tasks for organization: ${organizationId}`
     );
   } catch (error) {
     console.error(
       `❌ Error synchronizing tasks for organization ${organizationId}:`,
-      error,
+      error
     );
     throw error;
   }
@@ -531,13 +656,13 @@ export async function GET(request: Request) {
             success: false,
             error: `Sprint ${targetSprintId} not found`,
           },
-          { status: 400 },
+          { status: 400 }
         );
       }
 
       sprintOrganizationId = sprint.organizationId;
       console.log(
-        `🎯 Targeting specific sprint: ${targetSprintId} (${sprint.name}) in organization: ${sprintOrganizationId}`,
+        `🎯 Targeting specific sprint: ${targetSprintId} (${sprint.name}) in organization: ${sprintOrganizationId}`
       );
     }
 
@@ -568,10 +693,10 @@ export async function GET(request: Request) {
     const validOrganizations = organizations.filter((org) => {
       const settings = org.settings;
       const hasToken = settings.some(
-        (s) => s.param === "CLICKUP_API_TOKEN" && s.value,
+        (s) => s.param === "CLICKUP_API_TOKEN" && s.value
       );
       const hasFolder = settings.some(
-        (s) => s.param === "CLICKUP_FOLDER_ID" && s.value,
+        (s) => s.param === "CLICKUP_FOLDER_ID" && s.value
       );
       return hasToken && hasFolder;
     });
@@ -579,18 +704,18 @@ export async function GET(request: Request) {
     // Log parameter interpretation
     if (rawOrganizationId !== null && rawOrganizationId.trim() === "") {
       console.log(
-        `📝 Empty organization_id parameter detected - syncing all organizations`,
+        `📝 Empty organization_id parameter detected - syncing all organizations`
       );
     }
     if (rawSprintId !== null && rawSprintId.trim() === "") {
       console.log(
-        `📝 Empty sprint_id parameter detected - syncing all sprints`,
+        `📝 Empty sprint_id parameter detected - syncing all sprints`
       );
     }
 
     if (targetOrganizationId) {
       console.log(
-        `🎯 Targeting specific organization: ${targetOrganizationId}`,
+        `🎯 Targeting specific organization: ${targetOrganizationId}`
       );
 
       if (validOrganizations.length === 0) {
@@ -605,16 +730,16 @@ export async function GET(request: Request) {
             success: false,
             error: message,
           },
-          { status: 400 },
+          { status: 400 }
         );
       }
 
       console.log(
-        `🔍 Found organization with ClickUp configuration: ${validOrganizations[0].name}`,
+        `🔍 Found organization with ClickUp configuration: ${validOrganizations[0].name}`
       );
     } else {
       console.log(
-        `🔍 Found ${validOrganizations.length} organizations with ClickUp configuration`,
+        `🔍 Found ${validOrganizations.length} organizations with ClickUp configuration`
       );
     }
 
@@ -628,7 +753,7 @@ export async function GET(request: Request) {
       } catch (error) {
         console.error(
           `❌ Error syncing organization ${org.name} (${org.id}):`,
-          error,
+          error
         );
         // Continue with next organization instead of failing completely
       }
@@ -659,7 +784,7 @@ export async function GET(request: Request) {
         success: false,
         error: errorMessage,
       },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }
