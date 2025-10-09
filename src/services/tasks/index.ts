@@ -154,6 +154,7 @@ export async function findCountTasksByCategory(sprintIds: string[]) {
         select: {
           id: true,
           name: true,
+          color: true,
         },
         cacheStrategy: {
           ...CACHE_STRATEGY.DEFAULT,
@@ -162,17 +163,21 @@ export async function findCountTasksByCategory(sprintIds: string[]) {
       })
     : [];
 
-  // Map category names to grouped story points
+  // Map category names and colors to grouped story points
   const categoryMap = Object.fromEntries(
-    result.map((cat: { id: string; name: string }) => [cat.id, cat.name]),
+    result.map((cat: { id: string; name: string; color: string | null }) => [
+      cat.id,
+      { name: cat.name, color: cat.color },
+    ]),
   );
 
   const finalResult = Array.from(categoryStoryPoints.entries())
     .map(([categoryId, storyPoints]) => ({
       category: categoryId
-        ? categoryMap[categoryId] || "OTHER"
+        ? categoryMap[categoryId]?.name || "OTHER"
         : "OTHER",
       categoryId: categoryId,
+      color: categoryId ? categoryMap[categoryId]?.color || null : null,
       count: storyPoints,
     }))
     .sort((a, b) => b.count - a.count); // Sort by story points descending
@@ -513,6 +518,7 @@ export async function findTasksByCategory(
         select: {
           id: true,
           name: true,
+          color: true,
         },
       },
       assignees: {
@@ -632,6 +638,7 @@ export async function findAllTasksByCategories(sprintIds: string[]) {
         select: {
           id: true,
           name: true,
+          color: true,
         },
       },
       assignees: {

@@ -69,6 +69,7 @@ model Setting {
 model Category {
   id    String @id @db.Char(36)
   name  String @db.VarChar(25)
+  color String? @db.VarChar(50)
   tasks Task[]
 
   @@map("category")

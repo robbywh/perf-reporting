@@ -32,6 +32,7 @@ interface Task {
   category: {
     id: string;
     name: string;
+    color: string | null;
   } | null;
   assignees: Array<{
     engineer: {
@@ -184,9 +185,14 @@ export function TaskCategoriesModal({
     return `hsl(${hue}, 70%, 50%)`;
   };
 
-  // Use provided category colors or generate fallback colors
+  // Use provided category colors from props, or database colors, or fallback to generated colors
   const categoryColors = propCategoryColors || categories.reduce((acc, categoryName, index) => {
-    acc[categoryName] = generateColor(index);
+    // Find the first task with this category to get its color from database
+    const taskWithCategory = tasks.find(
+      (task) => (task.category?.name || "OTHER") === categoryName
+    );
+    const dbColor = taskWithCategory?.category?.color;
+    acc[categoryName] = dbColor || generateColor(index);
     return acc;
   }, {} as Record<string, string>);
 

@@ -10,6 +10,7 @@ import { PieChart } from "../pie-chart";
 interface TaskCategory {
   category: string;
   categoryId: string | null;
+  color: string | null;
   count: number;
 }
 
@@ -48,9 +49,9 @@ export function PieTaskCategoryChart({
     setModalOpen(true);
   };
 
-  // Create category color mapping based on taskData order
+  // Create category color mapping - use database color or fallback to generated color
   const categoryColors = taskData.reduce((acc, task, index) => {
-    acc[task.category] = generateColor(index);
+    acc[task.category] = task.color || generateColor(index);
     return acc;
   }, {} as Record<string, string>);
 
@@ -59,7 +60,7 @@ export function PieTaskCategoryChart({
     category: task.category,
     categoryId: task.categoryId,
     value: task.count,
-    fill: generateColor(index),
+    fill: task.color || generateColor(index),
   }));
 
   const chartConfig: ChartConfig = {
@@ -71,7 +72,7 @@ export function PieTaskCategoryChart({
   taskData.forEach((task, index) => {
     chartConfig[task.category.toLowerCase().replace(/\s/g, "")] = {
       label: task.category,
-      color: generateColor(index),
+      color: task.color || generateColor(index),
     };
   });
 
