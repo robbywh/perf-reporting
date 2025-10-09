@@ -74,26 +74,6 @@ export type QATasksBreakdown = {
 };
 
 export async function findCountTasksByCategory(sprintIds: string[]) {
-  const groupedTasks = (await prisma.task.groupBy({
-    by: ["categoryId"],
-    where: {
-      parentTaskId: null,
-      sprintId: { in: sprintIds },
-    },
-    _count: {
-      id: true,
-    },
-    orderBy: {
-      _count: {
-        id: "desc",
-      },
-    },
-    cacheStrategy: {
-      ...CACHE_STRATEGY.DEFAULT,
-      tags: ["groupedTasks"],
-    },
-  })) as GroupedTask[];
-
   // First get organization ID from sprint
   const sprint = await prisma.sprint.findFirst({
     where: { id: { in: sprintIds } },
@@ -104,37 +84,98 @@ export async function findCountTasksByCategory(sprintIds: string[]) {
     return [];
   }
 
-  // Fetch category names
-  const result = await prisma.category.findMany({
+  // Get all parent tasks with their categories and story points
+  const parentTasks = await prisma.task.findMany({
     where: {
-      id: {
-        in: groupedTasks
-          .map((task: GroupedTask) => task.categoryId)
-          .filter((id: string | null): id is string => id !== null),
-      },
+      parentTaskId: null,
+      sprintId: { in: sprintIds },
     },
     select: {
       id: true,
-      name: true,
+      categoryId: true,
+      storyPoint: true,
     },
     cacheStrategy: {
       ...CACHE_STRATEGY.DEFAULT,
-      tags: ["categoryNames"],
+      tags: ["parentTasksForCategory"],
     },
   });
 
-  // Map category names to grouped counts
+  // Get all subtasks for these parent tasks
+  const parentTaskIds = parentTasks.map((task) => task.id);
+  const subtasks = parentTaskIds.length > 0
+    ? await prisma.task.findMany({
+        where: {
+          sprintId: { in: sprintIds },
+          parentTaskId: { in: parentTaskIds },
+        },
+        select: {
+          parentTaskId: true,
+          storyPoint: true,
+        },
+        cacheStrategy: {
+          ...CACHE_STRATEGY.DEFAULT,
+          tags: ["subtasksForCategory"],
+        },
+      })
+    : [];
+
+  // Calculate total story points including subtasks for each parent task
+  const subtaskMap = new Map<string, number>();
+  subtasks.forEach((subtask) => {
+    if (subtask.parentTaskId) {
+      const current = subtaskMap.get(subtask.parentTaskId) || 0;
+      subtaskMap.set(
+        subtask.parentTaskId,
+        current + (Number(subtask.storyPoint) || 0),
+      );
+    }
+  });
+
+  // Group by category and sum story points
+  const categoryStoryPoints = new Map<string | null, number>();
+  parentTasks.forEach((task) => {
+    const subtaskSP = subtaskMap.get(task.id) || 0;
+    const totalStoryPoint = (Number(task.storyPoint) || 0) + subtaskSP;
+
+    const currentSP = categoryStoryPoints.get(task.categoryId) || 0;
+    categoryStoryPoints.set(task.categoryId, currentSP + totalStoryPoint);
+  });
+
+  // Fetch category names
+  const categoryIds = Array.from(categoryStoryPoints.keys())
+    .filter((id): id is string => id !== null);
+
+  const result = categoryIds.length > 0
+    ? await prisma.category.findMany({
+        where: {
+          id: { in: categoryIds },
+        },
+        select: {
+          id: true,
+          name: true,
+        },
+        cacheStrategy: {
+          ...CACHE_STRATEGY.DEFAULT,
+          tags: ["categoryNames"],
+        },
+      })
+    : [];
+
+  // Map category names to grouped story points
   const categoryMap = Object.fromEntries(
     result.map((cat: { id: string; name: string }) => [cat.id, cat.name]),
   );
 
-  const finalResult = groupedTasks.map((task: GroupedTask) => ({
-    category: task.categoryId
-      ? categoryMap[task.categoryId] || "OTHER"
-      : "OTHER",
-    categoryId: task.categoryId,
-    count: task._count.id,
-  }));
+  const finalResult = Array.from(categoryStoryPoints.entries())
+    .map(([categoryId, storyPoints]) => ({
+      category: categoryId
+        ? categoryMap[categoryId] || "OTHER"
+        : "OTHER",
+      categoryId: categoryId,
+      count: storyPoints,
+    }))
+    .sort((a, b) => b.count - a.count); // Sort by story points descending
 
   return finalResult;
 }

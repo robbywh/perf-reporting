@@ -64,7 +64,7 @@ export function PieTaskCategoryChart({
 
   const chartConfig: ChartConfig = {
     value: {
-      label: "Task Category",
+      label: "Task Category Percentage By SP",
     },
   };
 
@@ -78,7 +78,7 @@ export function PieTaskCategoryChart({
   return (
     <>
       <PieChart
-        title="Task Category"
+        title="Task Category Percentage By SP"
         data={chartData}
         config={chartConfig}
         onSegmentClick={handleChartClick}

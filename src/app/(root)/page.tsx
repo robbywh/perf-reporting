@@ -268,7 +268,7 @@ export default async function Home({
       {/* Second Section: Task Category + Tasks to QA + QA Performances */}
       <section className="grid gap-6 lg:grid-cols-5" key={`section-2-${organizationId || 'no-org'}`}>
         <div className="lg:col-span-2">
-          <Suspense fallback={<PieChartSkeleton title="Task Category" />}>
+          <Suspense fallback={<PieChartSkeleton title="Task Category Percentage By SP" />}>
             <AsyncPieTaskCategoryChart
               sprintIds={sprintIds}
               organizationId={organizationId}

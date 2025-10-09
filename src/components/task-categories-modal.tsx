@@ -98,16 +98,30 @@ export function TaskCategoriesModal({
   }, [isOpen, sprintIds]);
 
   // Get unique categories including OTHER for tasks without category
+  // Only include categories that have story points > 0
+  const categoryStoryPoints = tasks.reduce((acc, task) => {
+    const categoryName = task.category?.name || "OTHER";
+    acc[categoryName] = (acc[categoryName] || 0) + (task.totalStoryPoint || 0);
+    return acc;
+  }, {} as Record<string, number>);
+
   const categories = Array.from(
     new Set<string>(
       tasks
         .map((task) => task.category?.name || "OTHER")
-        .filter((name): name is string => !!name),
+        .filter((name): name is string => !!name && categoryStoryPoints[name] > 0),
     ),
   ).sort();
 
   // Filter tasks based on selected filter
   const filteredTasks = tasks.filter((task) => {
+    const categoryName = task.category?.name || "OTHER";
+
+    // Only show tasks from categories with story points > 0
+    if (categoryStoryPoints[categoryName] <= 0) {
+      return false;
+    }
+
     if (filter === "all") return true;
     if (filter === "OTHER") return !task.category?.name;
     return task.category?.name === filter;
