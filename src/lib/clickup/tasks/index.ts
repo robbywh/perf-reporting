@@ -2,6 +2,7 @@ export interface ClickUpTask {
   id: string;
   name: string;
   list: { id: string };
+  project?: { id: string } | null;
   status: { status: string };
   parent?: string | null;
   time_estimate?: number | null;

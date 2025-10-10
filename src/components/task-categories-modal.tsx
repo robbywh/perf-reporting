@@ -21,6 +21,7 @@ import {
 
 interface Task {
   id: string;
+  sprintId?: string;
   name: string;
   storyPoint: number | null;
   totalStoryPoint: number;
@@ -305,8 +306,8 @@ export function TaskCategoriesModal({
                       {Object.entries(tasksByCategory)
                         .sort(([a], [b]) => a.localeCompare(b))
                         .map(([categoryName, categoryTasks]) =>
-                          categoryTasks.map((task) => (
-                            <TableRow key={task.id}>
+                          categoryTasks.map((task, taskIndex) => (
+                            <TableRow key={`${task.id}-${task.sprintId || categoryName}-${taskIndex}`}>
                               <TableCell>
                                 <Badge
                                   variant="secondary"
