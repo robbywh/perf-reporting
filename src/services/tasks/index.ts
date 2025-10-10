@@ -83,6 +83,7 @@ export async function findCountTasksByProject(sprintIds: string[]) {
     where: {
       parentTaskId: null,
       sprintId: { in: sprintIds },
+      statusId: { in: APPROVED_STATUS_IDS },
     },
     select: {
       id: true,
@@ -195,6 +196,7 @@ export async function findCountTasksByCategory(sprintIds: string[]) {
     where: {
       parentTaskId: null,
       sprintId: { in: sprintIds },
+      statusId: { in: APPROVED_STATUS_IDS },
     },
     select: {
       id: true,
@@ -729,6 +731,7 @@ export async function findAllTasksByCategories(sprintIds: string[]) {
     where: {
       sprintId: { in: sprintIds },
       parentTaskId: null,
+      statusId: { in: APPROVED_STATUS_IDS },
     },
     select: {
       id: true,
@@ -857,6 +860,7 @@ export async function findAllTasksByProjects(sprintIds: string[]) {
     where: {
       sprintId: { in: sprintIds },
       parentTaskId: null,
+      statusId: { in: APPROVED_STATUS_IDS },
     },
     select: {
       id: true,
