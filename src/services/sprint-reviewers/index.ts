@@ -1,4 +1,7 @@
-import { APPROVED_STATUS_IDS } from "@/constants/client";
+import {
+  APPROVED_STATUS_IDS,
+  SPECIAL_TASK_PREFIXES,
+} from "@/constants/client";
 import { CACHE_STRATEGY } from "@/constants/server";
 import { prisma } from "@/services/db";
 
@@ -26,7 +29,7 @@ export async function findQAPerformanceBySprintIds(
       sprintId: { in: sprintIds },
       statusId: { in: APPROVED_STATUS_IDS },
       OR: [
-        { name: { startsWith: "[QA]", mode: "insensitive" } },
+        { name: { startsWith: SPECIAL_TASK_PREFIXES.QA, mode: "insensitive" } },
         { name: { startsWith: "QA", mode: "insensitive" } },
       ],
     },
@@ -76,15 +79,15 @@ export async function findQAPerformanceBySprintIds(
       }
 
       // Process different categories with Tasks to QA consistent approved/rejected logic
-      if (taskName.includes("[scenario]")) {
+      if (taskName.includes(SPECIAL_TASK_PREFIXES.SCENARIO)) {
         reviewerMap[noReviewerKey].scenarioTasks.count++;
         reviewerMap[noReviewerKey].scenarioTasks.data.push(task.name || "");
-      } else if (taskName.includes("[support]")) {
+      } else if (taskName.includes(SPECIAL_TASK_PREFIXES.SUPPORT)) {
         reviewerMap[noReviewerKey].supportedTasks.count++;
         reviewerMap[noReviewerKey].supportedTasks.data.push(task.name || "");
       }
       // For Tasks to QA consistency: approved/rejected logic must match exactly
-      else if (taskName.includes("[rejected]")) {
+      else if (taskName.includes(SPECIAL_TASK_PREFIXES.REJECTED)) {
         reviewerMap[noReviewerKey].rejectedTasks.count++;
         reviewerMap[noReviewerKey].rejectedTasks.data.push(task.name || "");
       }
@@ -114,15 +117,15 @@ export async function findQAPerformanceBySprintIds(
       }
 
       // Process different categories with Tasks to QA consistent approved/rejected logic
-      if (taskName.includes("[scenario]")) {
+      if (taskName.includes(SPECIAL_TASK_PREFIXES.SCENARIO)) {
         reviewerMap[reviewerName].scenarioTasks.count++;
         reviewerMap[reviewerName].scenarioTasks.data.push(task.name || "");
-      } else if (taskName.includes("[support]")) {
+      } else if (taskName.includes(SPECIAL_TASK_PREFIXES.SUPPORT)) {
         reviewerMap[reviewerName].supportedTasks.count++;
         reviewerMap[reviewerName].supportedTasks.data.push(task.name || "");
       }
       // For Tasks to QA consistency: approved/rejected logic must match exactly
-      else if (taskName.includes("[rejected]")) {
+      else if (taskName.includes(SPECIAL_TASK_PREFIXES.REJECTED)) {
         reviewerMap[reviewerName].rejectedTasks.count++;
         reviewerMap[reviewerName].rejectedTasks.data.push(task.name || "");
       }
@@ -254,13 +257,13 @@ export async function findReviewerTasksDetailBySprintIds(
       taskType: "scenario", // default
     };
 
-    if (taskName.includes("[scenario]")) {
+    if (taskName.includes(SPECIAL_TASK_PREFIXES.SCENARIO)) {
       taskDetail.taskType = "scenario";
       scenarios.push(taskDetail);
-    } else if (taskName.includes("[rejected]")) {
+    } else if (taskName.includes(SPECIAL_TASK_PREFIXES.REJECTED)) {
       taskDetail.taskType = "rejected";
       rejected.push(taskDetail);
-    } else if (taskName.includes("[support]")) {
+    } else if (taskName.includes(SPECIAL_TASK_PREFIXES.SUPPORT)) {
       taskDetail.taskType = "supported";
       supported.push(taskDetail);
     } else {

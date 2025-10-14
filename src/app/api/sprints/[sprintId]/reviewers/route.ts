@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
-import { APPROVED_STATUS_IDS } from "@/constants/client";
+import { APPROVED_STATUS_IDS, SPECIAL_TASK_PREFIXES } from "@/constants/client";
 import { CRON_SECRET } from "@/constants/server";
 import { prisma } from "@/services/db";
 
@@ -34,7 +34,7 @@ export async function GET(
           in: APPROVED_STATUS_IDS,
         },
         OR: [
-          { name: { startsWith: "[QA]", mode: "insensitive" } },
+          { name: { startsWith: SPECIAL_TASK_PREFIXES.QA, mode: "insensitive" } },
           { name: { startsWith: "QA", mode: "insensitive" } },
         ],
         ...(reviewerIds.length > 0 && {
@@ -111,25 +111,25 @@ export async function GET(
             }
 
             // Check for rejected tasks
-            if (taskName.includes("[rejected]")) {
+            if (taskName.includes(SPECIAL_TASK_PREFIXES.REJECTED)) {
               reviewerMap[reviewerName].rejectedTasks.count++;
               reviewerMap[reviewerName].rejectedTasks.data.push(task.name);
             }
             // Check for scenario tasks
-            else if (taskName.includes("[scenario]")) {
+            else if (taskName.includes(SPECIAL_TASK_PREFIXES.SCENARIO)) {
               reviewerMap[reviewerName].scenarioTasks.count++;
               reviewerMap[reviewerName].scenarioTasks.data.push(task.name);
             }
             // Check for Support tasks
-            else if (taskName.includes("[support]")) {
+            else if (taskName.includes(SPECIAL_TASK_PREFIXES.SUPPORT)) {
               reviewerMap[reviewerName].supportedTasks.count++;
               reviewerMap[reviewerName].supportedTasks.data.push(task.name);
             }
             // Check for QA tasks (excluding scenario tasks)
             else if (
-              (taskName.includes("[qa]") || taskName.includes("qa")) &&
-              (!taskName.includes("[scenario]") ||
-                !taskName.includes("[support]"))
+              (taskName.includes(SPECIAL_TASK_PREFIXES.QA) || taskName.includes("qa")) &&
+              (!taskName.includes(SPECIAL_TASK_PREFIXES.SCENARIO) ||
+                !taskName.includes(SPECIAL_TASK_PREFIXES.SUPPORT))
             ) {
               reviewerMap[reviewerName].qaTasks.count++;
               reviewerMap[reviewerName].qaTasks.data.push(task.name);

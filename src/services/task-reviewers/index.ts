@@ -1,4 +1,4 @@
-import { APPROVED_STATUS_NAMES } from "@/constants/client";
+import { APPROVED_STATUS_NAMES, SPECIAL_TASK_PREFIXES } from "@/constants/client";
 import { prisma } from "@/services/db";
 
 interface TaskReviewer {
@@ -78,15 +78,15 @@ export async function linkReviewersToTask(task: TaskReviewer) {
   // Check task name patterns (with null/undefined safety)
   const taskNameLower = task.name?.toLowerCase() || "";
   const isQATask =
-    (taskNameLower.includes("[qa]") || taskNameLower.includes("qa:")) &&
-    !taskNameLower.includes("[scenario]");
-  const isScenarioTask = taskNameLower.includes("[scenario]");
+    (taskNameLower.includes(SPECIAL_TASK_PREFIXES.QA.toLowerCase()) || taskNameLower.includes("qa:")) &&
+    !taskNameLower.includes(SPECIAL_TASK_PREFIXES.SCENARIO.toLowerCase());
+  const isScenarioTask = taskNameLower.includes(SPECIAL_TASK_PREFIXES.SCENARIO.toLowerCase());
   const scenarioCount =
-    taskNameLower.includes("[scenario]") && task?.storyPoint
+    taskNameLower.includes(SPECIAL_TASK_PREFIXES.SCENARIO.toLowerCase()) && task?.storyPoint
       ? task.storyPoint
       : 1;
-  const isRejectedTask = taskNameLower.includes("[rejected]");
-  const isSupportedTask = taskNameLower.includes("[support]");
+  const isRejectedTask = taskNameLower.includes(SPECIAL_TASK_PREFIXES.REJECTED.toLowerCase());
+  const isSupportedTask = taskNameLower.includes(SPECIAL_TASK_PREFIXES.SUPPORT.toLowerCase());
 
   for (const assignee of task.assignees) {
     // Only process if the assignee is also a reviewer

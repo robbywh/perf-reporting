@@ -11,3 +11,10 @@ export const APPROVED_STATUS_NAMES = [
 ];
 
 export const NODEV_TAGS = ["nodev", "non_dev", "non_development"];
+
+export const SPECIAL_TASK_PREFIXES = {
+  REJECTED: "rejected",
+  SCENARIO: "scenario",
+  SUPPORT: "support",
+  QA: "[qa]",
+} as const;

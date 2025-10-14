@@ -18,6 +18,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { SPECIAL_TASK_PREFIXES } from "@/constants/client";
 
 interface TaskDetail {
   id: string;
@@ -69,22 +70,20 @@ export function TaskDetailsModal({
   const getStatusDisplay = useCallback((task: TaskDetail) => {
     const statusName = task.status?.name?.toLowerCase() || "";
 
-    // Check if parent task contains [Rejected] or [rejected]
-    if (
-      task.parentTask &&
-      task.parentTask.name &&
-      (task.parentTask.name.includes("[Rejected]") ||
-        task.parentTask.name.includes("[rejected]"))
-    ) {
-      return { text: "Rejected", variant: "destructive" as const };
+    // Check if parent task contains rejected prefix (case-insensitive)
+    if (task.parentTask?.name) {
+      const parentTaskNameLower = task.parentTask.name.toLowerCase();
+      if (parentTaskNameLower.includes(SPECIAL_TASK_PREFIXES.REJECTED)) {
+        return { text: "Rejected", variant: "destructive" as const };
+      }
     }
 
-    // Check if task name contains [Rejected] or [rejected]
-    if (
-      task.name &&
-      (task.name.includes("[Rejected]") || task.name.includes("[rejected]"))
-    ) {
-      return { text: "Rejected", variant: "destructive" as const };
+    // Check if task name contains rejected prefix (case-insensitive)
+    if (task.name) {
+      const taskNameLower = task.name.toLowerCase();
+      if (taskNameLower.includes(SPECIAL_TASK_PREFIXES.REJECTED)) {
+        return { text: "Rejected", variant: "destructive" as const };
+      }
     }
 
     // Check if status is product_review or product_approved - show as green "Approved"
@@ -196,7 +195,7 @@ export function TaskDetailsModal({
       setFilter(newFilter);
       setCurrentPage(1);
     },
-    [],
+    []
   );
 
   // Pagination logic
@@ -398,7 +397,7 @@ export function TaskDetailsModal({
                               {pageNumber}
                             </Button>
                           );
-                        },
+                        }
                       )}
                     </div>
 

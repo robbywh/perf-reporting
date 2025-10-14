@@ -1,6 +1,10 @@
 import type { Decimal } from "@prisma/client/runtime/library";
 
-import { APPROVED_STATUS_IDS, NODEV_TAGS } from "@/constants/client";
+import {
+  APPROVED_STATUS_IDS,
+  NODEV_TAGS,
+  SPECIAL_TASK_PREFIXES,
+} from "@/constants/client";
 import { CACHE_STRATEGY } from "@/constants/server";
 
 import { prisma } from "../db";
@@ -302,12 +306,12 @@ export async function findTotalTaskToQACounts(
       sprintId: { in: sprintIds },
       statusId: { in: APPROVED_STATUS_IDS },
       OR: [
-        { name: { startsWith: "[QA]", mode: "insensitive" } },
+        { name: { startsWith: SPECIAL_TASK_PREFIXES.QA, mode: "insensitive" } },
         { name: { startsWith: "QA", mode: "insensitive" } },
       ],
       NOT: [
-        { name: { contains: "[Scenario]", mode: "insensitive" } },
-        { name: { contains: "[support]", mode: "insensitive" } },
+        { name: { contains: SPECIAL_TASK_PREFIXES.SCENARIO, mode: "insensitive" } },
+        { name: { contains: SPECIAL_TASK_PREFIXES.SUPPORT, mode: "insensitive" } },
       ],
     },
     select: {
@@ -365,11 +369,11 @@ export async function findTotalTaskToQACounts(
 
   const approvedTasks = filteredTasks.filter(
     (task: TaskWithAssignees) =>
-      !(task.name?.toLowerCase() || "").includes("[rejected]"),
+      !(task.name?.toLowerCase() || "").includes(SPECIAL_TASK_PREFIXES.REJECTED),
   ).length;
 
   const rejectedTasks = filteredTasks.filter((task: TaskWithAssignees) =>
-    (task.name?.toLowerCase() || "").includes("[rejected]"),
+    (task.name?.toLowerCase() || "").includes(SPECIAL_TASK_PREFIXES.REJECTED),
   ).length;
 
   return {
@@ -982,12 +986,12 @@ export async function findDetailedTaskToQACounts(
       sprintId: { in: sprintIds },
       statusId: { in: APPROVED_STATUS_IDS },
       OR: [
-        { name: { startsWith: "[QA]", mode: "insensitive" } },
+        { name: { startsWith: SPECIAL_TASK_PREFIXES.QA, mode: "insensitive" } },
         { name: { startsWith: "QA", mode: "insensitive" } },
       ],
       NOT: [
-        { name: { contains: "[Scenario]", mode: "insensitive" } },
-        { name: { contains: "[support]", mode: "insensitive" } },
+        { name: { contains: SPECIAL_TASK_PREFIXES.SCENARIO, mode: "insensitive" } },
+        { name: { contains: SPECIAL_TASK_PREFIXES.SUPPORT, mode: "insensitive" } },
       ],
     },
     select: {
@@ -1113,11 +1117,11 @@ export async function findDetailedTaskToQACounts(
   });
 
   const approvedTasks = filteredTasks
-    .filter((task) => !(task.name?.toLowerCase() || "").includes("[rejected]"))
+    .filter((task) => !(task.name?.toLowerCase() || "").includes(SPECIAL_TASK_PREFIXES.REJECTED))
     .map(mapTaskWithParentAssignees);
 
   const rejectedTasks = filteredTasks
-    .filter((task) => (task.name?.toLowerCase() || "").includes("[rejected]"))
+    .filter((task) => (task.name?.toLowerCase() || "").includes(SPECIAL_TASK_PREFIXES.REJECTED))
     .map(mapTaskWithParentAssignees);
 
   return {
