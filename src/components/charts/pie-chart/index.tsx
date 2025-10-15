@@ -54,7 +54,7 @@ export function PieChart({ title, config, data, onSegmentClick }: ChartProps) {
                   if (!entry || !entry.type) return "";
                   const configEntry = config[entry.type];
                   const label = configEntry?.label || entry.type || "Unknown";
-                  return `${label}: ${value} SP (${(percent * 100).toFixed(2)}%)`;
+                  return `${label}: ${value.toFixed(2)} SP (${(percent * 100).toFixed(2)}%)`;
                 }}
               >
                 {data.map((entry, index) => (
