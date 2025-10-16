@@ -33,6 +33,10 @@ interface Task {
     name: string;
     color: string | null;
   } | null;
+  sprint: {
+    id: string;
+    name: string;
+  };
   assignees: Array<{
     engineer: {
       id: number;
@@ -137,6 +141,29 @@ export function ProjectsModal({
     }
     return tasks.filter((task) => task.project?.name === projectName).length;
   };
+
+  // Calculate total SP per sprint
+  const sprintStoryPoints = tasks.reduce((acc, task) => {
+    const sprintName = task.sprint?.name || "Unknown Sprint";
+    acc[sprintName] = (acc[sprintName] || 0) + (task.totalStoryPoint || 0);
+    return acc;
+  }, {} as Record<string, number>);
+
+  // Calculate SP per project within each sprint
+  const sprintProjectStoryPoints = tasks.reduce((acc, task) => {
+    const sprintName = task.sprint?.name || "Unknown Sprint";
+    const projectName = task.project?.name || "OTHER";
+
+    if (!acc[sprintName]) {
+      acc[sprintName] = {};
+    }
+
+    acc[sprintName][projectName] = (acc[sprintName][projectName] || 0) + (task.totalStoryPoint || 0);
+    return acc;
+  }, {} as Record<string, Record<string, number>>);
+
+  // Get unique sprints sorted by name
+  const sprints = Object.keys(sprintStoryPoints).sort();
 
   // Generate colors matching the pie chart
   const generateColor = (index: number) => {
@@ -247,6 +274,43 @@ export function ProjectsModal({
                   </div>
                 </div>
               </div>
+
+              {/* Sprint Summary - Horizontal Layout */}
+              <div className="rounded-lg bg-gray-50 p-4">
+                <h3 className="mb-3 text-sm font-semibold">Sprint Summary</h3>
+                <div className="flex flex-wrap gap-4">
+                  {sprints.length > 0 ? (
+                    sprints.map((sprintName) => (
+                      <div key={sprintName} className="min-w-[200px] flex-1 space-y-1 rounded border border-gray-200 bg-white p-3">
+                        <div className="flex justify-between text-sm font-semibold">
+                          <span>{sprintName}:</span>
+                          <span className="text-blue-600">{sprintStoryPoints[sprintName]} SP</span>
+                        </div>
+                        <div className="space-y-1 border-t border-gray-100 pt-2">
+                          {Object.entries(sprintProjectStoryPoints[sprintName])
+                            .sort(([, a], [, b]) => b - a)
+                            .map(([projectName, sp]) => (
+                              <div key={projectName} className="flex items-center justify-between text-xs">
+                                <div className="flex items-center gap-1">
+                                  <div
+                                    className="size-2 rounded-full"
+                                    style={{ backgroundColor: projectColors[projectName] }}
+                                  />
+                                  <span className="text-gray-600">{projectName}:</span>
+                                </div>
+                                <span className="font-medium text-gray-700">{sp} SP</span>
+                              </div>
+                            ))}
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="text-sm text-muted-foreground">
+                      No sprints found
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
 
             {/* Filter Section */}
@@ -295,9 +359,10 @@ export function ProjectsModal({
                   <Table>
                     <TableHeader>
                       <TableRow>
+                        <TableHead className="w-[120px]">Sprint</TableHead>
                         <TableHead className="w-[150px]">Project</TableHead>
-                        <TableHead className="w-[450px]">Task Name</TableHead>
-                        <TableHead className="w-[120px]">Total SP</TableHead>
+                        <TableHead className="w-[350px]">Task Name</TableHead>
+                        <TableHead className="w-[100px]">Total SP</TableHead>
                         <TableHead className="w-[200px]">Assignees</TableHead>
                       </TableRow>
                     </TableHeader>
@@ -307,6 +372,11 @@ export function ProjectsModal({
                         .map(([projectName, projectTasks]) =>
                           projectTasks.map((task) => (
                             <TableRow key={task.id}>
+                              <TableCell>
+                                <div className="text-xs font-medium text-gray-700">
+                                  {task.sprint?.name || "N/A"}
+                                </div>
+                              </TableCell>
                               <TableCell>
                                 <Badge
                                   variant="secondary"
@@ -321,7 +391,7 @@ export function ProjectsModal({
                                 </Badge>
                               </TableCell>
                               <TableCell className="font-medium">
-                                <div className="max-w-[450px] truncate" title={task.name}>
+                                <div className="max-w-[350px] truncate" title={task.name}>
                                   {task.name}
                                 </div>
                               </TableCell>

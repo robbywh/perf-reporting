@@ -28,6 +28,10 @@ interface Task {
     name: string;
     color: string | null;
   } | null;
+  sprint: {
+    id: string;
+    name: string;
+  };
   assignees: Array<{
     engineer: {
       id: number;

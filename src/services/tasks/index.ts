@@ -884,6 +884,12 @@ export async function findAllTasksByProjects(sprintIds: string[]) {
           color: true,
         },
       },
+      sprint: {
+        select: {
+          id: true,
+          name: true,
+        },
+      },
       assignees: {
         select: {
           engineer: {
@@ -971,6 +977,7 @@ export async function findAllTasksByProjects(sprintIds: string[]) {
       ...task,
       storyPoint: task.storyPoint ? Number(task.storyPoint) : null,
       totalStoryPoint,
+      sprint: task.sprint,
     };
   });
 
