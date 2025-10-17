@@ -274,6 +274,8 @@ export async function linkSprintsToEngineers(
   }
 }
 
+const WORKING_DAYS_PER_SPRINT = 10;
+
 // Define the expected return type
 interface SprintCapacityReality {
   sprintId: string;
@@ -281,6 +283,7 @@ interface SprintCapacityReality {
   totalStoryPoints: number;
   totalBaseline: number;
   totalTarget: number;
+  workingDays: number;
 }
 
 export async function findCapacityVsRealityBySprintIds(
@@ -291,11 +294,23 @@ export async function findCapacityVsRealityBySprintIds(
     select: {
       id: true,
       name: true,
+      startDate: true,
+      endDate: true,
       sprintEngineers: {
         select: {
           storyPoints: true,
           baseline: true,
           target: true,
+          engineer: {
+            select: {
+              leaves: {
+                select: {
+                  date: true,
+                  type: true,
+                },
+              },
+            },
+          },
         },
       },
     },
@@ -305,15 +320,46 @@ export async function findCapacityVsRealityBySprintIds(
       tags: ["capacityVsReality"],
     },
   });
+
+  // Fetch all public holidays for the date range of all sprints
+  const allStartDates = sprints.map(s => s.startDate);
+  const allEndDates = sprints.map(s => s.endDate);
+  const minDate = allStartDates.length > 0 ? new Date(Math.min(...allStartDates.map(d => d.getTime()))) : new Date();
+  const maxDate = allEndDates.length > 0 ? new Date(Math.max(...allEndDates.map(d => d.getTime()))) : new Date();
+
+  const publicHolidays = await prisma.publicHoliday.findMany({
+    where: {
+      date: {
+        gte: minDate,
+        lte: maxDate,
+      },
+    },
+    select: {
+      date: true,
+    },
+    cacheStrategy: {
+      ...CACHE_STRATEGY.DEFAULT,
+      tags: ["publicHolidays"],
+    },
+  });
+
   // Map and aggregate the results
   return sprints.map(
     (sprint: {
       id: string;
       name: string;
+      startDate: Date;
+      endDate: Date;
       sprintEngineers: {
         storyPoints: Decimal | number | null;
         baseline: Decimal | number | null;
         target: Decimal | number | null;
+        engineer: {
+          leaves: {
+            date: Date;
+            type: "full_day" | "half_day_before_break" | "half_day_after_break";
+          }[];
+        };
       }[];
     }) => {
       const totalStoryPoints = sprint.sprintEngineers.reduce(
@@ -343,12 +389,44 @@ export async function findCapacityVsRealityBySprintIds(
         0,
       );
 
+      // Calculate working days based on total engineer-days
+      // Engineer-days = number of engineers × working days per sprint
+      const engineerCount = sprint.sprintEngineers.length || 0;
+
+      // Get public holidays in the sprint period
+      const sprintHolidays = publicHolidays.filter((holiday) => {
+        const holidayDate = new Date(holiday.date);
+        return holidayDate >= sprint.startDate && holidayDate <= sprint.endDate;
+      });
+
+      // Base working days for all engineers (engineers × 10 days)
+      let totalWorkingDays = engineerCount * WORKING_DAYS_PER_SPRINT;
+
+      // Subtract public holidays (affects all engineers)
+      // Each holiday reduces 1 day for each engineer
+      totalWorkingDays -= sprintHolidays.length * engineerCount;
+
+      // Subtract individual leaves
+      sprint.sprintEngineers.forEach((se) => {
+        se.engineer.leaves.forEach((leave) => {
+          const leaveDate = new Date(leave.date);
+          // Only count leaves within the sprint period
+          if (leaveDate >= sprint.startDate && leaveDate <= sprint.endDate) {
+            const reduction = leave.type === "full_day" ? 1 : 0.5;
+            totalWorkingDays -= reduction;
+          }
+        });
+      });
+
+      const workingDays = Math.max(0, totalWorkingDays);
+
       return {
         sprintId: sprint.id,
         sprintName: sprint.name,
         totalStoryPoints,
         totalBaseline,
         totalTarget,
+        workingDays: Number(workingDays.toFixed(2)), // 2 decimal places
       };
     },
   );

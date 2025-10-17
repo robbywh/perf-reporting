@@ -29,6 +29,7 @@ interface SprintData {
   totalStoryPoints: number;
   totalBaseline: number;
   totalTarget: number;
+  workingDays: number;
 }
 
 interface BarChartCapacityProps {
@@ -83,6 +84,7 @@ interface TooltipProps {
     payload: {
       capacity: number;
       reality: number;
+      workingDays: number;
       percentage: number;
     };
   }>;
@@ -94,6 +96,7 @@ const CustomTooltip = ({ active, payload, label }: TooltipProps) => {
     const data = payload[0].payload;
     const capacity = data.capacity;
     const reality = data.reality;
+    const workingDays = data.workingDays;
     const percentage = data.percentage;
 
     return (
@@ -107,6 +110,10 @@ const CustomTooltip = ({ active, payload, label }: TooltipProps) => {
           <p className="text-blue-600">
             <span className="font-medium">Capacity:</span> {capacity.toFixed(2)}{" "}
             SP
+          </p>
+          <p className="text-green-600">
+            <span className="font-medium">Working Days:</span>{" "}
+            {workingDays.toFixed(2)}
           </p>
           <p className="font-medium text-gray-700">
             Reality is {percentage.toFixed(2)}% from {capacity.toFixed(2)} SP
@@ -137,10 +144,11 @@ export const BarChartCapacity = memo(function BarChartCapacity({
           name: sprint.sprintName,
           capacity,
           reality,
+          workingDays: sprint.workingDays,
           percentage: Math.round(percentage * 100) / 100, // Round to 2 decimal places
         };
       }),
-    [sprints],
+    [sprints]
   );
 
   // Memoize the average velocity calculation
@@ -170,6 +178,15 @@ export const BarChartCapacity = memo(function BarChartCapacity({
     ).toFixed(2);
   }, [chartData]);
 
+  // Memoize the average working days calculation
+  const averageWorkingDays = useMemo(() => {
+    if (chartData.length === 0) return 0;
+    return (
+      chartData.reduce((acc, sprint) => acc + sprint.workingDays, 0) /
+      chartData.length
+    ).toFixed(2);
+  }, [chartData]);
+
   useEffect(() => {
     setMounted(true);
     return () => setMounted(false);
@@ -181,7 +198,8 @@ export const BarChartCapacity = memo(function BarChartCapacity({
         <CardTitle>Capacity VS Reality</CardTitle>
         <CardDescription>
           Average capacity: {averageCapacity} SP vs reality: {averageVelocity}{" "}
-          SP ({averagePercentage}% from capacity)
+          SP ({averagePercentage}% from capacity) | Average working days:{" "}
+          {averageWorkingDays}
         </CardDescription>
       </CardHeader>
       <CardContent>
