@@ -78,11 +78,11 @@ type SprintEngineer = {
 
 async function findSprintByDate(
   date: Date,
-  tx: PrismaTransactionClient = prisma,
+  tx: PrismaTransactionClient = prisma
 ) {
   // Convert all dates to UTC midnight for comparison
   const dateToFind = new Date(
-    date.toISOString().split("T")[0] + "T00:00:00.000Z",
+    date.toISOString().split("T")[0] + "T00:00:00.000Z"
   );
 
   const sprint = await tx.sprint.findFirst({
@@ -120,11 +120,11 @@ export async function adjustBaselineTarget(
     | "half_day_after_break"
     | null,
   isDelete: boolean = false,
-  tx: PrismaTransactionClient = prisma,
+  tx: PrismaTransactionClient = prisma
 ) {
   // Convert input date to UTC midnight for consistent comparison
   const dateToProcess = new Date(
-    date.toISOString().split("T")[0] + "T00:00:00.000Z",
+    date.toISOString().split("T")[0] + "T00:00:00.000Z"
   );
 
   // Find sprint based on date
@@ -250,17 +250,22 @@ export async function deleteLeaveOrHolidayAction(formData: FormData) {
           throw new Error("Leave not found");
         }
 
+        // Check if sprint exists for the given date
+        const sprint = await findSprintByDate(leave.date, tx);
+
         // Delete the leave
         await tx.leave.delete({ where: { id } });
 
-        // Readjust baseline and target for the specific engineer
-        await adjustBaselineTarget(
-          leave.date,
-          leave.engineerId,
-          leave.type,
-          true, // isDelete flag
-          tx,
-        );
+        // Only adjust baseline if sprint exists
+        if (sprint) {
+          await adjustBaselineTarget(
+            leave.date,
+            leave.engineerId,
+            leave.type,
+            true, // isDelete flag
+            tx
+          );
+        }
       } else {
         // Get holiday before deletion
         const holiday = await tx.publicHoliday.findUnique({
@@ -272,17 +277,22 @@ export async function deleteLeaveOrHolidayAction(formData: FormData) {
           throw new Error("Holiday not found");
         }
 
+        // Check if sprint exists for the given date
+        const sprint = await findSprintByDate(holiday.date, tx);
+
         // Delete the holiday
         await tx.publicHoliday.delete({ where: { id } });
 
-        // Readjust baseline and target for all engineers
-        await adjustBaselineTarget(
-          holiday.date,
-          null,
-          "full_day",
-          true, // isDelete flag
-          tx,
-        );
+        // Only adjust baseline if sprint exists
+        if (sprint) {
+          await adjustBaselineTarget(
+            holiday.date,
+            null,
+            "full_day",
+            true, // isDelete flag
+            tx
+          );
+        }
       }
     });
 
@@ -319,6 +329,9 @@ export async function addLeaveOrHolidayAction(formData: FormData) {
   try {
     await prisma.$transaction(
       async (tx) => {
+        // Check if sprint exists for the given date
+        const sprint = await findSprintByDate(dateObj, tx);
+
         if (parsedData.data.type === "leave") {
           const { engineerId, leaveType, requestType } = parsedData.data;
           await tx.leave.create({
@@ -330,13 +343,16 @@ export async function addLeaveOrHolidayAction(formData: FormData) {
             },
           });
 
-          await adjustBaselineTarget(
-            dateObj,
-            engineerId,
-            requestType,
-            false,
-            tx,
-          );
+          // Only adjust baseline if sprint exists
+          if (sprint) {
+            await adjustBaselineTarget(
+              dateObj,
+              engineerId,
+              requestType,
+              false,
+              tx
+            );
+          }
         } else {
           await tx.publicHoliday.create({
             data: {
@@ -345,12 +361,15 @@ export async function addLeaveOrHolidayAction(formData: FormData) {
             },
           });
 
-          await adjustBaselineTarget(dateObj, null, "full_day", false, tx);
+          // Only adjust baseline if sprint exists
+          if (sprint) {
+            await adjustBaselineTarget(dateObj, null, "full_day", false, tx);
+          }
         }
       },
       {
         timeout: 10000, // Increase timeout to 10 seconds
-      },
+      }
     );
 
     revalidatePath(`/`);

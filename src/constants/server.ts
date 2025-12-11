@@ -9,8 +9,8 @@ export const NODE_ENV = process.env.NODE_ENV;
 // Cache strategy constants
 export const CACHE_STRATEGY = {
   DEFAULT: {
-    swr: 2 * 60, // 2 minutes
-    ttl: 10 * 60, // 10 minutes
+    swr: 0, // 2 minutes
+    ttl: 0, // 10 minutes
   },
   SHORT: {
     swr: 1 * 60, // 1 minute
