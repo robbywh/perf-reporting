@@ -78,7 +78,8 @@ type SprintEngineer = {
 
 async function findSprintByDate(
   date: Date,
-  tx: PrismaTransactionClient = prisma
+  tx: PrismaTransactionClient = prisma,
+  organizationId?: string
 ) {
   // Convert all dates to UTC midnight for comparison
   const dateToFind = new Date(
@@ -98,6 +99,7 @@ async function findSprintByDate(
             gte: dateToFind,
           },
         },
+        ...(organizationId ? [{ organizationId }] : []),
       ],
     },
     // Also fetch start and end dates for logging
@@ -120,7 +122,8 @@ export async function adjustBaselineTarget(
     | "half_day_after_break"
     | null,
   isDelete: boolean = false,
-  tx: PrismaTransactionClient = prisma
+  tx: PrismaTransactionClient = prisma,
+  organizationId?: string
 ) {
   // Convert input date to UTC midnight for consistent comparison
   const dateToProcess = new Date(
@@ -128,7 +131,7 @@ export async function adjustBaselineTarget(
   );
 
   // Find sprint based on date
-  const sprint = await findSprintByDate(dateToProcess, tx);
+  const sprint = await findSprintByDate(dateToProcess, tx, organizationId);
   if (!sprint) {
     throw new Error("No sprint found for the given date");
   }
@@ -226,6 +229,7 @@ export async function deleteLeaveOrHolidayAction(formData: FormData) {
   const id = Number(formData.get("id"));
   const type = formData.get("type") as "leave" | "holiday";
   const date = formData.get("date") as string;
+  const organizationId = formData.get("organizationId") as string | null;
 
   if (!id || !type || !date) {
     return { success: false, error: "Missing required fields" };
@@ -238,63 +242,78 @@ export async function deleteLeaveOrHolidayAction(formData: FormData) {
       return { success: false, error: "Invalid date format" };
     }
 
-    await prisma.$transaction(async (tx) => {
-      if (type === "leave") {
-        // Get leave details before deletion
-        const leave = await tx.leave.findUnique({
-          where: { id },
-          select: { engineerId: true, type: true, date: true },
-        });
+    await prisma.$transaction(
+      async (tx) => {
+        if (type === "leave") {
+          // Get leave details before deletion
+          const leave = await tx.leave.findUnique({
+            where: { id },
+            select: { engineerId: true, type: true, date: true },
+          });
 
-        if (!leave) {
-          throw new Error("Leave not found");
-        }
+          if (!leave) {
+            throw new Error("Leave not found");
+          }
 
-        // Check if sprint exists for the given date
-        const sprint = await findSprintByDate(leave.date, tx);
-
-        // Delete the leave
-        await tx.leave.delete({ where: { id } });
-
-        // Only adjust baseline if sprint exists
-        if (sprint) {
-          await adjustBaselineTarget(
+          // Check if sprint exists for the given date
+          const sprint = await findSprintByDate(
             leave.date,
-            leave.engineerId,
-            leave.type,
-            true, // isDelete flag
-            tx
+            tx,
+            organizationId || undefined
           );
-        }
-      } else {
-        // Get holiday before deletion
-        const holiday = await tx.publicHoliday.findUnique({
-          where: { id },
-          select: { date: true },
-        });
 
-        if (!holiday) {
-          throw new Error("Holiday not found");
-        }
+          // Delete the leave
+          await tx.leave.delete({ where: { id } });
 
-        // Check if sprint exists for the given date
-        const sprint = await findSprintByDate(holiday.date, tx);
+          // Only adjust baseline if sprint exists
+          if (sprint) {
+            await adjustBaselineTarget(
+              leave.date,
+              leave.engineerId,
+              leave.type,
+              true, // isDelete flag
+              tx,
+              organizationId || undefined
+            );
+          }
+        } else {
+          // Get holiday before deletion
+          const holiday = await tx.publicHoliday.findUnique({
+            where: { id },
+            select: { date: true },
+          });
 
-        // Delete the holiday
-        await tx.publicHoliday.delete({ where: { id } });
+          if (!holiday) {
+            throw new Error("Holiday not found");
+          }
 
-        // Only adjust baseline if sprint exists
-        if (sprint) {
-          await adjustBaselineTarget(
+          // Check if sprint exists for the given date
+          const sprint = await findSprintByDate(
             holiday.date,
-            null,
-            "full_day",
-            true, // isDelete flag
-            tx
+            tx,
+            organizationId || undefined
           );
+
+          // Delete the holiday
+          await tx.publicHoliday.delete({ where: { id } });
+
+          // Only adjust baseline if sprint exists
+          if (sprint) {
+            await adjustBaselineTarget(
+              holiday.date,
+              null,
+              "full_day",
+              true, // isDelete flag
+              tx,
+              organizationId || undefined
+            );
+          }
         }
+      },
+      {
+        timeout: 20000, // Increase timeout to 20 seconds
       }
-    });
+    );
 
     revalidatePath(`/`);
     return { success: true };
@@ -325,12 +344,17 @@ export async function addLeaveOrHolidayAction(formData: FormData) {
   }
 
   const dateObj = new Date(parsedData.data.date);
+  const organizationId = formData.get("organizationId") as string | null;
 
   try {
     await prisma.$transaction(
       async (tx) => {
         // Check if sprint exists for the given date
-        const sprint = await findSprintByDate(dateObj, tx);
+        const sprint = await findSprintByDate(
+          dateObj,
+          tx,
+          organizationId || undefined
+        );
 
         if (parsedData.data.type === "leave") {
           const { engineerId, leaveType, requestType } = parsedData.data;
@@ -350,7 +374,8 @@ export async function addLeaveOrHolidayAction(formData: FormData) {
               engineerId,
               requestType,
               false,
-              tx
+              tx,
+              organizationId || undefined
             );
           }
         } else {
@@ -363,12 +388,19 @@ export async function addLeaveOrHolidayAction(formData: FormData) {
 
           // Only adjust baseline if sprint exists
           if (sprint) {
-            await adjustBaselineTarget(dateObj, null, "full_day", false, tx);
+            await adjustBaselineTarget(
+              dateObj,
+              null,
+              "full_day",
+              false,
+              tx,
+              organizationId || undefined
+            );
           }
         }
       },
       {
-        timeout: 10000, // Increase timeout to 10 seconds
+        timeout: 15000, // 15 seconds timeout for task creation
       }
     );
 

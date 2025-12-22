@@ -50,7 +50,7 @@ const DynamicLeavePublicHoliday = dynamic(
     import("@/components/client-wrappers").then((mod) => ({
       default: mod.DynamicLeavePublicHoliday,
     })),
-  { loading: () => <LeavePublicHolidaySkeleton /> },
+  { loading: () => <LeavePublicHolidaySkeleton /> }
 );
 
 // Optimize data fetching with preload and parallel execution for dashboard
@@ -68,7 +68,7 @@ async function fetchCriticalData(sprintIds: string[]): Promise<{
   ]);
 
   const { roleId } = await findRoleIdAndEngineerIdByUserId(
-    authData.userId || "",
+    authData.userId || ""
   );
 
   return {
@@ -98,7 +98,7 @@ async function AsyncTopPerformers({
 
 async function AsyncBarChartCapacity({
   sprintIds,
-  organizationId
+  organizationId,
 }: {
   sprintIds: string[];
   organizationId?: string;
@@ -114,7 +114,7 @@ async function AsyncBarChartCapacity({
 
 async function AsyncLineChartSPCoding({
   sprintIds,
-  organizationId
+  organizationId,
 }: {
   sprintIds: string[];
   organizationId?: string;
@@ -135,12 +135,7 @@ async function AsyncPieTaskCategoryChart({
   organizationId?: string;
 }) {
   if (!organizationId || sprintIds.length === 0) {
-    return (
-      <LazyPieTaskCategoryChart
-        taskData={[]}
-        allTasksData={[]}
-      />
-    );
+    return <LazyPieTaskCategoryChart taskData={[]} allTasksData={[]} />;
   }
 
   const [taskCategoryData, allTasksData] = await Promise.all([
@@ -164,12 +159,7 @@ async function AsyncPieProjectChart({
   organizationId?: string;
 }) {
   if (!organizationId || sprintIds.length === 0) {
-    return (
-      <LazyPieProjectChart
-        taskData={[]}
-        allTasksData={[]}
-      />
-    );
+    return <LazyPieProjectChart taskData={[]} allTasksData={[]} />;
   }
 
   const [taskProjectData, allTasksData] = await Promise.all([
@@ -187,7 +177,7 @@ async function AsyncPieProjectChart({
 
 async function AsyncPieDonutTaskChart({
   sprintIds,
-  organizationId
+  organizationId,
 }: {
   sprintIds: string[];
   organizationId?: string;
@@ -251,6 +241,7 @@ async function AsyncLeavePublicHoliday({
       addLeaveOrHolidayAction={addLeaveOrHolidayAction}
       deleteLeaveOrHolidayAction={deleteLeaveOrHolidayAction}
       showActionButton={showActionButton}
+      organizationId={organizationId}
     />
   );
 }
@@ -279,15 +270,18 @@ export default async function Home({
   const { roleId, topPerformersData } = await fetchCriticalData(sprintIds);
 
   return (
-    <main className="space-y-6" key={organizationId || 'no-org'}>
+    <main className="space-y-6" key={organizationId || "no-org"}>
       {/* First Section: Capacity vs Reality + Top Performers */}
-      <section className="grid gap-6 lg:grid-cols-3" key={`section-1-${organizationId || 'no-org'}`}>
+      <section
+        className="grid gap-6 lg:grid-cols-3"
+        key={`section-1-${organizationId || "no-org"}`}
+      >
         <div className="lg:col-span-2">
           <Suspense fallback={<BarChartCapacitySkeleton />}>
             <AsyncBarChartCapacity
               sprintIds={sprintIds}
               organizationId={organizationId}
-              key={`bar-chart-${organizationId || 'no-org'}`}
+              key={`bar-chart-${organizationId || "no-org"}`}
             />
           </Suspense>
         </div>
@@ -296,42 +290,54 @@ export default async function Home({
             <AsyncTopPerformers
               sprintIds={sprintIds}
               preloadedData={topPerformersData}
-              key={`top-performers-${organizationId || 'no-org'}`}
+              key={`top-performers-${organizationId || "no-org"}`}
             />
           </Suspense>
         </div>
       </section>
 
       {/* Second Section: Task Category + Project Percentage */}
-      <section className="grid gap-6 lg:grid-cols-2" key={`section-2-${organizationId || 'no-org'}`}>
+      <section
+        className="grid gap-6 lg:grid-cols-2"
+        key={`section-2-${organizationId || "no-org"}`}
+      >
         <div>
-          <Suspense fallback={<PieChartSkeleton title="Task Category Percentage By SP" />}>
+          <Suspense
+            fallback={
+              <PieChartSkeleton title="Task Category Percentage By SP" />
+            }
+          >
             <AsyncPieTaskCategoryChart
               sprintIds={sprintIds}
               organizationId={organizationId}
-              key={`pie-category-${organizationId || 'no-org'}`}
+              key={`pie-category-${organizationId || "no-org"}`}
             />
           </Suspense>
         </div>
         <div>
-          <Suspense fallback={<PieChartSkeleton title="Project Percentage By SP" />}>
+          <Suspense
+            fallback={<PieChartSkeleton title="Project Percentage By SP" />}
+          >
             <AsyncPieProjectChart
               sprintIds={sprintIds}
               organizationId={organizationId}
-              key={`pie-project-${organizationId || 'no-org'}`}
+              key={`pie-project-${organizationId || "no-org"}`}
             />
           </Suspense>
         </div>
       </section>
 
       {/* Third Section: QA Performance + Tasks to QA */}
-      <section className="grid gap-6 lg:grid-cols-2" key={`section-3-${organizationId || 'no-org'}`}>
+      <section
+        className="grid gap-6 lg:grid-cols-2"
+        key={`section-3-${organizationId || "no-org"}`}
+      >
         <div>
           <Suspense fallback={<QAPerformancePieChartSkeleton />}>
             <AsyncQAPerformancePieChart
               sprintIds={sprintIds}
               organizationId={organizationId}
-              key={`qa-performance-${organizationId || 'no-org'}`}
+              key={`qa-performance-${organizationId || "no-org"}`}
             />
           </Suspense>
         </div>
@@ -340,32 +346,38 @@ export default async function Home({
             <AsyncPieDonutTaskChart
               sprintIds={sprintIds}
               organizationId={organizationId}
-              key={`pie-donut-${organizationId || 'no-org'}`}
+              key={`pie-donut-${organizationId || "no-org"}`}
             />
           </Suspense>
         </div>
       </section>
 
       {/* Fourth Section: Engineer Trends - Full Width */}
-      <section className="w-full" key={`section-4-${organizationId || 'no-org'}`}>
+      <section
+        className="w-full"
+        key={`section-4-${organizationId || "no-org"}`}
+      >
         <Suspense fallback={<LineChartSPCodingSkeleton />}>
           <AsyncLineChartSPCoding
             sprintIds={sprintIds}
             organizationId={organizationId}
-            key={`line-chart-${organizationId || 'no-org'}`}
+            key={`line-chart-${organizationId || "no-org"}`}
           />
         </Suspense>
       </section>
 
       {/* Fifth Section: Leave & Holiday Management */}
-      <section className="w-full" key={`section-5-${organizationId || 'no-org'}`}>
+      <section
+        className="w-full"
+        key={`section-5-${organizationId || "no-org"}`}
+      >
         <Suspense fallback={<LeavePublicHolidaySkeleton />}>
           <AsyncLeavePublicHoliday
             sprintIds={sprintIds}
             roleId={roleId}
             showActionButton={roleId === ROLE.ENGINEERING_MANAGER}
             organizationId={organizationId}
-            key={`leave-holiday-${organizationId || 'no-org'}`}
+            key={`leave-holiday-${organizationId || "no-org"}`}
           />
         </Suspense>
       </section>

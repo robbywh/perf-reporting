@@ -96,11 +96,12 @@ interface LeavePublicHolidayProps {
   sprints: SprintData[];
   engineers: Engineer[];
   roleId: string;
+  organizationId?: string;
   addLeaveOrHolidayAction: (
-    formData: FormData,
+    formData: FormData
   ) => Promise<{ success: boolean; error?: string | z.ZodIssue[] }>;
   deleteLeaveOrHolidayAction: (
-    formData: FormData,
+    formData: FormData
   ) => Promise<{ success: boolean; error?: string }>;
 }
 
@@ -134,7 +135,7 @@ const leaveFormSchema = z.object({
     ["full_day", "half_day_before_break", "half_day_after_break"],
     {
       required_error: "Request type is required",
-    },
+    }
   ),
   leaveType: z.string().min(1, "Leave type is required"),
 });
@@ -155,6 +156,7 @@ export function LeavePublicHoliday({
   addLeaveOrHolidayAction,
   deleteLeaveOrHolidayAction,
   showActionButton = false,
+  organizationId,
 }: LeavePublicHolidayProps) {
   const [mounted, setMounted] = React.useState(false);
   const [openDialog, setOpenDialog] = React.useState(false);
@@ -195,7 +197,7 @@ export function LeavePublicHoliday({
   const confirmDelete = (
     type: "leave" | "holiday",
     sprintIndex: number,
-    itemId: number,
+    itemId: number
   ) => {
     setDeleteTarget({ type, sprintIndex, itemId });
     setDeleteDialog(true);
@@ -214,7 +216,7 @@ export function LeavePublicHoliday({
         type === "leave"
           ? sprintData[sprintIndex].leaves.find((leave) => leave.id === itemId)
           : sprintData[sprintIndex].holidays.find(
-              (holiday) => holiday.id === itemId,
+              (holiday) => holiday.id === itemId
             );
 
       if (!item) {
@@ -232,6 +234,11 @@ export function LeavePublicHoliday({
       // Ensure date is properly formatted as ISO string
       const dateObj = new Date(item.date);
       formData.append("date", dateObj.toISOString());
+
+      // Add organizationId if available
+      if (organizationId) {
+        formData.append("organizationId", organizationId);
+      }
 
       // For leave records, we need to include the leave type
       if (type === "leave" && "type" in item) {
@@ -263,7 +270,7 @@ export function LeavePublicHoliday({
       } else {
         console.error("Delete error:", result.error);
         setErrorMessage(
-          result.error || "An unexpected error occurred while deleting",
+          result.error || "An unexpected error occurred while deleting"
         );
         setErrorDialog(true);
       }
@@ -293,7 +300,7 @@ export function LeavePublicHoliday({
             // For holidays, ignore any leaveType/requestType/engineerId validation errors
             if (data.type === "holiday") {
               return !["leaveType", "requestType", "engineerId"].includes(
-                err.path[0] as string,
+                err.path[0] as string
               );
             }
             return true;
@@ -310,6 +317,11 @@ export function LeavePublicHoliday({
 
       const formDataObj = new globalThis.FormData();
 
+      // Add organizationId if available
+      if (organizationId) {
+        formDataObj.append("organizationId", organizationId);
+      }
+
       if (data.type === "leave") {
         formDataObj.append("type", "leave");
         formDataObj.append("leaveType", data.leaveType);
@@ -319,7 +331,7 @@ export function LeavePublicHoliday({
         if (data.leaveType) {
           formDataObj.append(
             "description",
-            LeaveTypeMapping[data.leaveType as LeaveTypeKey],
+            LeaveTypeMapping[data.leaveType as LeaveTypeKey]
           );
         }
       } else {
@@ -413,7 +425,7 @@ export function LeavePublicHoliday({
               return isIncluded;
             })
             .sort(
-              (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
+              (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
             );
 
           const filteredHolidays = sprint.holidays
@@ -424,7 +436,7 @@ export function LeavePublicHoliday({
               return isIncluded;
             })
             .sort(
-              (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
+              (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
             );
 
           return (
@@ -669,7 +681,7 @@ function TableSection({
   confirmDelete: (
     type: "leave" | "holiday",
     sprintIndex: number,
-    itemId: number,
+    itemId: number
   ) => void;
   getEngineerName?: (engineerId?: number) => string;
   type: "leave" | "holiday";

@@ -107,18 +107,23 @@ async function syncSprintsFromClickUp(
       };
     });
 
-    await prisma.$transaction(async (tx: PrismaTransaction) => {
-      // Bulk upsert all sprints
-      await Promise.all(
-        sprintData.map((sprint) =>
-          tx.sprint.upsert({
-            where: { id: sprint.id },
-            create: sprint,
-            update: sprint,
-          })
-        )
-      );
-    });
+    await prisma.$transaction(
+      async (tx: PrismaTransaction) => {
+        // Bulk upsert all sprints
+        await Promise.all(
+          sprintData.map((sprint) =>
+            tx.sprint.upsert({
+              where: { id: sprint.id },
+              create: sprint,
+              update: sprint,
+            })
+          )
+        );
+      },
+      {
+        timeout: 15000, // 15 seconds timeout for sprint upserts
+      }
+    );
 
     console.log(
       `✅ Successfully synchronized sprints for organization: ${organizationId}`
@@ -306,22 +311,27 @@ async function syncCategoriesFromCustomFields(tasks: ClickUpTask[]) {
 
   // Upsert all categories found in custom_fields
   if (categoriesMap.size > 0) {
-    await prisma.$transaction(async (tx) => {
-      for (const [id, categoryData] of categoriesMap.entries()) {
-        await tx.category.upsert({
-          where: { id },
-          create: {
-            id,
-            name: categoryData.name,
-            color: categoryData.color,
-          },
-          update: {
-            name: categoryData.name,
-            color: categoryData.color,
-          },
-        });
+    await prisma.$transaction(
+      async (tx) => {
+        for (const [id, categoryData] of categoriesMap.entries()) {
+          await tx.category.upsert({
+            where: { id },
+            create: {
+              id,
+              name: categoryData.name,
+              color: categoryData.color,
+            },
+            update: {
+              name: categoryData.name,
+              color: categoryData.color,
+            },
+          });
+        }
+      },
+      {
+        timeout: 15000, // 15 seconds timeout for category upserts
       }
-    });
+    );
 
     console.log(
       `✅ Synced ${categoriesMap.size} categories from custom fields`
@@ -354,22 +364,27 @@ async function syncProjectsFromCustomFields(tasks: ClickUpTask[]) {
 
   // Upsert all projects found in custom_fields
   if (projectsMap.size > 0) {
-    await prisma.$transaction(async (tx) => {
-      for (const [id, projectData] of projectsMap.entries()) {
-        await tx.project.upsert({
-          where: { id },
-          create: {
-            id,
-            name: projectData.name,
-            color: projectData.color,
-          },
-          update: {
-            name: projectData.name,
-            color: projectData.color,
-          },
-        });
+    await prisma.$transaction(
+      async (tx) => {
+        for (const [id, projectData] of projectsMap.entries()) {
+          await tx.project.upsert({
+            where: { id },
+            create: {
+              id,
+              name: projectData.name,
+              color: projectData.color,
+            },
+            update: {
+              name: projectData.name,
+              color: projectData.color,
+            },
+          });
+        }
+      },
+      {
+        timeout: 15000, // 15 seconds timeout for project upserts
       }
-    });
+    );
 
     console.log(`✅ Synced ${projectsMap.size} projects from custom fields`);
   }
@@ -518,39 +533,44 @@ async function syncTodayTasksFromClickUp(
 
       // Delete tasks that were moved to another sprint
       if (tasksToDelete.length > 0) {
-        await prisma.$transaction(async (tx: PrismaTransaction) => {
-          // Delete task tags first
-          await tx.taskTag.deleteMany({
-            where: {
-              taskId: { in: tasksToDelete.map((t: { id: string }) => t.id) },
-              sprintId: sprint.id,
-            },
-          });
+        await prisma.$transaction(
+          async (tx: PrismaTransaction) => {
+            // Delete task tags first
+            await tx.taskTag.deleteMany({
+              where: {
+                taskId: { in: tasksToDelete.map((t: { id: string }) => t.id) },
+                sprintId: sprint.id,
+              },
+            });
 
-          // Delete task assignees
-          await tx.taskAssignee.deleteMany({
-            where: {
-              taskId: { in: tasksToDelete.map((t: { id: string }) => t.id) },
-              sprintId: sprint.id,
-            },
-          });
+            // Delete task assignees
+            await tx.taskAssignee.deleteMany({
+              where: {
+                taskId: { in: tasksToDelete.map((t: { id: string }) => t.id) },
+                sprintId: sprint.id,
+              },
+            });
 
-          // Delete task reviewers
-          await tx.taskReviewer.deleteMany({
-            where: {
-              taskId: { in: tasksToDelete.map((t: { id: string }) => t.id) },
-              sprintId: sprint.id,
-            },
-          });
+            // Delete task reviewers
+            await tx.taskReviewer.deleteMany({
+              where: {
+                taskId: { in: tasksToDelete.map((t: { id: string }) => t.id) },
+                sprintId: sprint.id,
+              },
+            });
 
-          // Finally delete the tasks
-          await tx.task.deleteMany({
-            where: {
-              id: { in: tasksToDelete.map((t: { id: string }) => t.id) },
-              sprintId: sprint.id,
-            },
-          });
-        });
+            // Finally delete the tasks
+            await tx.task.deleteMany({
+              where: {
+                id: { in: tasksToDelete.map((t: { id: string }) => t.id) },
+                sprintId: sprint.id,
+              },
+            });
+          },
+          {
+            timeout: 15000, // 15 seconds timeout for task deletion
+          }
+        );
 
         console.log(
           `✅ Deleted ${tasksToDelete.length} tasks that were moved from Sprint ${sprint.id}`
