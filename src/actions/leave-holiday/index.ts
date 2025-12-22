@@ -136,37 +136,37 @@ export async function adjustBaselineTarget(
     throw new Error("No sprint found for the given date");
   }
 
-  // Get affected sprint engineers with their leaves
-  const sprintEngineers = await tx.sprintEngineer.findMany({
-    where: engineerId
-      ? { sprintId: sprint.id, engineerId }
-      : { sprintId: sprint.id },
-    include: {
-      engineer: {
-        include: {
-          jobLevel: true,
-          leaves: {
-            where: {
-              date: {
-                gte: sprint.startDate,
-                lte: sprint.endDate,
+  // Get affected sprint engineers with their leaves and holidays in parallel
+  const [sprintEngineers, publicHolidays] = await Promise.all([
+    tx.sprintEngineer.findMany({
+      where: engineerId
+        ? { sprintId: sprint.id, engineerId }
+        : { sprintId: sprint.id },
+      include: {
+        engineer: {
+          include: {
+            jobLevel: true,
+            leaves: {
+              where: {
+                date: {
+                  gte: sprint.startDate,
+                  lte: sprint.endDate,
+                },
               },
             },
           },
         },
       },
-    },
-  });
-
-  // Get all public holidays in the sprint period
-  const publicHolidays = await tx.publicHoliday.findMany({
-    where: {
-      date: {
-        gte: sprint.startDate,
-        lte: sprint.endDate,
+    }),
+    tx.publicHoliday.findMany({
+      where: {
+        date: {
+          gte: sprint.startDate,
+          lte: sprint.endDate,
+        },
       },
-    },
-  });
+    }),
+  ]);
 
   // Calculate how much to adjust per day for each engineer
   const updates = sprintEngineers.map((sprintEngineer: SprintEngineer) => {
@@ -311,7 +311,7 @@ export async function deleteLeaveOrHolidayAction(formData: FormData) {
         }
       },
       {
-        timeout: 20000, // Increase timeout to 20 seconds
+        timeout: 15000, // 14 seconds - under Prisma Accelerate's 15s limit
       }
     );
 
@@ -400,7 +400,7 @@ export async function addLeaveOrHolidayAction(formData: FormData) {
         }
       },
       {
-        timeout: 15000, // 15 seconds timeout for task creation
+        timeout: 15000, // 14 seconds - under Prisma Accelerate's 15s limit
       }
     );
 
