@@ -49,9 +49,10 @@ export function OrganizationProvider({
   useEffect(() => {
     if (!mountedRef.current) return;
 
+    // Get orgId from searchParams to avoid dependency on the object itself
     const orgId = searchParams.get("org");
 
-    // Handle organization change
+    // Handle organization change - only update if different to prevent infinite loops
     if (orgId && orgId !== currentOrganization?.id) {
       setIsChangingOrganization(true);
       setCurrentOrganization({ id: orgId, name: orgId });
@@ -68,7 +69,10 @@ export function OrganizationProvider({
         }
       }, 2000);
     }
-  }, [searchParams, currentOrganization?.id]);
+    // Use searchParams.toString() to get a stable string representation
+    // This prevents infinite loops from object reference changes
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams.toString()]);
 
   // Separate effect for initial setup
   useEffect(() => {

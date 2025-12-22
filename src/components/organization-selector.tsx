@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter, useSearchParams } from "next/navigation";
-import { memo, useCallback, useEffect, useMemo, useState } from "react";
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import {
   Select,
@@ -26,37 +26,47 @@ export const OrganizationSelector = memo(function OrganizationSelector({
   const router = useRouter();
   const searchParams = useSearchParams();
   const [selectedOrganization, setSelectedOrganization] = useState<string>("");
+  const hasInitializedRef = useRef(false);
 
   // Memoize organizations to prevent unnecessary effect runs
   const memoizedOrganizations = useMemo(() => organizations, [organizations]);
 
+  // Sync state with URL params (when URL changes externally)
   useEffect(() => {
-    // Only proceed if we have organizations
-    if (memoizedOrganizations.length === 0) return;
-
-    // Get organization from URL params
     const orgFromUrl = searchParams.get("org");
 
-    // If URL has valid org, use it
     if (
       orgFromUrl &&
-      memoizedOrganizations.some((org) => org.id === orgFromUrl)
+      memoizedOrganizations.some((org) => org.id === orgFromUrl) &&
+      selectedOrganization !== orgFromUrl
     ) {
       setSelectedOrganization(orgFromUrl);
+      hasInitializedRef.current = true;
+    }
+  }, [searchParams, memoizedOrganizations, selectedOrganization]);
+
+  // Initialize with first org if URL has no org (only once)
+  useEffect(() => {
+    if (hasInitializedRef.current) return;
+    if (memoizedOrganizations.length === 0) return;
+
+    const orgFromUrl = searchParams.get("org");
+    if (orgFromUrl) {
+      hasInitializedRef.current = true;
       return;
     }
 
-    // If no valid org in URL, set the first one and update URL
-    if (memoizedOrganizations.length > 0) {
-      const firstOrgId = memoizedOrganizations[0].id;
-      setSelectedOrganization(firstOrgId);
+    // Set first organization if URL has no org
+    const firstOrgId = memoizedOrganizations[0].id;
+    setSelectedOrganization(firstOrgId);
+    hasInitializedRef.current = true;
 
-      // Update URL to include the first organization
-      const newParams = new URLSearchParams(searchParams.toString());
-      newParams.set("org", firstOrgId);
-      router.push(`?${newParams.toString()}`);
-    }
-  }, [memoizedOrganizations, searchParams, router]);
+    // Update URL to include the first organization
+    const newParams = new URLSearchParams(searchParams.toString());
+    newParams.set("org", firstOrgId);
+    router.replace(`?${newParams.toString()}`, { scroll: false });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [memoizedOrganizations]);
 
   const handleOrganizationChange = useCallback(
     (organizationId: string) => {
@@ -67,7 +77,7 @@ export const OrganizationSelector = memo(function OrganizationSelector({
       newParams.set("org", organizationId);
       router.push(`?${newParams.toString()}`);
     },
-    [searchParams, router],
+    [searchParams, router]
   );
 
   // Memoize the organization options to prevent rerendering

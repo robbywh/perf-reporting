@@ -92,6 +92,11 @@ export function SprintMultiSelect({
     const sprintIdsFromUrl = searchParams.get("sprintIds")?.split(",");
     if (!sprintIdsFromUrl) return;
 
+    // Check if the URL values match current selection to prevent loops
+    const currentSelectedIds = selectedOptions.map((s) => s.value).sort().join(",");
+    const urlSelectedIds = sprintIdsFromUrl.sort().join(",");
+    if (currentSelectedIds === urlSelectedIds) return;
+
     if (filterOptions.some((opt) => sprintIdsFromUrl.includes(opt.value))) {
       const filterValue = sprintIdsFromUrl[0];
       const filteredSprints = getFilteredSprints(filterValue);
@@ -101,34 +106,38 @@ export function SprintMultiSelect({
         sprints.filter((sprint) => sprintIdsFromUrl.includes(sprint.value)),
       );
     }
-  }, [
-    searchParams,
-    sprints,
-    mounted,
-    filterOptions,
-    getCurrentSprint,
-    getFilteredSprints,
-  ]);
+    // Use searchParams.toString() for stable dependency
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams.toString(), sprints, mounted, filterOptions, getCurrentSprint, getFilteredSprints]);
 
   useEffect(() => {
     if (!mounted) return;
+    
+    const currentSprintIds = searchParams.get("sprintIds");
+    const selectedSprintIds = selectedOptions.map((s) => s.value).join(",");
+    
+    // Only update URL if selection actually changed to prevent infinite loops
+    if (currentSprintIds === selectedSprintIds) return;
+    
     const params = new URLSearchParams(searchParams.toString());
 
     if (selectedOptions.length > 0) {
-      params.set("sprintIds", selectedOptions.map((s) => s.value).join(","));
+      params.set("sprintIds", selectedSprintIds);
     } else {
       // If no selection, default to current sprint
       const currentSprint = getCurrentSprint();
       if (currentSprint) {
         params.set("sprintIds", currentSprint.value);
         setSelectedOptions([currentSprint]);
+        return; // Don't call router.replace here as setSelectedOptions will trigger this effect again
       }
     }
 
     router.replace(`?${params.toString()}`, {
       scroll: false,
     });
-  }, [selectedOptions, router, mounted, getCurrentSprint, searchParams]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedOptions, mounted]);
 
   const handleChange = (options: MultiValue<Option>) => {
     const lastSelected = options[options.length - 1];
