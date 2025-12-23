@@ -7,7 +7,7 @@ import { prisma } from "@/services/db";
 
 export async function linkSprintsToEngineers(
   sprintId: string,
-  organizationId: string,
+  organizationId: string
 ) {
   try {
     // ✅ Fetch Sprint start_date and end_date
@@ -28,7 +28,7 @@ export async function linkSprintsToEngineers(
 
     if (!apiConfig.GITLAB_PERSONAL_ACCESS_TOKEN || !apiConfig.GITLAB_GROUP_ID) {
       console.log(
-        "❌ Missing GitLab API configuration, skipping GitLab integration",
+        "❌ Missing GitLab API configuration, skipping GitLab integration"
       );
       return;
     }
@@ -39,7 +39,7 @@ export async function linkSprintsToEngineers(
       sprintEndDate.toISOString(),
       apiConfig.GITLAB_BASE_URL!,
       apiConfig.GITLAB_PERSONAL_ACCESS_TOKEN,
-      apiConfig.GITLAB_GROUP_ID,
+      apiConfig.GITLAB_GROUP_ID
     );
 
     // ✅ Fetch engineers & job levels filtered by organization using many-to-many relationship
@@ -84,7 +84,7 @@ export async function linkSprintsToEngineers(
 
     // ✅ First, batch upsert all GitLab MRs in batches of 50 with timeouts
     console.log(
-      `🔄 Processing ${allMergedMRs.length} GitLab MRs in batches of 50`,
+      `🔄 Processing ${allMergedMRs.length} GitLab MRs in batches of 50`
     );
 
     const batchSize = 50;
@@ -99,29 +99,29 @@ export async function linkSprintsToEngineers(
                 where: { id: merged.id },
                 update: { title: merged.title },
                 create: { id: merged.id, title: merged.title },
-              }),
-            ),
+              })
+            )
           ),
           new Promise((_resolve, reject) =>
             setTimeout(
               () =>
                 reject(
                   new Error(
-                    `GitLab MR batch ${i + 1}-${Math.min(i + batchSize, allMergedMRs.length)} timeout`,
-                  ),
+                    `GitLab MR batch ${i + 1}-${Math.min(i + batchSize, allMergedMRs.length)} timeout`
+                  )
                 ),
-              30000,
-            ),
+              30000
+            )
           ),
         ]);
 
         console.log(
-          `✅ Processed GitLab MR batch ${i + 1}-${Math.min(i + batchSize, allMergedMRs.length)}/${allMergedMRs.length}`,
+          `✅ Processed GitLab MR batch ${i + 1}-${Math.min(i + batchSize, allMergedMRs.length)}/${allMergedMRs.length}`
         );
       } catch (error) {
         console.error(
           `❌ Error processing GitLab MR batch ${i + 1}-${Math.min(i + batchSize, allMergedMRs.length)}:`,
-          error,
+          error
         );
         // Continue with next batch instead of failing completely
       }
@@ -142,17 +142,17 @@ export async function linkSprintsToEngineers(
         });
 
         console.log(
-          `✅ GitLab MR queued for linking: MR ${merged.id} -> Sprint ${sprintId}, Engineer ${engineer.id}`,
+          `✅ GitLab MR queued for linking: MR ${merged.id} -> Sprint ${sprintId}, Engineer ${engineer.id}`
         );
       } else {
         console.log(
-          `⚠️ Engineer not found for GitLab user ID ${assigneeId} for MR ${merged.id}`,
+          `⚠️ Engineer not found for GitLab user ID ${assigneeId} for MR ${merged.id}`
         );
       }
 
       mrCountByAssignee.set(
         assigneeId,
-        (mrCountByAssignee.get(assigneeId) || 0) + 1,
+        (mrCountByAssignee.get(assigneeId) || 0) + 1
       );
     }
 
@@ -162,7 +162,7 @@ export async function linkSprintsToEngineers(
         const values = sprintGitlabBatch
           .map(
             ({ gitlabId, engineerId }) =>
-              `(${gitlabId}, '${sprintId}', ${engineerId})`,
+              `(${gitlabId}, '${sprintId}', ${engineerId})`
           )
           .join(", ");
 
@@ -173,13 +173,13 @@ export async function linkSprintsToEngineers(
         `);
 
         console.log(
-          `✅ Batch inserted ${sprintGitlabBatch.length} sprint_gitlab records`,
+          `✅ Batch inserted ${sprintGitlabBatch.length} sprint_gitlab records`
         );
       } catch (error: unknown) {
         const errorMessage =
           error instanceof Error ? error.message : "Unknown error";
         console.log(
-          `❌ Error batch inserting sprint_gitlab records: ${errorMessage}`,
+          `❌ Error batch inserting sprint_gitlab records: ${errorMessage}`
         );
 
         // Fallback to individual inserts
@@ -196,7 +196,7 @@ export async function linkSprintsToEngineers(
                 ? individualError.message
                 : "Unknown error";
             console.log(
-              `ℹ️ Sprint GitLab record may already exist: MR ${gitlabId}, Sprint ${sprintId}, Engineer ${engineerId} - ${individualErrorMessage}`,
+              `ℹ️ Sprint GitLab record may already exist: MR ${gitlabId}, Sprint ${sprintId}, Engineer ${engineerId} - ${individualErrorMessage}`
             );
           }
         }
@@ -210,14 +210,14 @@ export async function linkSprintsToEngineers(
 
         if (!gitlabUserId) {
           console.log(
-            `⏩ Skipping Engineer ID ${engineerId} - No GitLab user ID.`,
+            `⏩ Skipping Engineer ID ${engineerId} - No GitLab user ID.`
           );
           return;
         }
 
         if (!jobLevelId) {
           console.log(
-            `⏩ Skipping Engineer ID ${engineerId} - No job level found.`,
+            `⏩ Skipping Engineer ID ${engineerId} - No job level found.`
           );
           return;
         }
@@ -259,17 +259,18 @@ export async function linkSprintsToEngineers(
           null,
           false,
           prisma,
+          organizationId
         );
 
         console.log(
-          `✅ Sprint Engineer Updated: Sprint ${sprintId}, Engineer ${engineerId}, Job Level: ${jobLevelId}, Merged Count: ${mergedCount}`,
+          `✅ Sprint Engineer Updated: Sprint ${sprintId}, Engineer ${engineerId}, Job Level: ${jobLevelId}, Merged Count: ${mergedCount}`
         );
-      }),
+      })
     );
   } catch (error) {
     console.error(
       `❌ Error updating sprint engineers for Sprint ${sprintId}:`,
-      error,
+      error
     );
   }
 }
@@ -287,7 +288,7 @@ interface SprintCapacityReality {
 }
 
 export async function findCapacityVsRealityBySprintIds(
-  sprintIds: string[],
+  sprintIds: string[]
 ): Promise<SprintCapacityReality[]> {
   const sprints = await prisma.sprint.findMany({
     where: { id: { in: sprintIds } },
@@ -322,10 +323,16 @@ export async function findCapacityVsRealityBySprintIds(
   });
 
   // Fetch all public holidays for the date range of all sprints
-  const allStartDates = sprints.map(s => s.startDate);
-  const allEndDates = sprints.map(s => s.endDate);
-  const minDate = allStartDates.length > 0 ? new Date(Math.min(...allStartDates.map(d => d.getTime()))) : new Date();
-  const maxDate = allEndDates.length > 0 ? new Date(Math.max(...allEndDates.map(d => d.getTime()))) : new Date();
+  const allStartDates = sprints.map((s) => s.startDate);
+  const allEndDates = sprints.map((s) => s.endDate);
+  const minDate =
+    allStartDates.length > 0
+      ? new Date(Math.min(...allStartDates.map((d) => d.getTime())))
+      : new Date();
+  const maxDate =
+    allEndDates.length > 0
+      ? new Date(Math.max(...allEndDates.map((d) => d.getTime())))
+      : new Date();
 
   const publicHolidays = await prisma.publicHoliday.findMany({
     where: {
@@ -368,7 +375,7 @@ export async function findCapacityVsRealityBySprintIds(
           (se.storyPoints instanceof Decimal
             ? se.storyPoints.toNumber()
             : Number(se.storyPoints || 0)),
-        0,
+        0
       );
 
       const totalBaseline = sprint.sprintEngineers.reduce(
@@ -377,7 +384,7 @@ export async function findCapacityVsRealityBySprintIds(
           (se.baseline instanceof Decimal
             ? se.baseline.toNumber()
             : Number(se.baseline || 0)),
-        0,
+        0
       );
 
       const totalTarget = sprint.sprintEngineers.reduce(
@@ -386,7 +393,7 @@ export async function findCapacityVsRealityBySprintIds(
           (se.target instanceof Decimal
             ? se.target.toNumber()
             : Number(se.target || 0)),
-        0,
+        0
       );
 
       // Calculate working days based on total engineer-days
@@ -428,7 +435,7 @@ export async function findCapacityVsRealityBySprintIds(
         totalTarget,
         workingDays: Number(workingDays.toFixed(2)), // 2 decimal places
       };
-    },
+    }
   );
 }
 
@@ -492,7 +499,7 @@ export async function findTopPerformersBySprintIds(sprintIds: string[]) {
 
   // Sort by completion percentage in descending order
   return performersWithCompletion.sort(
-    (a, b) => b.completionPercentage - a.completionPercentage,
+    (a, b) => b.completionPercentage - a.completionPercentage
   );
 }
 
@@ -550,7 +557,7 @@ export async function findEngineerTrendBySprintIds(sprintIds: string[]) {
             ? storyPoints.toNumber()
             : Number(storyPoints || 0),
       });
-    },
+    }
   );
 
   return Array.from(sprintMap.values());
@@ -558,7 +565,7 @@ export async function findEngineerTrendBySprintIds(sprintIds: string[]) {
 
 export async function findAveragesByEngineerAndSprintIds(
   sprintIds: string[],
-  engineerId: number,
+  engineerId: number
 ) {
   // ✅ Fetch all required metrics from `sprintEngineer`
   const sprintEngineerData = await prisma.sprintEngineer.findMany({
@@ -583,7 +590,7 @@ export async function findAveragesByEngineerAndSprintIds(
       ? Number(
           (
             arr.reduce((sum, v) => (sum ?? 0) + (v ?? 0), 0) / sprintIds.length
-          ).toFixed(2),
+          ).toFixed(2)
         )
       : 0;
 
@@ -592,43 +599,43 @@ export async function findAveragesByEngineerAndSprintIds(
       sprintEngineerData.map((se: { storyPoints: Decimal | number | null }) =>
         se.storyPoints instanceof Decimal
           ? se.storyPoints.toNumber()
-          : Number(se.storyPoints || 0),
-      ),
+          : Number(se.storyPoints || 0)
+      )
     ),
     averageTarget: computeAverage(
       sprintEngineerData.map((se: { target: Decimal | number | null }) =>
         se.target instanceof Decimal
           ? se.target.toNumber()
-          : Number(se.target || 0),
-      ),
+          : Number(se.target || 0)
+      )
     ),
     averageBaseline: computeAverage(
       sprintEngineerData.map((se: { baseline: Decimal | number | null }) =>
         se.baseline instanceof Decimal
           ? se.baseline.toNumber()
-          : Number(se.baseline || 0),
-      ),
+          : Number(se.baseline || 0)
+      )
     ),
     averageCodingHours: computeAverage(
       sprintEngineerData.map((se: { codingHours: Decimal | number | null }) =>
         se.codingHours instanceof Decimal
           ? se.codingHours.toNumber()
-          : Number(se.codingHours || 0),
-      ),
+          : Number(se.codingHours || 0)
+      )
     ),
     averageTargetCh: computeAverage(
       sprintEngineerData.map((se: { targetCh: Decimal | number | null }) =>
         se.targetCh instanceof Decimal
           ? se.targetCh.toNumber()
-          : Number(se.targetCh || 0),
-      ),
+          : Number(se.targetCh || 0)
+      )
     ),
     averageBaselineCh: computeAverage(
       sprintEngineerData.map((se: { baselineCh: Decimal | number | null }) =>
         se.baselineCh instanceof Decimal
           ? se.baselineCh.toNumber()
-          : Number(se.baselineCh || 0),
-      ),
+          : Number(se.baselineCh || 0)
+      )
     ),
   };
 }

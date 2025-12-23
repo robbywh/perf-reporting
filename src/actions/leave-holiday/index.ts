@@ -105,6 +105,7 @@ async function findSprintByDate(
     // Also fetch start and end dates for logging
     select: {
       id: true,
+      name: true,
       startDate: true,
       endDate: true,
     },
@@ -125,16 +126,26 @@ export async function adjustBaselineTarget(
   tx: PrismaTransactionClient = prisma,
   organizationId?: string
 ) {
+  // Validate organizationId is provided
+  if (!organizationId) {
+    console.warn("adjustBaselineTarget: organizationId is missing");
+  }
+
   // Convert input date to UTC midnight for consistent comparison
   const dateToProcess = new Date(
     date.toISOString().split("T")[0] + "T00:00:00.000Z"
   );
 
-  // Find sprint based on date
+  // Find sprint based on date - organizationId is required for proper filtering
   const sprint = await findSprintByDate(dateToProcess, tx, organizationId);
   if (!sprint) {
-    throw new Error("No sprint found for the given date");
+    throw new Error(
+      `No sprint found for the given date${organizationId ? ` in organization ${organizationId}` : ""}`
+    );
   }
+
+  console.log("adjustBaselineTarget - Organization ID:", organizationId);
+  console.log("adjustBaselineTarget - Sprint found:", sprint.name, sprint.id);
 
   // Get affected sprint engineers with their leaves and holidays in parallel
   const [sprintEngineers, publicHolidays] = await Promise.all([
