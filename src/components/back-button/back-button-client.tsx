@@ -12,15 +12,15 @@ export function BackButtonClient({ children }: BackButtonClientProps) {
   const searchParams = useSearchParams();
 
   const handleBack = () => {
-    // Get current organization parameter to preserve it
-    const currentOrg = searchParams.get("org");
+    // Preserve all current query parameters
+    const currentParams = searchParams.toString();
 
-    // Always navigate to home with organization parameter preserved
-    // This ensures the organization context is maintained regardless of browser history
-    if (currentOrg) {
-      router.push(`/?org=${currentOrg}`);
+    // Always preserve query parameters when navigating back
+    // Navigate to home with all query parameters preserved
+    if (currentParams) {
+      router.push(`/?${currentParams}`);
     } else {
-      // Check if we're in browser environment and there's browser history to go back to
+      // If no query params, check if we can go back in browser history
       if (typeof window !== "undefined" && window.history.length > 1) {
         router.back();
       } else {
