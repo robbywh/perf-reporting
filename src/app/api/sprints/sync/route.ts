@@ -45,22 +45,8 @@ async function syncSprintsFromClickUp(
       return;
     }
 
-    // If targeting a specific sprint, validate it exists and belongs to this organization
-    if (targetSprintId) {
-      const existingSprint = await prisma.sprint.findFirst({
-        where: {
-          id: targetSprintId,
-          organizationId,
-        },
-      });
-
-      if (!existingSprint) {
-        console.log(
-          `❌ Sprint ${targetSprintId} not found in organization ${organizationId}`
-        );
-        return;
-      }
-    }
+    // No early DB validation for targetSprintId — the sprint may be new
+    // and not yet in the database. The filter is applied after fetching from ClickUp.
 
     // Call the external API library to fetch sprint lists from ClickUp.
     const folderListResponse = await getFolderList(
@@ -661,7 +647,7 @@ export async function GET(request: Request) {
     const targetSprintId =
       rawSprintId && rawSprintId.trim() !== "" ? rawSprintId : null;
 
-    // If sprint_id is provided, get its organization
+    // If sprint_id is provided, try to get its organization from DB
     let sprintOrganizationId = targetOrganizationId;
     if (targetSprintId) {
       const sprint = await prisma.sprint.findUnique({
@@ -670,20 +656,29 @@ export async function GET(request: Request) {
       });
 
       if (!sprint) {
-        console.log(`❌ Sprint ${targetSprintId} not found`);
-        return NextResponse.json(
-          {
-            success: false,
-            error: `Sprint ${targetSprintId} not found`,
-          },
-          { status: 400 }
+        // Sprint not in DB yet — it may be a new ClickUp list.
+        // Require organization_id so we know which org to sync from.
+        if (!targetOrganizationId) {
+          console.log(
+            `❌ Sprint ${targetSprintId} not found and no organization_id provided`
+          );
+          return NextResponse.json(
+            {
+              success: false,
+              error: `Sprint ${targetSprintId} not found in database. Provide organization_id to sync it from ClickUp.`,
+            },
+            { status: 400 }
+          );
+        }
+        console.log(
+          `📝 Sprint ${targetSprintId} not in database yet, will attempt to sync from ClickUp for organization: ${targetOrganizationId}`
+        );
+      } else {
+        sprintOrganizationId = sprint.organizationId;
+        console.log(
+          `🎯 Targeting specific sprint: ${targetSprintId} (${sprint.name}) in organization: ${sprintOrganizationId}`
         );
       }
-
-      sprintOrganizationId = sprint.organizationId;
-      console.log(
-        `🎯 Targeting specific sprint: ${targetSprintId} (${sprint.name}) in organization: ${sprintOrganizationId}`
-      );
     }
 
     // Build the where clause for organization filtering
